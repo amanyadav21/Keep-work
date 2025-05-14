@@ -4,6 +4,7 @@
 import { Button } from '@/components/ui/button';
 import type { TaskFilter } from '@/types';
 import { ListFilter, ListChecks, ListTodo, CircleDot, Circle } from 'lucide-react';
+import { cn } from '@/lib/utils'; // Added import
 
 interface FilterControlsProps {
   currentFilter: TaskFilter;
