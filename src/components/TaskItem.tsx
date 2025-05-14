@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid } from 'date-fns';
 import { Pencil, Trash2, BookOpen, Users, User, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TaskItemProps {
   task: Task;
