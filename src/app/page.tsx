@@ -8,11 +8,13 @@ import { TaskList } from '@/components/TaskList';
 import { FilterControls } from '@/components/FilterControls';
 import { TaskStats } from '@/components/TaskStats';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import type { Task, TaskCategory, TaskFilter } from '@/types';
+import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal'; // New Modal
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow'; // AI Flow
 
 interface TaskFormData {
   description: string;
@@ -27,6 +29,10 @@ export default function HomePage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
+  const [prioritySuggestions, setPrioritySuggestions] = useState<PrioritizedTaskSuggestion[]>([]);
+  const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
@@ -73,7 +79,6 @@ export default function HomePage() {
     if (task) {
       toast({
         title: `Task ${!task.isCompleted ? "Completed" : "Marked Pending"}`,
-        // description: `"${task.description}" status updated.`, // Keep toast concise
       });
     }
   };
@@ -95,7 +100,6 @@ export default function HomePage() {
     if (task) {
       toast({
         title: "Task Deleted",
-        // description: `"${task.description}" has been deleted.`, // Keep toast concise
         variant: "destructive",
       });
     }
@@ -103,9 +107,6 @@ export default function HomePage() {
 
   const sortedTasks = useMemo(() => {
     if (!isMounted) return [];
-    // Primary sort: pending tasks first, then completed
-    // Secondary sort: by due date (earliest first)
-    // Tertiary sort: by creation date (earliest first) for tasks with same due date or no due date
     return [...tasks].sort((a, b) => {
       if (a.isCompleted !== b.isCompleted) {
         return a.isCompleted ? 1 : -1;
@@ -132,13 +133,61 @@ export default function HomePage() {
     }
   }, [sortedTasks, filter, isMounted]);
 
+  const pendingTasksForAI = useMemo(() => {
+    return tasks
+      .filter(task => !task.isCompleted)
+      .map(task => ({
+        id: task.id,
+        description: task.description,
+        dueDate: task.dueDate,
+        category: task.category,
+      } as FlowTaskInput));
+  }, [tasks]);
+
+  const handleSuggestPriorities = async () => {
+    if (pendingTasksForAI.length === 0) {
+      toast({
+        title: "No Pending Tasks",
+        description: "Add some tasks or mark existing ones as pending to get priority suggestions.",
+      });
+      return;
+    }
+    setIsSuggestingPriorities(true);
+    setIsPriorityModalOpen(true);
+    setPrioritySuggestions([]); // Clear previous suggestions
+    try {
+      const result = await suggestTaskPriorities({ tasks: pendingTasksForAI });
+      // Enrich suggestions with full description for modal display
+      const enrichedSuggestions = result.prioritizedSuggestions.map(suggestion => {
+        const task = tasks.find(t => t.id === suggestion.taskId);
+        return {
+          ...suggestion,
+          description: task ? task.description : "Unknown Task", 
+        };
+      });
+      setPrioritySuggestions(enrichedSuggestions);
+    } catch (error) {
+      console.error("AI priority suggestion error:", error);
+      toast({
+        title: "AI Suggestion Failed",
+        description: "Could not get priority suggestions at this time.",
+        variant: "destructive",
+      });
+      // Optionally close modal on error or show error in modal
+      // setIsPriorityModalOpen(false); 
+    } finally {
+      setIsSuggestingPriorities(false);
+    }
+  };
+
+
   if (!isMounted) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
         <main className="flex-grow container mx-auto px-4 md:px-6 py-6">
           <div className="space-y-4">
-            <div className="h-10 bg-muted rounded-lg w-full sm:w-1/2"></div> {/* Filter placeholder */}
+            <div className="h-10 bg-muted rounded-lg w-full sm:w-1/2"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="h-36 bg-muted rounded-lg"></div> 
@@ -168,7 +217,11 @@ export default function HomePage() {
             />
           </div>
           <aside className="xl:col-span-1 space-y-6">
-             <TaskStats tasks={tasks} />
+             <TaskStats 
+                tasks={tasks} 
+                onSuggestPriorities={handleSuggestPriorities}
+                isPrioritizing={isSuggestingPriorities}
+              />
           </aside>
         </div>
       </main>
@@ -208,6 +261,13 @@ export default function HomePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PrioritySuggestionsModal 
+        isOpen={isPriorityModalOpen}
+        onClose={() => setIsPriorityModalOpen(false)}
+        suggestions={prioritySuggestions}
+        isLoading={isSuggestingPriorities}
+      />
     </div>
   );
 }

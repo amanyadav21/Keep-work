@@ -4,14 +4,17 @@
 import type { Task } from '@/types';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Activity, CheckCircle, ListTodo, Sparkles } from 'lucide-react';
+import { Activity, CheckCircle, ListTodo, Sparkles, Brain } from 'lucide-react'; // Added Brain for AI
+import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
 interface TaskStatsProps {
   tasks: Task[];
+  onSuggestPriorities: () => void; // Callback to trigger AI prioritization
+  isPrioritizing: boolean; // To show loading state on button
 }
 
-export function TaskStats({ tasks }: TaskStatsProps) {
+export function TaskStats({ tasks, onSuggestPriorities, isPrioritizing }: TaskStatsProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -31,6 +34,7 @@ export function TaskStats({ tasks }: TaskStatsProps) {
             <div className="h-12 bg-muted rounded animate-pulse"></div>
             <div className="h-12 bg-muted rounded animate-pulse"></div>
           </div>
+          <div className="h-10 bg-muted rounded animate-pulse mt-2"></div> {/* Placeholder for AI button */}
         </CardContent>
       </Card>
     );
@@ -83,6 +87,17 @@ export function TaskStats({ tasks }: TaskStatsProps) {
               All tasks completed! Great job!
             </p>
           </div>
+        )}
+        {pendingTasks > 0 && (
+          <Button 
+            onClick={onSuggestPriorities} 
+            className="w-full mt-2"
+            variant="outline"
+            disabled={isPrioritizing}
+          >
+            <Brain className={`mr-2 h-4 w-4 ${isPrioritizing ? 'animate-pulse' : ''}`} />
+            {isPrioritizing ? 'Thinking...' : 'Suggest Priorities'}
+          </Button>
         )}
       </CardContent>
     </Card>

@@ -10,3 +10,10 @@ export interface Task {
 }
 
 export type TaskFilter = "all" | "pending" | "completed";
+
+// Added for AI Prioritization Flow
+export interface PrioritizedTaskSuggestion {
+  taskId: string;
+  description: string; // Include description for easy display in modal
+  reason: string;
+}
