@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
@@ -26,7 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}>
+      <body 
+        className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
+        suppressHydrationWarning={true} // Add this line
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
