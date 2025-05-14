@@ -1,9 +1,10 @@
+
 "use client";
 
 import type { Task } from '@/types';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ListChecks, Activity } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Activity, CheckCircle, ListTodo } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface TaskStatsProps {
@@ -15,13 +16,12 @@ export function TaskStats({ tasks }: TaskStatsProps) {
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    // Render placeholder or null during SSR to avoid hydration mismatch
     return (
-      <Card className="shadow-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl flex items-center">
+      <Card className="shadow-sm rounded-lg">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center font-medium">
             <Activity className="mr-2 h-5 w-5 text-primary" />
-            Your Progress
+            Summary
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -38,27 +38,45 @@ export function TaskStats({ tasks }: TaskStatsProps) {
   const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <Card className="shadow-md">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xl flex items-center">
+    <Card className="shadow-sm rounded-lg">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center font-medium">
           <Activity className="mr-2 h-5 w-5 text-primary" />
-          Your Progress
+          Summary
         </CardTitle>
+        <CardDescription>Your task completion overview.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <div>
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium text-foreground">
-              {completedTasks} of {totalTasks} tasks completed
+          <div className="flex justify-between items-center mb-1 text-sm">
+            <span className="font-medium text-foreground">
+              Overall Progress
             </span>
-            <span className="text-sm font-semibold text-primary">{completionPercentage}%</span>
+            <span className="font-semibold text-primary">{completionPercentage}%</span>
           </div>
           <Progress value={completionPercentage} aria-label={`${completionPercentage}% tasks completed`} className="h-2" />
         </div>
-        <p className="text-sm text-muted-foreground">
-          <ListChecks className="inline h-4 w-4 mr-1 text-green-500" />
-          You have <strong className="text-foreground">{pendingTasks}</strong> task{pendingTasks !== 1 ? 's' : ''} left. Keep going!
-        </p>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-md">
+                <ListTodo className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                <div>
+                    <p className="text-muted-foreground">Pending</p>
+                    <p className="font-semibold text-lg text-foreground">{pendingTasks}</p>
+                </div>
+            </div>
+            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-md">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-500" />
+                <div>
+                    <p className="text-muted-foreground">Completed</p>
+                    <p className="font-semibold text-lg text-foreground">{completedTasks}</p>
+                </div>
+            </div>
+        </div>
+         {totalTasks > 0 && pendingTasks === 0 && (
+          <p className="text-sm text-center text-green-600 dark:text-green-500 pt-2">
+            ✨ All tasks completed! Great job! ✨
+          </p>
+        )}
       </CardContent>
     </Card>
   );

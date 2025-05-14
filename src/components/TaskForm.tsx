@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea"; // Changed to Textarea
 import {
   Select,
   SelectContent,
@@ -26,7 +28,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Save } from "lucide-react";
+import { CalendarIcon, Save, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import type { Task, TaskCategory } from "@/types";
@@ -35,7 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 const taskCategories: TaskCategory[] = ["Assignment", "Class", "Personal"];
 
 const taskFormSchema = z.object({
-  description: z.string().min(3, "Description must be at least 3 characters").max(100, "Description must be at most 100 characters"),
+  description: z.string().min(3, "Description must be at least 3 characters").max(200, "Description must be at most 200 characters"), // Increased max length
   dueDate: z.date({ required_error: "Due date is required." }),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
 });
@@ -60,7 +62,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
         }
       : {
           description: "",
-          dueDate: new Date(),
+          dueDate: new Date(new Date().setHours(23, 59, 59, 999)), // Default to end of today
           category: undefined,
         },
   });
@@ -69,28 +71,32 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     onSubmit(data, editingTask?.id);
     toast({
       title: editingTask ? "Task Updated" : "Task Added",
-      description: `"${data.description}" has been ${editingTask ? 'updated' : 'added'}.`,
+      description: `"${data.description.substring(0, 30)}${data.description.length > 30 ? "..." : ""}" ${editingTask ? 'updated' : 'added'}.`,
     });
     onClose(); 
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 p-1">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 p-1">
         <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Task Description</FormLabel>
               <FormControl>
-                <Input placeholder="E.g., Complete Math homework" {...field} />
+                <Textarea 
+                  placeholder="E.g., Finish reading Chapter 3 for History class..." 
+                  {...field} 
+                  className="min-h-[100px] resize-none" // Allow vertical resize
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="dueDate"
@@ -103,16 +109,16 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-full pl-3 text-left font-normal",
+                          "w-full justify-start text-left font-normal",
                           !field.value && "text-muted-foreground"
                         )}
                       >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
                         {field.value ? (
                           format(field.value, "PPP")
                         ) : (
                           <span>Pick a date</span>
                         )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -121,7 +127,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))} // Disable past dates
+                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))} 
                       initialFocus
                     />
                   </PopoverContent>
@@ -139,7 +145,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -155,12 +161,13 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
             )}
           />
         </div>
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" /> {editingTask ? "Save Changes" : "Add Task"}
+          <Button type="submit" className="min-w-[120px]">
+            {editingTask ? <Save className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+            {editingTask ? "Save Changes" : "Add Task"}
           </Button>
         </div>
       </form>

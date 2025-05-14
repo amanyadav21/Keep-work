@@ -1,4 +1,5 @@
-import { GraduationCap } from 'lucide-react';
+
+import { GraduationCap, Edit } from 'lucide-react'; // Edit can be an alternative to PlusCircle
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -9,20 +10,17 @@ interface HeaderProps {
 
 export function Header({ onAddTask }: HeaderProps) {
   return (
-    <header className="py-6 px-4 md:px-8 border-b border-border/60">
+    <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50">
       <div className="container mx-auto flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <GraduationCap className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            TaskWise Student
+        <div className="flex items-center gap-2">
+          <GraduationCap className="h-7 w-7 text-primary" />
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">
+            TaskWise
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={onAddTask} className="hidden sm:flex">
-            <PlusCircle className="mr-2 h-5 w-5" /> Add Task
-          </Button>
-          <Button onClick={onAddTask} size="icon" variant="outline" className="sm:hidden" aria-label="Add Task">
-            <PlusCircle className="h-5 w-5" />
+          <Button onClick={onAddTask} size="sm" className="rounded-full">
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Task
           </Button>
           <ThemeToggle />
         </div>

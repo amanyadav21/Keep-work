@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -8,10 +9,8 @@ import { FilterControls } from '@/components/FilterControls';
 import { TaskStats } from '@/components/TaskStats';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import type { Task, TaskCategory, TaskFilter } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle } from 'lucide-react';
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,7 +28,6 @@ export default function HomePage() {
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Hydration check
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
 
@@ -42,7 +40,7 @@ export default function HomePage() {
       isCompleted: false,
       createdAt: formatISO(new Date()),
     };
-    setTasks(prevTasks => [...prevTasks, newTask].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime() || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
+    setTasks(prevTasks => [...prevTasks, newTask]);
   };
 
   const handleEditTask = (data: TaskFormData, taskId: string) => {
@@ -51,7 +49,7 @@ export default function HomePage() {
         task.id === taskId
           ? { ...task, ...data, dueDate: formatISO(data.dueDate) }
           : task
-      ).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime() || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      )
     );
     setEditingTask(null);
   };
@@ -75,7 +73,7 @@ export default function HomePage() {
     if (task) {
       toast({
         title: `Task ${!task.isCompleted ? "Completed" : "Marked Pending"}`,
-        description: `"${task.description}" status updated.`,
+        // description: `"${task.description}" status updated.`, // Keep toast concise
       });
     }
   };
@@ -93,26 +91,37 @@ export default function HomePage() {
   const handleDeleteTask = (id: string) => {
     const task = tasks.find(t => t.id === id);
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
-    setTaskToDelete(null); // Close confirmation dialog
+    setTaskToDelete(null); 
     if (task) {
       toast({
         title: "Task Deleted",
-        description: `"${task.description}" has been deleted.`,
+        // description: `"${task.description}" has been deleted.`, // Keep toast concise
         variant: "destructive",
       });
     }
   };
 
-  const filteredTasks = useMemo(() => {
-    if (!isMounted) return []; // Return empty array or placeholder during SSR / before mount
-    let sortedTasks = [...tasks].sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime() || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    
-    // Further sort by completion status: pending tasks first
-    sortedTasks = sortedTasks.sort((a,b) => {
-      if (a.isCompleted === b.isCompleted) return 0;
-      return a.isCompleted ? 1 : -1;
+  const sortedTasks = useMemo(() => {
+    if (!isMounted) return [];
+    // Primary sort: pending tasks first, then completed
+    // Secondary sort: by due date (earliest first)
+    // Tertiary sort: by creation date (earliest first) for tasks with same due date or no due date
+    return [...tasks].sort((a, b) => {
+      if (a.isCompleted !== b.isCompleted) {
+        return a.isCompleted ? 1 : -1;
+      }
+      const dueDateA = new Date(a.dueDate).getTime();
+      const dueDateB = new Date(b.dueDate).getTime();
+      if (dueDateA !== dueDateB) {
+        return dueDateA - dueDateB;
+      }
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
+  }, [tasks, isMounted]);
 
+
+  const filteredTasks = useMemo(() => {
+    if (!isMounted) return []; 
     switch (filter) {
       case 'pending':
         return sortedTasks.filter(task => !task.isCompleted);
@@ -121,18 +130,20 @@ export default function HomePage() {
       default: // 'all'
         return sortedTasks;
     }
-  }, [tasks, filter, isMounted]);
+  }, [sortedTasks, filter, isMounted]);
 
   if (!isMounted) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
-        <main className="flex-grow container mx-auto px-4 md:px-8 py-8">
-          <div className="animate-pulse space-y-4">
-            <div className="h-24 bg-muted rounded-lg"></div>
-            <div className="h-10 bg-muted rounded-lg w-1/2"></div>
-            <div className="h-16 bg-muted rounded-lg"></div>
-            <div className="h-16 bg-muted rounded-lg"></div>
+        <main className="flex-grow container mx-auto px-4 md:px-6 py-6">
+          <div className="space-y-4">
+            <div className="h-10 bg-muted rounded-lg w-full sm:w-1/2"></div> {/* Filter placeholder */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-36 bg-muted rounded-lg"></div> 
+              ))}
+            </div>
           </div>
         </main>
       </div>
@@ -142,13 +153,13 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header onAddTask={handleOpenAddForm} />
-      <main className="flex-grow container mx-auto px-4 md:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <h2 className="text-2xl font-semibold text-foreground">Your Tasks</h2>
-              <FilterControls currentFilter={filter} onFilterChange={setFilter} />
-            </div>
+      <main className="flex-grow container mx-auto px-4 md:px-6 py-6">
+        <div className="mb-6">
+            <FilterControls currentFilter={filter} onFilterChange={setFilter} />
+        </div>
+        
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <div className="xl:col-span-3">
             <TaskList
               tasks={filteredTasks}
               onToggleComplete={handleToggleComplete}
@@ -156,20 +167,19 @@ export default function HomePage() {
               onDelete={(id) => setTaskToDelete(id)} 
             />
           </div>
-          <aside className="lg:col-span-1 space-y-6">
+          <aside className="xl:col-span-1 space-y-6">
              <TaskStats tasks={tasks} />
-             {/* You could add more things to the sidebar here, like a calendar view or upcoming deadlines summary */}
           </aside>
         </div>
       </main>
 
       <Dialog open={isFormOpen} onOpenChange={(open) => {
         setIsFormOpen(open);
-        if (!open) setEditingTask(null); // Reset editing task when dialog closes
+        if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-xl">{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
           </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
@@ -183,12 +193,11 @@ export default function HomePage() {
       </Dialog>
 
       <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Task?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the task
-              "{tasks.find(t => t.id === taskToDelete)?.description}".
+              This will permanently delete the task "{tasks.find(t => t.id === taskToDelete)?.description}". This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
