@@ -4,5 +4,6 @@ import {googleAI} from '@genkit-ai/googleai';
 
 export const ai = genkit({
   plugins: [googleAI()],
-  model: 'gemini-pro', // Switched to gemini-pro as gemini-1.5-flash-latest was not found
+  model: 'gemini-1.0-pro', // Switched to gemini-1.0-pro
 });
+
