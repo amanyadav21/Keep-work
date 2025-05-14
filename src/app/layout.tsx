@@ -16,7 +16,7 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'TaskWise Student',
+  title: 'Student | Keep Work',
   description: 'Smart Task Manager for Students',
 };
 
