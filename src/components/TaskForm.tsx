@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; // Changed to Textarea
+import { Textarea } from "@/components/ui/textarea"; 
 import {
   Select,
   SelectContent,
@@ -28,16 +28,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Save, PlusCircle } from "lucide-react";
+import { CalendarIcon, Save, PlusCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import type { Task, TaskCategory } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import { suggestTaskCategory } from "@/ai/flows/suggest-category-flow";
 
-const taskCategories: TaskCategory[] = ["Assignment", "Class", "Personal"];
+const taskCategories: [TaskCategory, ...TaskCategory[]] = ["Assignment", "Class", "Personal"];
 
 const taskFormSchema = z.object({
-  description: z.string().min(3, "Description must be at least 3 characters").max(200, "Description must be at most 200 characters"), // Increased max length
+  description: z.string().min(3, "Description must be at least 3 characters").max(500, "Description must be at most 500 characters"), // Increased max length
   dueDate: z.date({ required_error: "Due date is required." }),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
 });
@@ -62,10 +64,47 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
         }
       : {
           description: "",
-          dueDate: new Date(new Date().setHours(23, 59, 59, 999)), // Default to end of today
+          dueDate: new Date(new Date().setHours(23, 59, 59, 999)), 
           category: undefined,
         },
   });
+
+  const [isSuggestingCategory, setIsSuggestingCategory] = useState(false);
+  const descriptionValue = form.watch('description');
+
+  useEffect(() => {
+    // Only suggest if not editing, description is long enough, and no category is manually set
+    if (!editingTask && descriptionValue && descriptionValue.length > 10 && !form.getValues('category')) {
+      const handler = setTimeout(async () => {
+        setIsSuggestingCategory(true);
+        try {
+          const result = await suggestTaskCategory({ description: descriptionValue });
+          if (result && result.category) {
+            form.setValue('category', result.category, { shouldValidate: true });
+            toast({
+              title: "AI Suggestion",
+              description: `We've suggested category: "${result.category}".`,
+            });
+          }
+        } catch (error) {
+          console.error("AI category suggestion error:", error);
+          // Optionally, inform the user about the error with a toast
+          // toast({
+          //   title: "AI Suggestion Failed",
+          //   description: "Could not suggest a category at this time.",
+          //   variant: "destructive",
+          // });
+        } finally {
+          setIsSuggestingCategory(false);
+        }
+      }, 1200); // Debounce for 1.2 seconds
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }
+  }, [descriptionValue, editingTask, form, toast]);
+
 
   const handleFormSubmit = (data: TaskFormValues) => {
     onSubmit(data, editingTask?.id);
@@ -89,7 +128,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                 <Textarea 
                   placeholder="E.g., Finish reading Chapter 3 for History class..." 
                   {...field} 
-                  className="min-h-[100px] resize-none" // Allow vertical resize
+                  className="min-h-[100px] resize-none"
                 />
               </FormControl>
               <FormMessage />
@@ -141,8 +180,11 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
             name="category"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormLabel className="flex items-center">
+                  Category
+                  {isSuggestingCategory && <Loader2 className="ml-2 h-4 w-4 animate-spin text-primary" />}
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
