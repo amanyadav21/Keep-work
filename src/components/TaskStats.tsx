@@ -4,7 +4,7 @@
 import type { Task } from '@/types';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Activity, CheckCircle, ListTodo } from 'lucide-react';
+import { Activity, CheckCircle, ListTodo, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface TaskStatsProps {
@@ -27,6 +27,10 @@ export function TaskStats({ tasks }: TaskStatsProps) {
         <CardContent className="space-y-3">
           <div className="h-4 bg-muted rounded w-full animate-pulse"></div>
           <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-12 bg-muted rounded animate-pulse"></div>
+            <div className="h-12 bg-muted rounded animate-pulse"></div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -73,9 +77,12 @@ export function TaskStats({ tasks }: TaskStatsProps) {
             </div>
         </div>
          {totalTasks > 0 && pendingTasks === 0 && (
-          <p className="text-sm text-center text-green-600 dark:text-green-500 pt-2">
-            ✨ All tasks completed! Great job! ✨
-          </p>
+          <div className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-md mt-3">
+            <Sparkles className="mx-auto h-8 w-8 text-green-500 dark:text-green-400 mb-2" />
+            <p className="text-md font-semibold text-green-700 dark:text-green-300">
+              All tasks completed! Great job!
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
