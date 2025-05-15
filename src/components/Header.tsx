@@ -15,7 +15,7 @@ export function Header({ onAddTask }: HeaderProps) {
         <div className="flex items-center gap-2">
           <GraduationCap className="h-7 w-7 text-primary" />
           <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">
-            TaskWise
+            Upnext
           </h1>
         </div>
         <div className="flex items-center gap-2">
