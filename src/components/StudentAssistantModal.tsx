@@ -44,7 +44,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
 
   const scrollToBottom = () => {
     setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" }); // Changed to auto for immediate jump
     }, 0);
   };
 
@@ -59,11 +59,17 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     } else if (isOpen && taskDescription && isLoadingInitial) {
       setChatMessages([{ role: 'user', content: taskDescription }]);
       latestIdentifiedType.current = undefined;
+    } else if (!isOpen) { // Clear state when modal is closed
+      setChatMessages([]);
+      setCurrentUserInput("");
+      latestIdentifiedType.current = undefined;
     }
   }, [isOpen, taskDescription, initialAssistance, isLoadingInitial]);
 
   useEffect(() => {
-    scrollToBottom();
+    if (chatMessages.length > 0) {
+      scrollToBottom();
+    }
   }, [chatMessages]);
 
 
@@ -73,13 +79,14 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
     setChatMessages(prev => [...prev, userMessage]);
     const currentChatHistory = [...chatMessages, userMessage]; 
+    const followUpQuery = currentUserInput; // Capture before clearing
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
       const flowInput: StudentAssistantInput = {
-        currentInquiry: userMessage.content,
-        conversationHistory: chatMessages, 
+        currentInquiry: followUpQuery,
+        conversationHistory: chatMessages, // Send history *before* the current user message for AI context
         originalTaskContext: taskDescription,
       };
       const result = await getStudentAssistance(flowInput);
@@ -99,16 +106,14 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   };
 
   const handleCloseModal = () => {
-    setChatMessages([]);
-    setCurrentUserInput("");
-    latestIdentifiedType.current = undefined;
+    // State clearing is now handled in the main useEffect when isOpen changes to false
     onClose();
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleCloseModal(); }}>
       <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl rounded-lg max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-4 pb-3 border-b bg-background z-10">
+        <DialogHeader className="p-4 pb-3 border-b bg-background z-10 sticky top-0">
           <DialogTitle className="text-xl flex items-center">
             <Brain className="h-6 w-6 mr-2 text-primary" />
             AI Student Assistant
@@ -128,50 +133,60 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </DialogHeader>
 
-        <ScrollArea className="flex-grow min-h-0"> 
-          <div className="space-y-4 p-4">
-            {isLoadingInitial && chatMessages.length <=1 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
-                <p>Thinking...</p>
-                <p className="text-sm">Your AI assistant is generating an initial response.</p>
-              </div>
-            ) : chatMessages.length > 0 ? (
-              chatMessages.map((msg, index) => (
-                <div key={index} className={cn("flex items-start space-x-3", msg.role === 'user' ? 'justify-end' : '')}>
-                  {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 mt-1" />}
-                  <div
+        <ScrollArea className="flex-grow min-h-0" tabIndex={0} style={{outline: 'none'}}> 
+          <div className="p-4">
+            <div className="space-y-4">
+              {isLoadingInitial && chatMessages.length <=1 && !initialAssistance ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
+                  <p>Thinking...</p>
+                  <p className="text-sm">Your AI assistant is generating an initial response.</p>
+                </div>
+              ) : chatMessages.length > 0 ? (
+                chatMessages.map((msg, index) => (
+                  <div 
+                    key={index} 
                     className={cn(
-                      "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border",
-                      msg.role === 'user' ? 'bg-primary/10 border-primary/20 text-primary-foreground' : 'bg-muted/50 border-muted'
+                      "flex items-end space-x-2", 
+                      msg.role === 'user' ? 'justify-end' : 'justify-start'
                     )}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.content}
-                    </ReactMarkdown>
+                    {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 mb-1" />}
+                    <div
+                      className={cn(
+                        "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border text-sm",
+                        msg.role === 'user' 
+                          ? 'bg-primary/10 border-primary/30 text-foreground' 
+                          : 'bg-muted/50 border-muted text-foreground'
+                      )}
+                    >
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                    {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mb-1" />}
                   </div>
-                  {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />}
+                ))
+              ) : !isLoadingInitial && ( // Case where there are no messages and not loading
+                <div className="text-center py-10 text-muted-foreground">
+                  <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
+                  <p>No assistance available or conversation started.</p>
                 </div>
-              ))
-            ) : !isLoadingInitial && (
-              <div className="text-center py-10 text-muted-foreground">
-                <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
-                <p>No assistance available or conversation started.</p>
-              </div>
-            )}
-            {(isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role === 'user') && (
-              <div className="flex items-start space-x-3">
-                <Bot className="h-6 w-6 text-primary flex-shrink-0 animate-pulse" />
-                <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
-                  Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
+              )}
+              {(isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length -1].role === 'user') && (
+                <div className="flex items-end space-x-2 justify-start">
+                  <Bot className="h-6 w-6 text-primary flex-shrink-0 mb-1 animate-pulse" />
+                  <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
+                    Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
+                  </div>
                 </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
+              )}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t bg-background">
+        <div className="p-4 border-t bg-background sticky bottom-0">
           <div className="flex items-start space-x-2">
             <Textarea
               placeholder="Ask a follow-up question..."
@@ -180,7 +195,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleSendFollowUp();
+                  if (!isSendingFollowUp && !isLoadingInitial) handleSendFollowUp();
                 }
               }}
               rows={1}
@@ -191,7 +206,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               onClick={handleSendFollowUp}
               disabled={!currentUserInput.trim() || isSendingFollowUp || isLoadingInitial}
               size="icon"
-              className="h-10 w-10"
+              className="h-10 w-10 flex-shrink-0" // Ensure button doesn't shrink
             >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send</span>
@@ -199,7 +214,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </div>
         </div>
 
-        <DialogFooter className="p-4 pt-0 border-t sm:justify-between">
+        <DialogFooter className="p-4 pt-0 border-t sm:justify-between bg-background sticky bottom-0">
           <div className="text-xs text-muted-foreground">AI can make mistakes. Consider checking important information.</div>
           <Button onClick={handleCloseModal} variant="outline" size="sm">Close</Button>
         </DialogFooter>
@@ -207,3 +222,6 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     </Dialog>
   );
 }
+
+
+    
