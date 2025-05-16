@@ -22,7 +22,7 @@ interface TaskItemProps {
   onToggleComplete: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
-  onRequestAIAssistance: (task: Task) => void; // New prop
+  onRequestAIAssistance: (task: Task) => void;
 }
 
 const categoryIcons: Record<TaskCategory, React.ReactNode> = {
@@ -41,7 +41,11 @@ const categoryBorderColors: Record<TaskCategory, string> = {
 export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAIAssistance }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
+  // showActions can be removed if pure group-hover is preferred,
+  // but keeping it allows for programmatic control if ever needed or for touch devices where hover is not primary.
+  // For simplicity, we'll primarily rely on group-hover for visual cues.
   const [showActions, setShowActions] = useState(false);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -80,10 +84,12 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
 
       let timeLeftString = "";
       if (days > 0) timeLeftString += `${days}d `;
-      if (hours > 0 || days > 0) timeLeftString += `${hours}h `;
-      timeLeftString += `${minutes}m left`;
+      if (hours > 0 || days > 0) timeLeftString += `${hours}h `; // Also show hours if days > 0
+      if (minutes > 0 || (days === 0 && hours === 0)) timeLeftString += `${minutes}m `; // Show minutes if it's the smallest unit or only unit
       
-      setTimeLeft(timeLeftString);
+      timeLeftString += "left";
+      
+      setTimeLeft(timeLeftString.trim());
     };
 
     calculateTimeLeft();
@@ -101,7 +107,7 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
     <TooltipProvider delayDuration={300}>
       <Card 
         className={cn(
-          "flex flex-col justify-between rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[160px]", // Increased min-height slightly
+          "group flex flex-col justify-between rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[170px]", 
           categoryBorderColors[task.category],
           "border-l-4", 
           task.isCompleted ? "bg-muted/30 dark:bg-muted/20 opacity-80" : "bg-card"
@@ -121,7 +127,7 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
             <p 
               id={`task-desc-${task.id}`}
               className={cn(
-                "text-base font-medium text-foreground break-words",
+                "text-base font-medium text-foreground break-words", // Ensure break-words for long descriptions
                 task.isCompleted ? "line-through text-muted-foreground" : ""
               )}
             >
@@ -152,7 +158,7 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
                 isOverdue || timeLeft === "Past due" ? "text-destructive" : task.isCompleted ? "text-green-600 dark:text-green-500" : "text-primary",
                 "w-full" 
               )}>
-                {isOverdue ? <AlertTriangle className="inline h-3 w-3 mr-1" /> : null}
+                {isOverdue && !task.isCompleted ? <AlertTriangle className="inline h-3 w-3 mr-1" /> : null}
                 {timeLeft}
               </p>
             )}
