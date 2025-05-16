@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Brain, Loader2, Type, Code, ListChecks, HelpCircle, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface StudentAssistantModalProps {
   isOpen: boolean;
@@ -59,9 +61,10 @@ export function StudentAssistantModal({ isOpen, onClose, assistance, isLoading, 
               </div>
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none bg-muted/30 p-4 rounded-md border"
-                style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }} // Ensures pre-wrap for markdown-like content
               >
-                {assistance.assistantResponse}
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {assistance.assistantResponse}
+                </ReactMarkdown>
               </div>
             </div>
           ) : (
