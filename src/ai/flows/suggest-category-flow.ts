@@ -33,8 +33,6 @@ const suggestCategoryPrompt = ai.definePrompt({
   name: 'suggestCategoryPrompt',
   input: {schema: SuggestCategoryInputSchema},
   output: {schema: SuggestCategoryOutputSchema},
-  // Corrected prompt definition: should be a top-level property.
-  // Using the simplified prompt that explicitly lists categories.
   prompt: `You are an expert at categorizing tasks. Based on the task description provided, identify the most appropriate category.
 The available categories are: "Assignment", "Class", "Personal".
 
@@ -44,7 +42,6 @@ Task Description:
 "{{{description}}}"
 
 Your JSON response (ensure the value for "category" is one of "Assignment", "Class", or "Personal") :`
-  // Removed incorrect nested config.prompt
 });
 
 
@@ -59,13 +56,12 @@ const suggestCategoryFlow = ai.defineFlow(
     if (!output) {
         throw new Error('AI failed to suggest a category or return valid output.');
     }
-    // Zod validation on the output schema (defined in suggestCategoryPrompt) should handle this.
-    // An additional explicit check can be kept if desired, but might be redundant.
-    if (!taskCategories.includes(output.category as TaskCategory)) {
-        console.warn(`AI returned an unexpected category: ${output.category}. This might indicate an issue with the prompt or model response if Zod validation didn't catch it.`);
-        // Fallback or error handling can be more sophisticated here if needed.
-        // For now, we rely on Zod schema validation specified in definePrompt.
-    }
+    // The Zod schema validation on output (defined in suggestCategoryPrompt)
+    // already ensures the category is one of the allowed taskCategories.
+    // The explicit check below is redundant.
+    // if (!taskCategories.includes(output.category as TaskCategory)) {
+    //     console.warn(`AI returned an unexpected category: ${output.category}. This might indicate an issue with the prompt or model response if Zod validation didn't catch it.`);
+    // }
     return output;
   }
 );
