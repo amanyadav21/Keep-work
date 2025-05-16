@@ -37,8 +37,8 @@ export default function HomePage() {
   const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
 
   const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
-  const [initialAssistantOutput, setInitialAssistantOutput] = useState<StudentAssistantOutput | null>(null); // Renamed for clarity
-  const [isRequestingInitialAssistance, setIsRequestingInitialAssistance] = useState(false); // Renamed for clarity
+  const [initialAssistantOutput, setInitialAssistantOutput] = useState<StudentAssistantOutput | null>(null); 
+  const [isRequestingInitialAssistance, setIsRequestingInitialAssistance] = useState(false); 
   const [assistingTaskDescription, setAssistingTaskDescription] = useState<string | null>(null);
 
   const [isMounted, setIsMounted] = useState(false);
@@ -187,10 +187,9 @@ export default function HomePage() {
   const handleRequestInitialAIAssistance = async (task: Task) => {
     setAssistingTaskDescription(task.description);
     setIsRequestingInitialAssistance(true);
-    setInitialAssistantOutput(null); // Clear previous output
+    setInitialAssistantOutput(null); 
     setIsAssistantModalOpen(true);
     try {
-      // For the initial call, no conversation history or originalTaskContext is needed beyond the current inquiry.
       const result = await getStudentAssistance({ currentInquiry: task.description });
       setInitialAssistantOutput(result);
     } catch (error) {
@@ -200,7 +199,7 @@ export default function HomePage() {
         description: "Could not get AI help for this task at the moment.",
         variant: "destructive",
       });
-       setIsAssistantModalOpen(false); // Close modal on initial fetch error
+       setIsAssistantModalOpen(false); 
     } finally {
       setIsRequestingInitialAssistance(false);
     }
@@ -212,15 +211,13 @@ export default function HomePage() {
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-16 md:w-64 bg-muted p-4 hidden md:block"> 
-             <div className="h-10 bg-muted-foreground/20 rounded-lg w-full mb-4"></div>
-             <div className="h-32 bg-muted-foreground/20 rounded-lg w-full"></div>
-          </div>
-          <main className="flex-1 p-4 md:p-6">
-            <div className="h-10 bg-muted-foreground/20 rounded-lg w-full sm:w-1/2 mb-4"></div>
+          {/* Placeholder for Sidebar - consistent with AppSidebar's desktop placeholder */}
+          <div className="hidden md:block h-svh w-16 md:w-[var(--sidebar-width-icon)] lg:w-[var(--sidebar-width)] bg-muted animate-pulse" />
+          <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+            <div className="h-10 bg-muted-foreground/20 rounded-lg w-full sm:w-1/2 mb-4 animate-pulse"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-36 bg-muted-foreground/20 rounded-lg"></div> 
+                <div key={i} className="h-36 bg-muted-foreground/20 rounded-lg animate-pulse"></div> 
               ))}
             </div>
           </main>
@@ -300,7 +297,7 @@ export default function HomePage() {
         isOpen={isAssistantModalOpen}
         onClose={() => {
           setIsAssistantModalOpen(false);
-          setInitialAssistantOutput(null); // Clear output when modal closes
+          setInitialAssistantOutput(null); 
           setAssistingTaskDescription(null);
         }}
         initialAssistance={initialAssistantOutput}
@@ -310,3 +307,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    

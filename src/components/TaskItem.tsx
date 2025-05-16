@@ -41,9 +41,6 @@ const categoryBorderColors: Record<TaskCategory, string> = {
 export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAIAssistance }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
-  // showActions can be removed if pure group-hover is preferred,
-  // but keeping it allows for programmatic control if ever needed or for touch devices where hover is not primary.
-  // For simplicity, we'll primarily rely on group-hover for visual cues.
   const [showActions, setShowActions] = useState(false);
 
 
@@ -84,8 +81,8 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
 
       let timeLeftString = "";
       if (days > 0) timeLeftString += `${days}d `;
-      if (hours > 0 || days > 0) timeLeftString += `${hours}h `; // Also show hours if days > 0
-      if (minutes > 0 || (days === 0 && hours === 0)) timeLeftString += `${minutes}m `; // Show minutes if it's the smallest unit or only unit
+      if (hours > 0 || days > 0) timeLeftString += `${hours}h `; 
+      if (minutes > 0 || (days === 0 && hours === 0)) timeLeftString += `${minutes}m `; 
       
       timeLeftString += "left";
       
@@ -127,7 +124,7 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
             <p 
               id={`task-desc-${task.id}`}
               className={cn(
-                "text-base font-medium text-foreground break-words", // Ensure break-words for long descriptions
+                "text-base font-medium text-foreground break-words", 
                 task.isCompleted ? "line-through text-muted-foreground" : ""
               )}
             >
@@ -203,3 +200,5 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
     </TooltipProvider>
   );
 }
+
+    
