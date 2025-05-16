@@ -115,13 +115,12 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
             AI Student Assistant
           </DialogTitle>
           {taskDescription && (
-            // Replaced DialogDescription with a div to avoid p > div nesting
             <div className="mt-1 text-sm text-muted-foreground flex items-center justify-between">
-              <div> {/* Wrapper for the text part to allow badge to be on the right */}
+              <div> 
                 Original Task: <span className="font-medium text-foreground italic ml-1">"{taskDescription}"</span>
               </div>
               {latestIdentifiedType.current && (
-                 <Badge variant="outline" className="capitalize text-xs"> {/* Removed ml-auto, justify-between on parent handles it */}
+                 <Badge variant="outline" className="capitalize text-xs"> 
                   <TaskTypeIcon type={latestIdentifiedType.current} />
                   <span className="ml-1.5">{latestIdentifiedType.current.replace('_', ' ')}</span>
                 </Badge>
@@ -130,8 +129,8 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </DialogHeader>
 
-        <ScrollArea ref={scrollAreaRef} className="flex-grow overflow-y-auto p-4 space-y-4">
-          {isLoadingInitial && chatMessages.length <=1 ? ( // Show main loader only if initial response is loading
+        <ScrollArea ref={scrollAreaRef} className="flex-grow p-4 space-y-4">
+          {isLoadingInitial && chatMessages.length <=1 ? ( 
             <div className="flex flex-col items-center justify-center h-48">
               <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
               <p className="text-muted-foreground">Thinking...</p>
@@ -154,13 +153,13 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
                 {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />}
               </div>
             ))
-          ) : !isLoadingInitial && ( // Fallback if no messages and not loading initial
+          ) : !isLoadingInitial && ( 
             <div className="text-center py-10 text-muted-foreground">
               <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
               <p>No assistance available or conversation started.</p>
             </div>
           )}
-           {isSendingFollowUp && ( // Loader for follow-up messages
+           {isSendingFollowUp && ( 
             <div className="flex items-center space-x-3 py-2">
               <Bot className="h-6 w-6 text-primary flex-shrink-0 animate-pulse" />
               <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
@@ -170,7 +169,8 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </ScrollArea>
         
-        <div className="p-4 border-t sticky bottom-0 bg-background">
+        {/* Input area - removed sticky bottom-0 */}
+        <div className="p-4 border-t bg-background">
           <div className="flex items-start space-x-2">
             <Textarea
               placeholder="Ask a follow-up question..."
@@ -190,7 +190,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               onClick={handleSendFollowUp} 
               disabled={!currentUserInput.trim() || isSendingFollowUp || isLoadingInitial}
               size="icon"
-              className="h-10 w-10" // Ensure button height matches textarea
+              className="h-10 w-10" 
             >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send</span>
@@ -206,4 +206,3 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     </Dialog>
   );
 }
-
