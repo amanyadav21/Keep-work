@@ -2,7 +2,7 @@
 "use client";
 
 import type { StudentAssistantOutput, ChatMessage } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'; // Removed DialogDescription from here
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -18,9 +18,9 @@ import { cn } from '@/lib/utils';
 interface StudentAssistantModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialAssistance: StudentAssistantOutput | null; // Renamed from 'assistance'
-  isLoadingInitial: boolean; // Renamed from 'isLoading'
-  taskDescription: string | null; // The original task description
+  initialAssistance: StudentAssistantOutput | null;
+  isLoadingInitial: boolean;
+  taskDescription: string | null;
 }
 
 const TaskTypeIcon: React.FC<{ type: StudentAssistantOutput['identifiedTaskType'] | undefined }> = ({ type }) => {
@@ -49,9 +49,8 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
         { role: 'user', content: taskDescription },
         { role: 'assistant', content: initialAssistance.assistantResponse }
       ]);
-      setCurrentUserInput(""); // Reset input field when modal re-opens with new initial data
+      setCurrentUserInput(""); 
     } else if (isOpen && taskDescription && isLoadingInitial) {
-      // If modal opens while initial data is still loading
       setChatMessages([{ role: 'user', content: taskDescription }]);
       latestIdentifiedType.current = undefined;
     }
@@ -62,7 +61,10 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     if (scrollAreaRef.current) {
       const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
       if (scrollViewport) {
-        scrollViewport.scrollTop = scrollViewport.scrollHeight;
+        // Defer scroll to end of event loop to allow DOM updates
+        setTimeout(() => {
+          scrollViewport.scrollTop = scrollViewport.scrollHeight;
+        }, 0);
       }
     }
   }, [chatMessages]);
@@ -73,13 +75,14 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
 
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
     setChatMessages(prev => [...prev, userMessage]);
+    const currentChatHistory = [...chatMessages, userMessage]; // Use updated history for the API call
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
       const flowInput: StudentAssistantInput = {
         currentInquiry: userMessage.content,
-        conversationHistory: chatMessages, // Send the history *before* adding the current user message
+        conversationHistory: chatMessages, // Send the history *before* adding the current user message for the AI
         originalTaskContext: taskDescription,
       };
       const result = await getStudentAssistance(flowInput);
@@ -92,7 +95,6 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
         description: "Could not get a follow-up response at this moment.",
         variant: "destructive",
       });
-      // Optionally add an error message to chat
       setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error trying to respond." }]);
     } finally {
       setIsSendingFollowUp(false);
@@ -100,7 +102,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   };
   
   const handleCloseModal = () => {
-    setChatMessages([]); // Clear chat history on close
+    setChatMessages([]); 
     setCurrentUserInput("");
     latestIdentifiedType.current = undefined;
     onClose();
@@ -159,7 +161,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               <p>No assistance available or conversation started.</p>
             </div>
           )}
-           {isSendingFollowUp && ( 
+           {isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length -1].role === 'user' && ( 
             <div className="flex items-center space-x-3 py-2">
               <Bot className="h-6 w-6 text-primary flex-shrink-0 animate-pulse" />
               <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
@@ -169,7 +171,6 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </ScrollArea>
         
-        {/* Input area - removed sticky bottom-0 */}
         <div className="p-4 border-t bg-background">
           <div className="flex items-start space-x-2">
             <Textarea
@@ -206,3 +207,4 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     </Dialog>
   );
 }
+
