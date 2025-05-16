@@ -215,7 +215,7 @@ export default function HomePage() {
             onSuggestPriorities={() => {}}
             isPrioritizing={false}
         />
-        <main className="flex-grow container mx-auto px-4 md:px-6 py-6">
+        <main className="flex-grow container mx-auto px-4 md:px-6 pt-4 pb-6">
           <div className="space-y-4">
             <div className="h-10 bg-muted rounded-lg w-full sm:w-1/2"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -237,7 +237,7 @@ export default function HomePage() {
         onSuggestPriorities={handleSuggestPriorities}
         isPrioritizing={isSuggestingPriorities}
       />
-      <main className="flex-grow container mx-auto px-4 md:px-6 py-6">
+      <main className="flex-grow container mx-auto px-4 md:px-6 pt-4 pb-6"> {/* Adjusted py-6 to pt-4 pb-6 */}
         <div className="mb-6">
             <FilterControls currentFilter={filter} onFilterChange={setFilter} />
         </div>
