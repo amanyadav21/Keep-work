@@ -44,7 +44,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
 
   const scrollToBottom = () => {
     setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "auto" }); // Changed to auto for immediate jump
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
     }, 0);
   };
 
@@ -59,7 +59,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     } else if (isOpen && taskDescription && isLoadingInitial) {
       setChatMessages([{ role: 'user', content: taskDescription }]);
       latestIdentifiedType.current = undefined;
-    } else if (!isOpen) { // Clear state when modal is closed
+    } else if (!isOpen) { 
       setChatMessages([]);
       setCurrentUserInput("");
       latestIdentifiedType.current = undefined;
@@ -79,14 +79,14 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
     setChatMessages(prev => [...prev, userMessage]);
     const currentChatHistory = [...chatMessages, userMessage]; 
-    const followUpQuery = currentUserInput; // Capture before clearing
+    const followUpQuery = currentUserInput; 
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
       const flowInput: StudentAssistantInput = {
         currentInquiry: followUpQuery,
-        conversationHistory: chatMessages, // Send history *before* the current user message for AI context
+        conversationHistory: chatMessages, 
         originalTaskContext: taskDescription,
       };
       const result = await getStudentAssistance(flowInput);
@@ -106,7 +106,6 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   };
 
   const handleCloseModal = () => {
-    // State clearing is now handled in the main useEffect when isOpen changes to false
     onClose();
   }
 
@@ -119,7 +118,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
             AI Student Assistant
           </DialogTitle>
           {taskDescription && (
-            <div className="mt-1 text-sm text-muted-foreground flex items-center justify-between">
+            <div className="text-muted-foreground mt-1 text-sm flex items-center justify-between">
               <div>
                 Original Task: <span className="font-medium text-foreground italic ml-1">"{taskDescription}"</span>
               </div>
@@ -133,7 +132,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </DialogHeader>
 
-        <ScrollArea className="flex-grow min-h-0" tabIndex={0} style={{outline: 'none'}}> 
+        <ScrollArea className="flex-1 min-h-0" tabIndex={0} style={{outline: 'none'}}> 
           <div className="p-4">
             <div className="space-y-4">
               {isLoadingInitial && chatMessages.length <=1 && !initialAssistance ? (
@@ -154,10 +153,10 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
                     {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 mb-1" />}
                     <div
                       className={cn(
-                        "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border text-sm",
+                        "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border text-sm text-foreground",
                         msg.role === 'user' 
-                          ? 'bg-primary/10 border-primary/30 text-foreground' 
-                          : 'bg-muted/50 border-muted text-foreground'
+                          ? 'bg-primary/10 border-primary/30' 
+                          : 'bg-muted/50 border-muted'
                       )}
                     >
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -167,7 +166,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
                     {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mb-1" />}
                   </div>
                 ))
-              ) : !isLoadingInitial && ( // Case where there are no messages and not loading
+              ) : !isLoadingInitial && (
                 <div className="text-center py-10 text-muted-foreground">
                   <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
                   <p>No assistance available or conversation started.</p>
@@ -186,7 +185,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t bg-background sticky bottom-0">
+        <div className="p-4 border-t bg-background">
           <div className="flex items-start space-x-2">
             <Textarea
               placeholder="Ask a follow-up question..."
@@ -206,7 +205,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               onClick={handleSendFollowUp}
               disabled={!currentUserInput.trim() || isSendingFollowUp || isLoadingInitial}
               size="icon"
-              className="h-10 w-10 flex-shrink-0" // Ensure button doesn't shrink
+              className="h-10 w-10 flex-shrink-0"
             >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send</span>
@@ -214,7 +213,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </div>
         </div>
 
-        <DialogFooter className="p-4 pt-0 border-t sm:justify-between bg-background sticky bottom-0">
+        <DialogFooter className="p-4 pt-0 border-t sm:justify-between bg-background">
           <div className="text-xs text-muted-foreground">AI can make mistakes. Consider checking important information.</div>
           <Button onClick={handleCloseModal} variant="outline" size="sm">Close</Button>
         </DialogFooter>
@@ -222,6 +221,3 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     </Dialog>
   );
 }
-
-
-    
