@@ -17,7 +17,7 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Student | Keep Work',
+  title: 'Upnext | Smart Task Manager',
   description: 'Smart Task Manager for Students',
 };
 
