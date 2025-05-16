@@ -207,24 +207,24 @@ export default function HomePage() {
 
 
   if (!isMounted) {
+    // Simplified skeleton for initial load
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
-        <AppSidebar 
-            tasks={[]} 
-            onSuggestPriorities={() => {}}
-            isPrioritizing={false}
-        />
-        <main className="flex-grow container mx-auto px-4 md:px-6 pt-4 pb-6">
-          <div className="space-y-4">
-            <div className="h-10 bg-muted rounded-lg w-full sm:w-1/2"></div>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="w-16 md:w-64 bg-muted p-4 hidden md:block"> {/* Skeleton Sidebar */}
+             <div className="h-10 bg-muted-foreground/20 rounded-lg w-full mb-4"></div>
+             <div className="h-32 bg-muted-foreground/20 rounded-lg w-full"></div>
+          </div>
+          <main className="flex-1 p-4 md:p-6">
+            <div className="h-10 bg-muted-foreground/20 rounded-lg w-full sm:w-1/2 mb-4"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-36 bg-muted rounded-lg"></div> 
+                <div key={i} className="h-36 bg-muted-foreground/20 rounded-lg"></div> 
               ))}
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     );
   }
@@ -232,24 +232,26 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header onAddTask={handleOpenAddForm} />
-      <AppSidebar 
-        tasks={tasks} 
-        onSuggestPriorities={handleSuggestPriorities}
-        isPrioritizing={isSuggestingPriorities}
-      />
-      <main className="flex-grow container mx-auto px-4 md:px-6 pt-4 pb-6"> {/* Adjusted py-6 to pt-4 pb-6 */}
-        <div className="mb-6">
-            <FilterControls currentFilter={filter} onFilterChange={setFilter} />
-        </div>
-        
-        <TaskList
-          tasks={filteredTasks}
-          onToggleComplete={handleToggleComplete}
-          onEdit={handleOpenEditForm}
-          onDelete={(id) => setTaskToDelete(id)}
-          onRequestAIAssistance={handleRequestAIAssistance}
+      <div className="flex flex-1 overflow-hidden"> {/* Flex container for sidebar and main content */}
+        <AppSidebar 
+          tasks={tasks} 
+          onSuggestPriorities={handleSuggestPriorities}
+          isPrioritizing={isSuggestingPriorities}
         />
-      </main>
+        <main className="flex-1 overflow-y-auto container mx-auto px-4 md:px-6 pt-4 pb-6">
+          <div className="mb-6">
+              <FilterControls currentFilter={filter} onFilterChange={setFilter} />
+          </div>
+          
+          <TaskList
+            tasks={filteredTasks}
+            onToggleComplete={handleToggleComplete}
+            onEdit={handleOpenEditForm}
+            onDelete={(id) => setTaskToDelete(id)}
+            onRequestAIAssistance={handleRequestAIAssistance}
+          />
+        </main>
+      </div>
 
       <Dialog open={isFormOpen} onOpenChange={(open) => {
         setIsFormOpen(open);

@@ -4,7 +4,7 @@ import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar'; // Removed SidebarInset
 
 const inter = Inter({
   variable: '--font-sans',
@@ -39,9 +39,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SidebarProvider>
-            <SidebarInset>
-              {children}
-            </SidebarInset>
+            {/* AppSidebar is now rendered within HomePage, which is part of children */}
+            {/* SidebarInset is removed as HomePage now manages its layout relative to AppSidebar via flexbox */}
+            {children}
           </SidebarProvider>
           <Toaster />
         </ThemeProvider>
