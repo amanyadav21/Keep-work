@@ -2,7 +2,7 @@
 "use client";
 
 import type { StudentAssistantOutput, ChatMessage } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'; // Removed DialogDescription from here
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -115,15 +115,18 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
             AI Student Assistant
           </DialogTitle>
           {taskDescription && (
-            <DialogDescription className="mt-1 text-sm flex items-center">
-              Original Task: <span className="font-medium text-foreground italic ml-1">"{taskDescription}"</span>
+            // Replaced DialogDescription with a div to avoid p > div nesting
+            <div className="mt-1 text-sm text-muted-foreground flex items-center justify-between">
+              <div> {/* Wrapper for the text part to allow badge to be on the right */}
+                Original Task: <span className="font-medium text-foreground italic ml-1">"{taskDescription}"</span>
+              </div>
               {latestIdentifiedType.current && (
-                 <Badge variant="outline" className="capitalize ml-auto text-xs">
+                 <Badge variant="outline" className="capitalize text-xs"> {/* Removed ml-auto, justify-between on parent handles it */}
                   <TaskTypeIcon type={latestIdentifiedType.current} />
                   <span className="ml-1.5">{latestIdentifiedType.current.replace('_', ' ')}</span>
                 </Badge>
               )}
-            </DialogDescription>
+            </div>
           )}
         </DialogHeader>
 
@@ -203,3 +206,4 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     </Dialog>
   );
 }
+
