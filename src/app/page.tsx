@@ -211,7 +211,6 @@ export default function HomePage() {
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
         <div className="flex flex-1 overflow-hidden">
-          {/* Placeholder for Sidebar - consistent with AppSidebar's desktop placeholder */}
           <div className="hidden md:block h-svh w-16 md:w-[var(--sidebar-width-icon)] lg:w-[var(--sidebar-width)] bg-muted animate-pulse" />
           <main className="flex-1 p-4 md:p-6 overflow-y-auto">
             <div className="h-10 bg-muted-foreground/20 rounded-lg w-full sm:w-1/2 mb-4 animate-pulse"></div>

@@ -55,13 +55,11 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
         { role: 'user', content: taskDescription },
         { role: 'assistant', content: initialAssistance.assistantResponse }
       ]);
-      setCurrentUserInput(""); // Clear input for follow-ups
+      setCurrentUserInput(""); 
     } else if (isOpen && taskDescription && isLoadingInitial) {
-      // Only show user's initial query while loading
       setChatMessages([{ role: 'user', content: taskDescription }]);
       latestIdentifiedType.current = undefined;
     } else if (!isOpen) { 
-      // Clear chat when modal is closed
       setChatMessages([]);
       setCurrentUserInput("");
       latestIdentifiedType.current = undefined;
@@ -81,17 +79,14 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
     const currentFollowUpQuery = currentUserInput;
     
-    // Add user message to UI first
     setChatMessages(prev => [...prev, userMessage]);
-    setCurrentUserInput(""); // Clear input field immediately
+    setCurrentUserInput(""); 
     setIsSendingFollowUp(true);
 
     try {
-      // conversationHistory should be the state *before* adding the current userMessage
-      // as the AI prompt expects currentInquiry to be the latest.
       const flowInput: StudentAssistantInput = {
         currentInquiry: currentFollowUpQuery,
-        conversationHistory: chatMessages, // This uses chatMessages state *before* the new userMessage was added
+        conversationHistory: chatMessages, 
         originalTaskContext: taskDescription,
       };
       const result = await getStudentAssistance(flowInput);
@@ -125,10 +120,10 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           {taskDescription && (
             <div className="text-muted-foreground mt-1 text-sm flex items-center justify-between">
               <div>
-                Original Task: <span className="font-medium text-foreground italic ml-1">"{taskDescription}"</span>
+                Original Task: <span className="font-medium text-foreground/90 italic ml-1">"{taskDescription}"</span>
               </div>
               {latestIdentifiedType.current && (
-                 <Badge variant="outline" className="capitalize text-xs">
+                 <Badge variant="outline" className="capitalize text-xs py-0.5">
                   <TaskTypeIcon type={latestIdentifiedType.current} />
                   <span className="ml-1.5">{latestIdentifiedType.current.replace('_', ' ')}</span>
                 </Badge>
@@ -138,7 +133,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0" tabIndex={0} style={{outline: 'none'}}> 
-          <div className="p-4"> {/* Padding for scrollable content */}
+          <div className="p-4"> 
             <div className="space-y-4">
               {isLoadingInitial && chatMessages.length <=1 && !initialAssistance ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -171,7 +166,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
                     {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mb-1" />}
                   </div>
                 ))
-              ) : !isLoadingInitial && ( // If not loading initial and no messages (e.g. error before any message)
+              ) : !isLoadingInitial && ( 
                 <div className="text-center py-10 text-muted-foreground">
                   <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
                   <p>No assistance available or conversation started.</p>
@@ -191,7 +186,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t bg-background"> {/* Input area */}
+        <div className="p-4 border-t bg-background"> 
           <div className="flex items-start space-x-2">
             <Textarea
               placeholder="Ask a follow-up question..."
@@ -205,11 +200,11 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               }}
               rows={1}
               className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
-              disabled={isSendingFollowUp || isLoadingInitial || !initialAssistance } // Disable if initial assistance hasn't loaded
+              disabled={isSendingFollowUp || isLoadingInitial || (!initialAssistance && !isLoadingInitial && chatMessages.length === 0) } 
             />
             <Button
               onClick={handleSendFollowUp}
-              disabled={!currentUserInput.trim() || isSendingFollowUp || isLoadingInitial || !initialAssistance}
+              disabled={!currentUserInput.trim() || isSendingFollowUp || isLoadingInitial || (!initialAssistance && !isLoadingInitial && chatMessages.length === 0)}
               size="icon"
               className="h-10 w-10 flex-shrink-0"
               aria-label="Send follow-up question"
@@ -219,11 +214,12 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </div>
         </div>
 
-        <DialogFooter className="p-4 pt-0 border-t sm:justify-between bg-background">
-          <div className="text-xs text-muted-foreground">AI can make mistakes. Consider checking important information.</div>
+        <DialogFooter className="p-4 pt-3 border-t sm:justify-between bg-background text-xs">
+          <div className="text-muted-foreground">AI can make mistakes. Consider checking important information.</div>
           <Button onClick={handleCloseModal} variant="outline" size="sm">Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+

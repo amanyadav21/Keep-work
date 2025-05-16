@@ -4,14 +4,14 @@
 import type { Task } from '@/types';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Activity, CheckCircle, ListTodo, Sparkles, Brain } from 'lucide-react'; // Added Brain for AI
+import { Activity, CheckCircle, ListTodo, Sparkles, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
 interface TaskStatsProps {
   tasks: Task[];
-  onSuggestPriorities: () => void; // Callback to trigger AI prioritization
-  isPrioritizing: boolean; // To show loading state on button
+  onSuggestPriorities: () => void; 
+  isPrioritizing: boolean; 
 }
 
 export function TaskStats({ tasks, onSuggestPriorities, isPrioritizing }: TaskStatsProps) {
@@ -20,21 +20,21 @@ export function TaskStats({ tasks, onSuggestPriorities, isPrioritizing }: TaskSt
 
   if (!mounted) {
     return (
-      <Card className="shadow-sm rounded-lg">
+      <Card className="shadow-sm rounded-lg border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center font-medium">
             <Activity className="mr-2 h-5 w-5 text-primary" />
             Summary
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 p-4">
           <div className="h-4 bg-muted rounded w-full animate-pulse"></div>
           <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
           <div className="grid grid-cols-2 gap-3">
             <div className="h-12 bg-muted rounded animate-pulse"></div>
             <div className="h-12 bg-muted rounded animate-pulse"></div>
           </div>
-          <div className="h-10 bg-muted rounded animate-pulse mt-2"></div> {/* Placeholder for AI button */}
+          <div className="h-10 bg-muted rounded animate-pulse mt-2"></div>
         </CardContent>
       </Card>
     );
@@ -46,7 +46,7 @@ export function TaskStats({ tasks, onSuggestPriorities, isPrioritizing }: TaskSt
   const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <Card className="shadow-sm rounded-lg">
+    <Card className="shadow-sm rounded-lg border">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center font-medium">
           <Activity className="mr-2 h-5 w-5 text-primary" />
@@ -54,7 +54,7 @@ export function TaskStats({ tasks, onSuggestPriorities, isPrioritizing }: TaskSt
         </CardTitle>
         <CardDescription>Your task completion overview.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4">
         <div>
           <div className="flex justify-between items-center mb-1 text-sm">
             <span className="font-medium text-foreground">
@@ -103,3 +103,4 @@ export function TaskStats({ tasks, onSuggestPriorities, isPrioritizing }: TaskSt
     </Card>
   );
 }
+
