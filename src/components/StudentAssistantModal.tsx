@@ -43,7 +43,9 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }, 0);
   };
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   }, [isOpen, taskDescription, initialAssistance, isLoadingInitial]);
 
   useEffect(() => {
-    setTimeout(scrollToBottom, 0);
+    scrollToBottom();
   }, [chatMessages]);
 
 
@@ -70,14 +72,14 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
 
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
     setChatMessages(prev => [...prev, userMessage]);
-    const currentChatHistory = [...chatMessages, userMessage]; // Include the latest user message for context
+    const currentChatHistory = [...chatMessages, userMessage]; 
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
       const flowInput: StudentAssistantInput = {
         currentInquiry: userMessage.content,
-        conversationHistory: chatMessages, // Send history *before* the current user message for the AI
+        conversationHistory: chatMessages, 
         originalTaskContext: taskDescription,
       };
       const result = await getStudentAssistance(flowInput);
@@ -126,13 +128,13 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </DialogHeader>
 
-        <ScrollArea className="flex-grow min-h-0"> {/* Added min-h-0 here */}
+        <ScrollArea className="flex-grow min-h-0"> 
           <div className="space-y-4 p-4">
             {isLoadingInitial && chatMessages.length <=1 ? (
-              <div className="flex flex-col items-center justify-center h-48">
-                <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                <p className="text-muted-foreground">Thinking...</p>
-                <p className="text-sm text-muted-foreground">Your AI assistant is generating an initial response.</p>
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
+                <p>Thinking...</p>
+                <p className="text-sm">Your AI assistant is generating an initial response.</p>
               </div>
             ) : chatMessages.length > 0 ? (
               chatMessages.map((msg, index) => (
@@ -205,4 +207,3 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     </Dialog>
   );
 }
-

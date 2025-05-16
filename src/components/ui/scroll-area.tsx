@@ -15,7 +15,12 @@ const ScrollArea = React.forwardRef<
     className={cn("relative overflow-hidden", className)}
     {...props}
   >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+    <ScrollAreaPrimitive.Viewport 
+      className="h-full w-full rounded-[inherit]"
+      // Add tabIndex to make it focusable, which can help with mouse wheel events
+      tabIndex={0} 
+      style={{outline: 'none'}} // Hide default focus outline if not desired
+    >
       {children}
     </ScrollAreaPrimitive.Viewport>
     <ScrollBar />
@@ -34,17 +39,17 @@ const ScrollBar = React.forwardRef<
     className={cn(
       "flex touch-none select-none transition-colors",
       orientation === "vertical" &&
-        "h-full w-2 rounded-full bg-muted/30", // Adjusted width and added track background
+        "h-full w-2 rounded-full bg-muted/30", 
       orientation === "horizontal" &&
-        "h-2 w-full rounded-full bg-muted/30", // Adjusted height and added track background
+        "h-2 w-full rounded-full bg-muted/30", 
       className
     )}
     {...props}
   >
     <ScrollAreaPrimitive.ScrollAreaThumb 
       className={cn(
-        "relative flex-1 rounded-full bg-muted-foreground/50", // Adjusted thumb background
-        "hover:bg-muted-foreground/70 transition-colors duration-200" // Added hover effect
+        "relative flex-1 rounded-full bg-muted-foreground/50", 
+        "hover:bg-muted-foreground/70 transition-colors duration-200" 
       )} 
     />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
@@ -52,4 +57,3 @@ const ScrollBar = React.forwardRef<
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
 
 export { ScrollArea, ScrollBar }
-
