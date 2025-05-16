@@ -61,8 +61,9 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   }, [isOpen, taskDescription, initialAssistance, isLoadingInitial]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [chatMessages]); // Trigger scroll whenever messages change
+    // Using setTimeout to ensure DOM update before scrolling
+    setTimeout(scrollToBottom, 0);
+  }, [chatMessages]);
 
 
   const handleSendFollowUp = async () => {
@@ -70,7 +71,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
 
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
     setChatMessages(prev => [...prev, userMessage]);
-    const currentChatHistory = chatMessages; // History before adding the current user's new message
+    const currentChatHistory = chatMessages; 
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
@@ -126,8 +127,8 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </DialogHeader>
 
-        <ScrollArea className="flex-grow p-4">
-          <div className="space-y-4">
+        <ScrollArea className="flex-grow"> {/* Removed p-4 from here */}
+          <div className="space-y-4 p-4"> {/* Added p-4 here */}
             {isLoadingInitial && chatMessages.length <=1 ? ( 
               <div className="flex flex-col items-center justify-center h-48">
                 <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
@@ -157,15 +158,15 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
                 <p>No assistance available or conversation started.</p>
               </div>
             )}
-            {isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role === 'user' && ( 
-              <div className="flex items-start space-x-3 py-2"> {/* Ensure this is part of the spaced content */}
+            {(isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role === 'user') && ( 
+              <div className="flex items-start space-x-3"> 
                 <Bot className="h-6 w-6 text-primary flex-shrink-0 animate-pulse" />
                 <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
                   Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} /> {/* Invisible div to scroll to */}
+            <div ref={messagesEndRef} /> 
           </div>
         </ScrollArea>
         
@@ -197,7 +198,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </div>
         </div>
         
-        <DialogFooter className="p-4 pt-0 border-t sm:justify-between"> {/* Changed from sticky, footer is now naturally at bottom */}
+        <DialogFooter className="p-4 pt-0 border-t sm:justify-between"> 
           <div className="text-xs text-muted-foreground">AI can make mistakes. Consider checking important information.</div>
           <Button onClick={handleCloseModal} variant="outline" size="sm">Close</Button>
         </DialogFooter>
