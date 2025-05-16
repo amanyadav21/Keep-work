@@ -7,19 +7,29 @@ export interface Task {
   dueDate: string; // ISO string date
   category: TaskCategory;
   isCompleted: boolean;
-  createdAt: string; // ISO string date for sorting or reference
+  createdAt: string; // ISO string date for reference
 }
 
 export type TaskFilter = "all" | "pending" | "completed";
 
-// Added for AI Prioritization Flow
 export interface PrioritizedTaskSuggestion {
   taskId: string;
-  description: string; // Include description for easy display in modal
+  description: string; 
   reason: string;
 }
 
-// Exported for use in page.tsx state
+// For Student Assistant Flow
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface StudentAssistantInput {
+  currentInquiry: string;
+  conversationHistory?: ChatMessage[];
+  originalTaskContext?: string; 
+}
+
 export interface StudentAssistantOutput {
   assistantResponse: string;
   identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "unknown";

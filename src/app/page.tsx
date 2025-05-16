@@ -11,8 +11,8 @@ import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion, Student
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal';
-import { StudentAssistantModal } from '@/components/StudentAssistantModal';
-import { AppSidebar } from '@/components/AppSidebar';
+import { StudentAssistantModal } from '@/components/StudentAssistantModal'; 
+import { AppSidebar } from '@/components/AppSidebar'; 
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
@@ -37,8 +37,8 @@ export default function HomePage() {
   const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
 
   const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
-  const [assistantOutput, setAssistantOutput] = useState<StudentAssistantOutput | null>(null);
-  const [isRequestingAssistance, setIsRequestingAssistance] = useState(false);
+  const [initialAssistantOutput, setInitialAssistantOutput] = useState<StudentAssistantOutput | null>(null); // Renamed for clarity
+  const [isRequestingInitialAssistance, setIsRequestingInitialAssistance] = useState(false); // Renamed for clarity
   const [assistingTaskDescription, setAssistingTaskDescription] = useState<string | null>(null);
 
   const [isMounted, setIsMounted] = useState(false);
@@ -184,14 +184,15 @@ export default function HomePage() {
     }
   };
 
-  const handleRequestAIAssistance = async (task: Task) => {
+  const handleRequestInitialAIAssistance = async (task: Task) => {
     setAssistingTaskDescription(task.description);
-    setIsRequestingAssistance(true);
-    setAssistantOutput(null);
+    setIsRequestingInitialAssistance(true);
+    setInitialAssistantOutput(null); // Clear previous output
     setIsAssistantModalOpen(true);
     try {
-      const result = await getStudentAssistance({ userTask: task.description });
-      setAssistantOutput(result);
+      // For the initial call, no conversation history or originalTaskContext is needed beyond the current inquiry.
+      const result = await getStudentAssistance({ currentInquiry: task.description });
+      setInitialAssistantOutput(result);
     } catch (error) {
       console.error("AI student assistance error:", error);
       toast({
@@ -199,20 +200,19 @@ export default function HomePage() {
         description: "Could not get AI help for this task at the moment.",
         variant: "destructive",
       });
-       setIsAssistantModalOpen(false);
+       setIsAssistantModalOpen(false); // Close modal on initial fetch error
     } finally {
-      setIsRequestingAssistance(false);
+      setIsRequestingInitialAssistance(false);
     }
   };
 
 
   if (!isMounted) {
-    // Simplified skeleton for initial load
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-16 md:w-64 bg-muted p-4 hidden md:block"> {/* Skeleton Sidebar */}
+          <div className="w-16 md:w-64 bg-muted p-4 hidden md:block"> 
              <div className="h-10 bg-muted-foreground/20 rounded-lg w-full mb-4"></div>
              <div className="h-32 bg-muted-foreground/20 rounded-lg w-full"></div>
           </div>
@@ -232,7 +232,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header onAddTask={handleOpenAddForm} />
-      <div className="flex flex-1 overflow-hidden"> {/* Flex container for sidebar and main content */}
+      <div className="flex flex-1 overflow-hidden"> 
         <AppSidebar 
           tasks={tasks} 
           onSuggestPriorities={handleSuggestPriorities}
@@ -248,7 +248,7 @@ export default function HomePage() {
             onToggleComplete={handleToggleComplete}
             onEdit={handleOpenEditForm}
             onDelete={(id) => setTaskToDelete(id)}
-            onRequestAIAssistance={handleRequestAIAssistance}
+            onRequestAIAssistance={handleRequestInitialAIAssistance}
           />
         </main>
       </div>
@@ -298,9 +298,13 @@ export default function HomePage() {
 
       <StudentAssistantModal
         isOpen={isAssistantModalOpen}
-        onClose={() => setIsAssistantModalOpen(false)}
-        assistance={assistantOutput}
-        isLoading={isRequestingAssistance}
+        onClose={() => {
+          setIsAssistantModalOpen(false);
+          setInitialAssistantOutput(null); // Clear output when modal closes
+          setAssistingTaskDescription(null);
+        }}
+        initialAssistance={initialAssistantOutput}
+        isLoadingInitial={isRequestingInitialAssistance}
         taskDescription={assistingTaskDescription}
       />
     </div>
