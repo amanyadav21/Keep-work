@@ -55,11 +55,13 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
         { role: 'user', content: taskDescription },
         { role: 'assistant', content: initialAssistance.assistantResponse }
       ]);
-      setCurrentUserInput("");
+      setCurrentUserInput(""); // Clear input for follow-ups
     } else if (isOpen && taskDescription && isLoadingInitial) {
+      // Only show user's initial query while loading
       setChatMessages([{ role: 'user', content: taskDescription }]);
       latestIdentifiedType.current = undefined;
     } else if (!isOpen) { 
+      // Clear chat when modal is closed
       setChatMessages([]);
       setCurrentUserInput("");
       latestIdentifiedType.current = undefined;
@@ -77,16 +79,19 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     if (!currentUserInput.trim() || !taskDescription) return;
 
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
+    const currentFollowUpQuery = currentUserInput;
+    
+    // Add user message to UI first
     setChatMessages(prev => [...prev, userMessage]);
-    const currentChatHistory = [...chatMessages, userMessage]; 
-    const followUpQuery = currentUserInput; 
-    setCurrentUserInput("");
+    setCurrentUserInput(""); // Clear input field immediately
     setIsSendingFollowUp(true);
 
     try {
+      // conversationHistory should be the state *before* adding the current userMessage
+      // as the AI prompt expects currentInquiry to be the latest.
       const flowInput: StudentAssistantInput = {
-        currentInquiry: followUpQuery,
-        conversationHistory: chatMessages, 
+        currentInquiry: currentFollowUpQuery,
+        conversationHistory: chatMessages, // This uses chatMessages state *before* the new userMessage was added
         originalTaskContext: taskDescription,
       };
       const result = await getStudentAssistance(flowInput);
@@ -133,7 +138,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0" tabIndex={0} style={{outline: 'none'}}> 
-          <div className="p-4">
+          <div className="p-4"> {/* Padding for scrollable content */}
             <div className="space-y-4">
               {isLoadingInitial && chatMessages.length <=1 && !initialAssistance ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -166,10 +171,11 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
                     {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mb-1" />}
                   </div>
                 ))
-              ) : !isLoadingInitial && (
+              ) : !isLoadingInitial && ( // If not loading initial and no messages (e.g. error before any message)
                 <div className="text-center py-10 text-muted-foreground">
                   <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
                   <p>No assistance available or conversation started.</p>
+                  <p className="text-xs">This could be due to an error fetching initial assistance.</p>
                 </div>
               )}
               {(isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length -1].role === 'user') && (
@@ -185,7 +191,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t bg-background">
+        <div className="p-4 border-t bg-background"> {/* Input area */}
           <div className="flex items-start space-x-2">
             <Textarea
               placeholder="Ask a follow-up question..."
@@ -199,16 +205,16 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               }}
               rows={1}
               className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
-              disabled={isSendingFollowUp || isLoadingInitial}
+              disabled={isSendingFollowUp || isLoadingInitial || !initialAssistance } // Disable if initial assistance hasn't loaded
             />
             <Button
               onClick={handleSendFollowUp}
-              disabled={!currentUserInput.trim() || isSendingFollowUp || isLoadingInitial}
+              disabled={!currentUserInput.trim() || isSendingFollowUp || isLoadingInitial || !initialAssistance}
               size="icon"
               className="h-10 w-10 flex-shrink-0"
+              aria-label="Send follow-up question"
             >
               <Send className="h-4 w-4" />
-              <span className="sr-only">Send</span>
             </Button>
           </div>
         </div>
