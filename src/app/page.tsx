@@ -6,15 +6,17 @@ import { Header } from '@/components/Header';
 import { TaskForm } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import { FilterControls } from '@/components/FilterControls';
-import { TaskStats } from '@/components/TaskStats';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion } from '@/types';
+import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion, StudentAssistantOutput } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal'; // New Modal
+import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal';
+import { StudentAssistantModal } from '@/components/StudentAssistantModal';
+import { AppSidebar } from '@/components/AppSidebar';
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow'; // AI Flow
+import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
+import { getStudentAssistance } from '@/ai/flows/student-assistant-flow';
 
 interface TaskFormData {
   description: string;
@@ -33,6 +35,11 @@ export default function HomePage() {
   const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
   const [prioritySuggestions, setPrioritySuggestions] = useState<PrioritizedTaskSuggestion[]>([]);
   const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
+
+  const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
+  const [assistantOutput, setAssistantOutput] = useState<StudentAssistantOutput | null>(null);
+  const [isRequestingAssistance, setIsRequestingAssistance] = useState(false);
+  const [assistingTaskDescription, setAssistingTaskDescription] = useState<string | null>(null);
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
@@ -154,10 +161,9 @@ export default function HomePage() {
     }
     setIsSuggestingPriorities(true);
     setIsPriorityModalOpen(true);
-    setPrioritySuggestions([]); // Clear previous suggestions
+    setPrioritySuggestions([]); 
     try {
       const result = await suggestTaskPriorities({ tasks: pendingTasksForAI });
-      // Enrich suggestions with full description for modal display
       const enrichedSuggestions = result.prioritizedSuggestions.map(suggestion => {
         const task = tasks.find(t => t.id === suggestion.taskId);
         return {
@@ -173,10 +179,29 @@ export default function HomePage() {
         description: "Could not get priority suggestions at this time.",
         variant: "destructive",
       });
-      // Optionally close modal on error or show error in modal
-      // setIsPriorityModalOpen(false); 
     } finally {
       setIsSuggestingPriorities(false);
+    }
+  };
+
+  const handleRequestAIAssistance = async (task: Task) => {
+    setAssistingTaskDescription(task.description);
+    setIsRequestingAssistance(true);
+    setAssistantOutput(null);
+    setIsAssistantModalOpen(true);
+    try {
+      const result = await getStudentAssistance({ userTask: task.description });
+      setAssistantOutput(result);
+    } catch (error) {
+      console.error("AI student assistance error:", error);
+      toast({
+        title: "AI Assistance Failed",
+        description: "Could not get AI help for this task at the moment.",
+        variant: "destructive",
+      });
+       setIsAssistantModalOpen(false);
+    } finally {
+      setIsRequestingAssistance(false);
     }
   };
 
@@ -185,6 +210,11 @@ export default function HomePage() {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
+        <AppSidebar 
+            tasks={[]} 
+            onSuggestPriorities={() => {}}
+            isPrioritizing={false}
+        />
         <main className="flex-grow container mx-auto px-4 md:px-6 py-6">
           <div className="space-y-4">
             <div className="h-10 bg-muted rounded-lg w-full sm:w-1/2"></div>
@@ -202,28 +232,23 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header onAddTask={handleOpenAddForm} />
+      <AppSidebar 
+        tasks={tasks} 
+        onSuggestPriorities={handleSuggestPriorities}
+        isPrioritizing={isSuggestingPriorities}
+      />
       <main className="flex-grow container mx-auto px-4 md:px-6 py-6">
         <div className="mb-6">
             <FilterControls currentFilter={filter} onFilterChange={setFilter} />
         </div>
         
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          <div className="xl:col-span-3">
-            <TaskList
-              tasks={filteredTasks}
-              onToggleComplete={handleToggleComplete}
-              onEdit={handleOpenEditForm}
-              onDelete={(id) => setTaskToDelete(id)} 
-            />
-          </div>
-          <aside className="xl:col-span-1 space-y-6">
-             <TaskStats 
-                tasks={tasks} 
-                onSuggestPriorities={handleSuggestPriorities}
-                isPrioritizing={isSuggestingPriorities}
-              />
-          </aside>
-        </div>
+        <TaskList
+          tasks={filteredTasks}
+          onToggleComplete={handleToggleComplete}
+          onEdit={handleOpenEditForm}
+          onDelete={(id) => setTaskToDelete(id)}
+          onRequestAIAssistance={handleRequestAIAssistance}
+        />
       </main>
 
       <Dialog open={isFormOpen} onOpenChange={(open) => {
@@ -267,6 +292,14 @@ export default function HomePage() {
         onClose={() => setIsPriorityModalOpen(false)}
         suggestions={prioritySuggestions}
         isLoading={isSuggestingPriorities}
+      />
+
+      <StudentAssistantModal
+        isOpen={isAssistantModalOpen}
+        onClose={() => setIsAssistantModalOpen(false)}
+        assistance={assistantOutput}
+        isLoading={isRequestingAssistance}
+        taskDescription={assistingTaskDescription}
       />
     </div>
   );

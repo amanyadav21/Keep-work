@@ -4,6 +4,7 @@ import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 
 const inter = Inter({
   variable: '--font-sans',
@@ -29,7 +30,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body 
         className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
-        suppressHydrationWarning={true} // Add this line
+        suppressHydrationWarning={true}
       >
         <ThemeProvider
           attribute="class"
@@ -37,7 +38,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SidebarProvider>
+            <SidebarInset>
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
           <Toaster />
         </ThemeProvider>
       </body>

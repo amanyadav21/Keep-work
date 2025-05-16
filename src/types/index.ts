@@ -1,3 +1,4 @@
+
 export type TaskCategory = "Assignment" | "Class" | "Personal";
 
 export interface Task {
@@ -16,4 +17,10 @@ export interface PrioritizedTaskSuggestion {
   taskId: string;
   description: string; // Include description for easy display in modal
   reason: string;
+}
+
+// Exported for use in page.tsx state
+export interface StudentAssistantOutput {
+  assistantResponse: string;
+  identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "unknown";
 }
