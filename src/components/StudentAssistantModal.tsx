@@ -39,8 +39,12 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   const [currentUserInput, setCurrentUserInput] = useState("");
   const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
   const { toast } = useToast();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const latestIdentifiedType = useRef<StudentAssistantOutput['identifiedTaskType'] | undefined>(undefined);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+  };
 
   useEffect(() => {
     if (isOpen && taskDescription && initialAssistance && !isLoadingInitial) {
@@ -57,17 +61,8 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   }, [isOpen, taskDescription, initialAssistance, isLoadingInitial]);
 
   useEffect(() => {
-    // Scroll to bottom when chatMessages change
-    if (scrollAreaRef.current) {
-      const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-      if (scrollViewport) {
-        // Defer scroll to end of event loop to allow DOM updates
-        setTimeout(() => {
-          scrollViewport.scrollTop = scrollViewport.scrollHeight;
-        }, 0);
-      }
-    }
-  }, [chatMessages]);
+    scrollToBottom();
+  }, [chatMessages]); // Trigger scroll whenever messages change
 
 
   const handleSendFollowUp = async () => {
@@ -75,14 +70,14 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
 
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
     setChatMessages(prev => [...prev, userMessage]);
-    const currentChatHistory = [...chatMessages, userMessage]; // Use updated history for the API call
+    const currentChatHistory = chatMessages; // History before adding the current user's new message
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
       const flowInput: StudentAssistantInput = {
         currentInquiry: userMessage.content,
-        conversationHistory: chatMessages, // Send the history *before* adding the current user message for the AI
+        conversationHistory: currentChatHistory, 
         originalTaskContext: taskDescription,
       };
       const result = await getStudentAssistance(flowInput);
@@ -111,7 +106,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleCloseModal(); }}>
       <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl rounded-lg max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-4 pb-3 border-b sticky top-0 bg-background z-10">
+        <DialogHeader className="p-4 pb-3 border-b bg-background z-10">
           <DialogTitle className="text-xl flex items-center">
             <Brain className="h-6 w-6 mr-2 text-primary" />
             AI Student Assistant
@@ -131,44 +126,47 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </DialogHeader>
 
-        <ScrollArea ref={scrollAreaRef} className="flex-grow p-4 space-y-4">
-          {isLoadingInitial && chatMessages.length <=1 ? ( 
-            <div className="flex flex-col items-center justify-center h-48">
-              <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-              <p className="text-muted-foreground">Thinking...</p>
-              <p className="text-sm text-muted-foreground">Your AI assistant is generating an initial response.</p>
-            </div>
-          ) : chatMessages.length > 0 ? (
-            chatMessages.map((msg, index) => (
-              <div key={index} className={cn("flex items-start space-x-3", msg.role === 'user' ? 'justify-end' : '')}>
-                {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 mt-1" />}
-                <div 
-                  className={cn(
-                    "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border",
-                    msg.role === 'user' ? 'bg-primary/10 border-primary/20 text-primary-foreground' : 'bg-muted/50 border-muted'
-                  )}
-                >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
+        <ScrollArea className="flex-grow p-4">
+          <div className="space-y-4">
+            {isLoadingInitial && chatMessages.length <=1 ? ( 
+              <div className="flex flex-col items-center justify-center h-48">
+                <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+                <p className="text-muted-foreground">Thinking...</p>
+                <p className="text-sm text-muted-foreground">Your AI assistant is generating an initial response.</p>
+              </div>
+            ) : chatMessages.length > 0 ? (
+              chatMessages.map((msg, index) => (
+                <div key={index} className={cn("flex items-start space-x-3", msg.role === 'user' ? 'justify-end' : '')}>
+                  {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 mt-1" />}
+                  <div 
+                    className={cn(
+                      "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border",
+                      msg.role === 'user' ? 'bg-primary/10 border-primary/20 text-primary-foreground' : 'bg-muted/50 border-muted'
+                    )}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                  {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />}
                 </div>
-                {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />}
+              ))
+            ) : !isLoadingInitial && ( 
+              <div className="text-center py-10 text-muted-foreground">
+                <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p>No assistance available or conversation started.</p>
               </div>
-            ))
-          ) : !isLoadingInitial && ( 
-            <div className="text-center py-10 text-muted-foreground">
-              <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
-              <p>No assistance available or conversation started.</p>
-            </div>
-          )}
-           {isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length -1].role === 'user' && ( 
-            <div className="flex items-center space-x-3 py-2">
-              <Bot className="h-6 w-6 text-primary flex-shrink-0 animate-pulse" />
-              <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
-                Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
+            )}
+            {isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role === 'user' && ( 
+              <div className="flex items-start space-x-3 py-2"> {/* Ensure this is part of the spaced content */}
+                <Bot className="h-6 w-6 text-primary flex-shrink-0 animate-pulse" />
+                <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
+                  Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            <div ref={messagesEndRef} /> {/* Invisible div to scroll to */}
+          </div>
         </ScrollArea>
         
         <div className="p-4 border-t bg-background">
@@ -199,7 +197,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </div>
         </div>
         
-        <DialogFooter className="p-4 pt-0 border-t sm:justify-between">
+        <DialogFooter className="p-4 pt-0 border-t sm:justify-between"> {/* Changed from sticky, footer is now naturally at bottom */}
           <div className="text-xs text-muted-foreground">AI can make mistakes. Consider checking important information.</div>
           <Button onClick={handleCloseModal} variant="outline" size="sm">Close</Button>
         </DialogFooter>
