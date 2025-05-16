@@ -53,7 +53,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
         { role: 'user', content: taskDescription },
         { role: 'assistant', content: initialAssistance.assistantResponse }
       ]);
-      setCurrentUserInput(""); 
+      setCurrentUserInput("");
     } else if (isOpen && taskDescription && isLoadingInitial) {
       setChatMessages([{ role: 'user', content: taskDescription }]);
       latestIdentifiedType.current = undefined;
@@ -61,7 +61,6 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   }, [isOpen, taskDescription, initialAssistance, isLoadingInitial]);
 
   useEffect(() => {
-    // Using setTimeout to ensure DOM update before scrolling
     setTimeout(scrollToBottom, 0);
   }, [chatMessages]);
 
@@ -71,14 +70,14 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
 
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput };
     setChatMessages(prev => [...prev, userMessage]);
-    const currentChatHistory = chatMessages; 
+    const currentChatHistory = [...chatMessages, userMessage]; // Include the latest user message for context
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
       const flowInput: StudentAssistantInput = {
         currentInquiry: userMessage.content,
-        conversationHistory: currentChatHistory, 
+        conversationHistory: chatMessages, // Send history *before* the current user message for the AI
         originalTaskContext: taskDescription,
       };
       const result = await getStudentAssistance(flowInput);
@@ -96,9 +95,9 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
       setIsSendingFollowUp(false);
     }
   };
-  
+
   const handleCloseModal = () => {
-    setChatMessages([]); 
+    setChatMessages([]);
     setCurrentUserInput("");
     latestIdentifiedType.current = undefined;
     onClose();
@@ -114,11 +113,11 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           </DialogTitle>
           {taskDescription && (
             <div className="mt-1 text-sm text-muted-foreground flex items-center justify-between">
-              <div> 
+              <div>
                 Original Task: <span className="font-medium text-foreground italic ml-1">"{taskDescription}"</span>
               </div>
               {latestIdentifiedType.current && (
-                 <Badge variant="outline" className="capitalize text-xs"> 
+                 <Badge variant="outline" className="capitalize text-xs">
                   <TaskTypeIcon type={latestIdentifiedType.current} />
                   <span className="ml-1.5">{latestIdentifiedType.current.replace('_', ' ')}</span>
                 </Badge>
@@ -127,9 +126,9 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </DialogHeader>
 
-        <ScrollArea className="flex-grow"> {/* Removed p-4 from here */}
-          <div className="space-y-4 p-4"> {/* Added p-4 here */}
-            {isLoadingInitial && chatMessages.length <=1 ? ( 
+        <ScrollArea className="flex-grow min-h-0"> {/* Added min-h-0 here */}
+          <div className="space-y-4 p-4">
+            {isLoadingInitial && chatMessages.length <=1 ? (
               <div className="flex flex-col items-center justify-center h-48">
                 <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
                 <p className="text-muted-foreground">Thinking...</p>
@@ -139,7 +138,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               chatMessages.map((msg, index) => (
                 <div key={index} className={cn("flex items-start space-x-3", msg.role === 'user' ? 'justify-end' : '')}>
                   {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 mt-1" />}
-                  <div 
+                  <div
                     className={cn(
                       "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border",
                       msg.role === 'user' ? 'bg-primary/10 border-primary/20 text-primary-foreground' : 'bg-muted/50 border-muted'
@@ -152,24 +151,24 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
                   {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />}
                 </div>
               ))
-            ) : !isLoadingInitial && ( 
+            ) : !isLoadingInitial && (
               <div className="text-center py-10 text-muted-foreground">
                 <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
                 <p>No assistance available or conversation started.</p>
               </div>
             )}
-            {(isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role === 'user') && ( 
-              <div className="flex items-start space-x-3"> 
+            {(isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role === 'user') && (
+              <div className="flex items-start space-x-3">
                 <Bot className="h-6 w-6 text-primary flex-shrink-0 animate-pulse" />
                 <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
                   Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} /> 
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
-        
+
         <div className="p-4 border-t bg-background">
           <div className="flex items-start space-x-2">
             <Textarea
@@ -186,19 +185,19 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
               disabled={isSendingFollowUp || isLoadingInitial}
             />
-            <Button 
-              onClick={handleSendFollowUp} 
+            <Button
+              onClick={handleSendFollowUp}
               disabled={!currentUserInput.trim() || isSendingFollowUp || isLoadingInitial}
               size="icon"
-              className="h-10 w-10" 
+              className="h-10 w-10"
             >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send</span>
             </Button>
           </div>
         </div>
-        
-        <DialogFooter className="p-4 pt-0 border-t sm:justify-between"> 
+
+        <DialogFooter className="p-4 pt-0 border-t sm:justify-between">
           <div className="text-xs text-muted-foreground">AI can make mistakes. Consider checking important information.</div>
           <Button onClick={handleCloseModal} variant="outline" size="sm">Close</Button>
         </DialogFooter>
