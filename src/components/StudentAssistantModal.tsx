@@ -6,11 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Brain, Loader2, Type, Code, ListChecks, HelpCircle, AlertCircle, Send, UserCircle, Bot, ChevronDown, MessageSquareText } from 'lucide-react';
+import { Brain, Loader2, Type, Code, ListChecks, HelpCircle, AlertCircle, Send, UserCircle, Bot, ChevronDown, MessageSquareText, Lightbulb } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getStudentAssistance, type StudentAssistantInput } from '@/ai/flows/student-assistant-flow';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,7 @@ const TaskTypeIcon: React.FC<{ type: StudentAssistantOutput['identifiedTaskType'
     case 'coding': return <Code className="h-4 w-4" />;
     case 'planning_reminder': return <ListChecks className="h-4 w-4" />;
     case 'general_query': return <HelpCircle className="h-4 w-4" />;
+    case 'brainstorming_elaboration': return <Lightbulb className="h-4 w-4" />;
     default: return <AlertCircle className="h-4 w-4" />;
   }
 };
@@ -47,9 +48,9 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
-  const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
-  };
+  }, []);
   
   useEffect(() => {
     const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
@@ -60,12 +61,12 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
       const { scrollTop, scrollHeight, clientHeight } = viewport;
       const atBottom = scrollHeight - scrollTop - clientHeight < 50; 
       setIsUserScrolledUp(!atBottom);
-      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50); // Only show if significant scroll up
+      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50);
     };
 
     viewport.addEventListener('scroll', handleScroll);
     return () => viewport.removeEventListener('scroll', handleScroll);
-  }, [isOpen]); // Re-attach if modal reopens
+  }, [isOpen]);
 
 
   useEffect(() => {
@@ -82,16 +83,15 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
       } else if (isLoadingInitial) {
         setChatMessages([firstUserMessage]);
         latestIdentifiedType.current = undefined;
-      } else { // Not loading and no initial assistance (e.g. error or modal opened without initial call)
-        setChatMessages([firstUserMessage]); // Show just the initial prompt
+      } else { 
+        setChatMessages([firstUserMessage]); 
         latestIdentifiedType.current = undefined;
       }
       setCurrentUserInput("");
-      setIsUserScrolledUp(false); // Reset scroll state on open
+      setIsUserScrolledUp(false); 
       setShowScrollToBottom(false);
-       setTimeout(() => scrollToBottom("smooth"), 100); // Scroll to bottom on open
+      setTimeout(() => scrollToBottom("smooth"), 100); 
     } else { 
-      // Reset state when modal closes
       setChatMessages([]);
       setCurrentUserInput("");
       latestIdentifiedType.current = undefined;
@@ -99,38 +99,33 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
       setShowScrollToBottom(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, initialAssistance, isLoadingInitial, taskDescription]); // taskDescription is key for initial setup
+  }, [isOpen, initialAssistance, isLoadingInitial, taskDescription, scrollToBottom]);
 
   useEffect(() => {
-    if (chatMessages.length > 0 && !isUserScrolledUp && isOpen) { // Ensure modal is open
+    if (chatMessages.length > 0 && !isUserScrolledUp && isOpen) { 
       setTimeout(() => scrollToBottom("smooth"), 100);
     }
-  }, [chatMessages, isUserScrolledUp, isOpen]);
+  }, [chatMessages, isUserScrolledUp, isOpen, scrollToBottom]);
 
 
-  const handleSendFollowUp = async () => {
-    if (!currentUserInput.trim()) return;
+  const handleSendFollowUp = async (inquiry?: string) => {
+    const currentFollowUpQuery = inquiry || currentUserInput;
+    if (!currentFollowUpQuery.trim()) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: currentUserInput, timestamp: Date.now() };
-    const currentFollowUpQuery = currentUserInput;
+    const userMessage: ChatMessage = { role: 'user', content: currentFollowUpQuery, timestamp: Date.now() };
     
-    // Add user message optimistically
     setChatMessages(prev => [...prev, userMessage]);
-    setCurrentUserInput(""); 
+    if (!inquiry) { // Only clear input if it wasn't a programmatic inquiry (like from a button)
+        setCurrentUserInput(""); 
+    }
     setIsSendingFollowUp(true);
     setIsUserScrolledUp(false); 
 
     try {
-      // Prepare history, exclude the very first user message if it was the initial task prompt.
-      // The originalTaskContext handles the initial task.
-      const historyForAI = chatMessages.length > 0 && chatMessages[0].role === 'user' && chatMessages[0].content === (taskDescription || "How can I help you today?")
-        ? chatMessages.slice(1) // Exclude the very first user message if it's the initial prompt
-        : chatMessages;
+      const historyForAI = chatMessages.filter(msg => msg.role !== 'user' || msg.content !== (taskDescription || "How can I help you today?"));
 
       const flowInput: StudentAssistantInput = {
         currentInquiry: currentFollowUpQuery,
-        // Send chat history for follow-ups. For the first actual follow-up, chatMessages would be [initialUser, initialBot, currentFollowUpUser]
-        // So, we send history up to the message before the current user's input.
         conversationHistory: historyForAI.length > 0 ? historyForAI : [],
         originalTaskContext: taskDescription || (chatMessages[0]?.role === 'user' ? chatMessages[0].content : "General Inquiry"),
       };
@@ -151,12 +146,23 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     }
   };
 
+  const handleBrainstormRequest = () => {
+    if (taskDescription && taskDescription !== "How can I help you today?" && taskDescription !== "General Inquiry") {
+      handleSendFollowUp(`Help me brainstorm ideas for: "${taskDescription}"`);
+    } else if (chatMessages.length > 0) {
+      // If no specific task desc, try to brainstorm based on the last user message or general context
+      const lastUserMessage = [...chatMessages].reverse().find(msg => msg.role === 'user');
+      const contextForBrainstorm = lastUserMessage ? lastUserMessage.content : "the current topic";
+      handleSendFollowUp(`Help me brainstorm ideas for: "${contextForBrainstorm}"`);
+    }
+  };
+
+
   const handleCloseModal = () => {
     onClose();
   }
 
   const isEssentiallyLoading = isLoadingInitial || isSendingFollowUp;
-  // Can send if input is not empty, not loading, and (there's an initial task OR there are already messages meaning conversation started)
   const canSendMessage = currentUserInput.trim() && !isEssentiallyLoading && (taskDescription || chatMessages.length > 0 || initialAssistance);
   
   const effectiveTaskDescription = taskDescription || (initialAssistance ? "General Inquiry" : "New Conversation");
@@ -165,6 +171,10 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     (effectiveTaskDescription === "General Inquiry" || effectiveTaskDescription === "New Conversation") && chatMessages.length <=1
     ? "Enter your general inquiry here..."
     : "Ask a follow-up question...";
+
+  const showBrainstormButton = isOpen && !isLoadingInitial && !isSendingFollowUp && 
+                              (taskDescription && taskDescription !== "How can I help you today?" && taskDescription !== "General Inquiry");
+
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleCloseModal(); }}>
@@ -175,12 +185,13 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
             AI Student Assistant
           </DialogTitle>
           {effectiveTaskDescription && effectiveTaskDescription !== "New Conversation" && (
-            <div className="text-muted-foreground mt-1 text-sm flex items-center justify-between">
+            <div className="text-muted-foreground mt-1.5 text-sm flex items-center justify-between p-2.5 bg-muted/30 rounded-md border border-dashed border-muted-foreground/30">
               <div className="truncate pr-2">
-                Context: <span className="font-medium text-foreground/90 italic ml-1">"{effectiveTaskDescription}"</span>
+                <span className="font-medium text-foreground/80">Context:</span> 
+                <span className="italic ml-1.5 text-foreground/90">"{effectiveTaskDescription}"</span>
               </div>
               {latestIdentifiedType.current && (
-                 <Badge variant="outline" className="capitalize text-xs py-0.5 whitespace-nowrap">
+                 <Badge variant="outline" className="capitalize text-xs py-0.5 whitespace-nowrap shrink-0">
                   <TaskTypeIcon type={latestIdentifiedType.current} />
                   <span className="ml-1.5">{latestIdentifiedType.current.replace('_', ' ')}</span>
                 </Badge>
@@ -189,8 +200,8 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
           )}
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 relative"> 
-          <ScrollArea className="h-full min-h-0" ref={scrollAreaRef}>
+        <div className="flex-1 min-h-0 relative flex flex-col"> 
+          <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}> {/* Added flex-1 min-h-0 here */}
             <div className="p-4 space-y-4">
               {isLoadingInitial && chatMessages.length <=1 && !initialAssistance ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -220,7 +231,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
                         {msg.content}
                       </ReactMarkdown>
                       <div className={cn("text-xs mt-1.5", msg.role === 'user' ? 'text-right' : 'text-left', 'text-muted-foreground/70')}>
-                        {format(msg.timestamp, "p")}
+                        {format(msg.timestamp || Date.now(), "p")}
                       </div>
                     </div>
                     {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 self-start mt-1" />}
@@ -256,6 +267,21 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
             </Button>
           )}
         </div>
+        
+        {showBrainstormButton && (
+          <div className="p-2 px-4 border-t">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full" 
+              onClick={handleBrainstormRequest}
+              disabled={isEssentiallyLoading}
+            >
+              <Lightbulb className="mr-2 h-4 w-4" />
+              Brainstorm ideas for "{effectiveTaskDescription}"
+            </Button>
+          </div>
+        )}
 
         <div className="p-4 border-t bg-background"> 
           <div className="flex items-start space-x-2">
@@ -271,10 +297,10 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               }}
               rows={1}
               className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
-              disabled={isEssentiallyLoading || (!taskDescription && !initialAssistance && chatMessages.length === 0) } // Disable if no context at all
+              disabled={isEssentiallyLoading || (!taskDescription && !initialAssistance && chatMessages.length === 0) } 
             />
             <Button
-              onClick={handleSendFollowUp}
+              onClick={()=>handleSendFollowUp()}
               disabled={!canSendMessage}
               size="icon"
               className="h-10 w-10 flex-shrink-0"

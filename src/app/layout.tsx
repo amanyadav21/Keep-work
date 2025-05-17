@@ -1,14 +1,16 @@
 
 import type { Metadata } from 'next';
-import { Inter, Roboto_Mono } from 'next/font/google';
+import { Roboto, Roboto_Mono } from 'next/font/google'; // Changed from Inter to Roboto
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { SidebarProvider } from '@/components/ui/sidebar'; // Removed SidebarInset
+import { SidebarProvider } from '@/components/ui/sidebar';
 
-const inter = Inter({
+// Setup Roboto font
+const roboto = Roboto({
   variable: '--font-sans',
   subsets: ['latin'],
+  weight: ['400', '500', '700'], // Added common weights
 });
 
 const robotoMono = Roboto_Mono({
@@ -29,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body 
-        className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
+        className={`${roboto.variable} ${robotoMono.variable} font-sans antialiased`}
         suppressHydrationWarning={true}
       >
         <ThemeProvider
@@ -38,9 +40,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider>
-            {/* AppSidebar is now rendered within HomePage, which is part of children */}
-            {/* SidebarInset is removed as HomePage now manages its layout relative to AppSidebar via flexbox */}
+          <SidebarProvider collapsible="icon"> {/* Ensure collapsible type is set */}
             {children}
           </SidebarProvider>
           <Toaster />

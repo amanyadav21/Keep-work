@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
@@ -38,7 +38,7 @@ export default function HomePage() {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
 
-  const handleAddTask = (data: TaskFormValues) => {
+  const handleAddTask = useCallback((data: TaskFormValues) => {
     const newTask: Task = {
       id: crypto.randomUUID(),
       description: data.description,
@@ -47,15 +47,15 @@ export default function HomePage() {
       isCompleted: false,
       createdAt: formatISO(new Date()),
       subtasks: data.subtasks?.map(st => ({
-        id: st.id || crypto.randomUUID(), // Ensure ID for new subtasks
+        id: st.id || crypto.randomUUID(), 
         text: st.text,
         isCompleted: st.isCompleted || false,
       })) || [],
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
-  };
+  }, [setTasks]);
 
-  const handleEditTask = (data: TaskFormValues, taskId: string) => {
+  const handleEditTask = useCallback((data: TaskFormValues, taskId: string) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === taskId
@@ -74,18 +74,18 @@ export default function HomePage() {
       )
     );
     setEditingTask(null);
-  };
+  }, [setTasks]);
 
-  const handleSubmitTask = (data: TaskFormValues, existingTaskId?: string) => {
+  const handleSubmitTask = useCallback((data: TaskFormValues, existingTaskId?: string) => {
     if (existingTaskId) {
       handleEditTask(data, existingTaskId);
     } else {
       handleAddTask(data);
     }
     setIsFormOpen(false);
-  };
+  }, [handleAddTask, handleEditTask]);
 
-  const handleToggleComplete = (id: string) => {
+  const handleToggleComplete = useCallback((id: string) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
@@ -97,9 +97,9 @@ export default function HomePage() {
         title: `Task ${!task.isCompleted ? "Completed" : "Marked Pending"}`,
       });
     }
-  };
+  }, [setTasks, tasks, toast]);
 
-  const handleToggleSubtaskComplete = (taskId: string, subtaskId: string) => {
+  const handleToggleSubtaskComplete = useCallback((taskId: string, subtaskId: string) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === taskId
@@ -112,20 +112,20 @@ export default function HomePage() {
           : task
       )
     );
-  };
+  }, [setTasks]);
 
 
-  const handleOpenEditForm = (task: Task) => {
+  const handleOpenEditForm = useCallback((task: Task) => {
     setEditingTask(task);
     setIsFormOpen(true);
-  };
+  }, []);
   
-  const handleOpenAddForm = () => {
+  const handleOpenAddForm = useCallback(() => {
     setEditingTask(null);
     setIsFormOpen(true);
-  }
+  }, []);
 
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = useCallback((id: string) => {
     const task = tasks.find(t => t.id === id);
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
     setTaskToDelete(null); 
@@ -135,7 +135,7 @@ export default function HomePage() {
         variant: "destructive",
       });
     }
-  };
+  }, [setTasks, tasks, toast]);
 
   const sortedTasks = useMemo(() => {
     if (!isMounted) return [];
@@ -176,7 +176,7 @@ export default function HomePage() {
       } as FlowTaskInput));
   }, [tasks]);
 
-  const handleSuggestPriorities = async () => {
+  const handleSuggestPriorities = useCallback(async () => {
     if (pendingTasksForAI.length === 0) {
       toast({
         title: "No Pending Tasks",
@@ -207,9 +207,9 @@ export default function HomePage() {
     } finally {
       setIsSuggestingPriorities(false);
     }
-  };
+  }, [pendingTasksForAI, tasks, toast]);
 
-  const handleRequestInitialAIAssistance = async (taskDescriptionForAI: string) => {
+  const handleRequestInitialAIAssistance = useCallback(async (taskDescriptionForAI: string) => {
     setAssistingTaskDescription(taskDescriptionForAI);
     setIsRequestingInitialAssistance(true);
     setInitialAssistantOutput(null); 
@@ -228,15 +228,14 @@ export default function HomePage() {
     } finally {
       setIsRequestingInitialAssistance(false);
     }
-  };
+  }, [toast]);
 
-  const handleOpenAIAssistantFromSidebar = async () => {
-    setAssistingTaskDescription("General Inquiry"); 
+  const handleOpenAIAssistantFromSidebar = useCallback(async () => {
+    setAssistingTaskDescription("How can I help you today?"); // Generic prompt for sidebar open
     setIsRequestingInitialAssistance(true);
     setInitialAssistantOutput(null); 
     setIsAssistantModalOpen(true);
     try {
-      // Use a generic prompt for general inquiries
       const result = await getStudentAssistance({ currentInquiry: "How can I help you today?" });
       setInitialAssistantOutput(result);
     } catch (error) {
@@ -250,22 +249,18 @@ export default function HomePage() {
     } finally {
       setIsRequestingInitialAssistance(false);
     }
-  };
+  }, [toast]);
 
 
   if (!isMounted) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <Header onAddTask={() => {}} /> {/* Placeholder onAddTask during skeleton */}
+        <Header onAddTask={() => {}} /> 
         <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar Skeleton */}
-          <div className="hidden md:block h-svh w-[var(--sidebar-width-icon)] bg-muted animate-pulse" />
-          {/* Main Content Skeleton */}
+          <div className="hidden md:block h-svh bg-muted animate-pulse w-[var(--sidebar-width-icon)] group-data-[state=expanded]:group-data-[collapsible=icon]:w-[var(--sidebar-width)]" />
           <main className="flex-1 p-4 md:p-6 overflow-y-auto">
             <div className="container mx-auto w-full">
-              {/* Filter Controls Skeleton */}
               <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div>
-              {/* Task List Skeleton */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
                 {[...Array(6)].map((_, i) => ( 
                   <div key={i} className="h-44 bg-muted rounded-lg animate-pulse"></div> 
@@ -354,7 +349,7 @@ export default function HomePage() {
         onClose={() => {
           setIsAssistantModalOpen(false);
           setInitialAssistantOutput(null); 
-          setAssistingTaskDescription(null);
+          setAssistingTaskDescription(null); // Reset this on close
         }}
         initialAssistance={initialAssistantOutput}
         isLoadingInitial={isRequestingInitialAssistance}
