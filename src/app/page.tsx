@@ -7,18 +7,23 @@ import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import { FilterControls } from '@/components/FilterControls';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion, StudentAssistantOutput, Subtask } from '@/types';
+import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion, StudentAssistantOutput } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal';
-import { StudentAssistantModal } from '@/components/StudentAssistantModal'; 
-import { AppSidebar } from '@/components/AppSidebar'; 
+import { StudentAssistantModal } from '@/components/StudentAssistantModal';
+import { AppSidebar } from '@/components/AppSidebar';
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
 import { getStudentAssistance } from '@/ai/flows/student-assistant-flow';
 
-export default function HomePage() {
+interface HomePageProps {
+  params: { [key: string]: string | string[] | undefined };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default function HomePage({ params, searchParams }: HomePageProps) {
   const [tasks, setTasks] = useLocalStorage<Task[]>('studentTasks', []);
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -31,8 +36,8 @@ export default function HomePage() {
   const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
 
   const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
-  const [initialAssistantOutput, setInitialAssistantOutput] = useState<StudentAssistantOutput | null>(null); 
-  const [isRequestingInitialAssistance, setIsRequestingInitialAssistance] = useState(false); 
+  const [initialAssistantOutput, setInitialAssistantOutput] = useState<StudentAssistantOutput | null>(null);
+  const [isRequestingInitialAssistance, setIsRequestingInitialAssistance] = useState(false);
   const [assistingTaskDescription, setAssistingTaskDescription] = useState<string | null>(null);
 
   const [isMounted, setIsMounted] = useState(false);
@@ -47,7 +52,7 @@ export default function HomePage() {
       isCompleted: false,
       createdAt: formatISO(new Date()),
       subtasks: data.subtasks?.map(st => ({
-        id: st.id || crypto.randomUUID(), 
+        id: st.id || crypto.randomUUID(),
         text: st.text,
         isCompleted: st.isCompleted || false,
       })) || [],
@@ -59,8 +64,8 @@ export default function HomePage() {
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === taskId
-          ? { 
-              ...task, 
+          ? {
+              ...task,
               description: data.description,
               dueDate: formatISO(data.dueDate),
               category: data.category,
@@ -119,7 +124,7 @@ export default function HomePage() {
     setEditingTask(task);
     setIsFormOpen(true);
   }, []);
-  
+
   const handleOpenAddForm = useCallback(() => {
     setEditingTask(null);
     setIsFormOpen(true);
@@ -128,7 +133,7 @@ export default function HomePage() {
   const handleDeleteTask = useCallback((id: string) => {
     const task = tasks.find(t => t.id === id);
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
-    setTaskToDelete(null); 
+    setTaskToDelete(null);
     if (task) {
       toast({
         title: "Task Deleted",
@@ -154,7 +159,7 @@ export default function HomePage() {
 
 
   const filteredTasks = useMemo(() => {
-    if (!isMounted) return []; 
+    if (!isMounted) return [];
     switch (filter) {
       case 'pending':
         return sortedTasks.filter(task => !task.isCompleted);
@@ -186,14 +191,14 @@ export default function HomePage() {
     }
     setIsSuggestingPriorities(true);
     setIsPriorityModalOpen(true);
-    setPrioritySuggestions([]); 
+    setPrioritySuggestions([]);
     try {
       const result = await suggestTaskPriorities({ tasks: pendingTasksForAI });
       const enrichedSuggestions = result.prioritizedSuggestions.map(suggestion => {
         const task = tasks.find(t => t.id === suggestion.taskId);
         return {
           ...suggestion,
-          description: task ? task.description : "Unknown Task", 
+          description: task ? task.description : "Unknown Task",
         };
       });
       setPrioritySuggestions(enrichedSuggestions);
@@ -212,7 +217,7 @@ export default function HomePage() {
   const handleRequestInitialAIAssistance = useCallback(async (taskDescriptionForAI: string) => {
     setAssistingTaskDescription(taskDescriptionForAI);
     setIsRequestingInitialAssistance(true);
-    setInitialAssistantOutput(null); 
+    setInitialAssistantOutput(null);
     setIsAssistantModalOpen(true);
     try {
       const result = await getStudentAssistance({ currentInquiry: taskDescriptionForAI });
@@ -224,7 +229,7 @@ export default function HomePage() {
         description: "Could not get AI help for this task at the moment.",
         variant: "destructive",
       });
-       setIsAssistantModalOpen(false); 
+       setIsAssistantModalOpen(false);
     } finally {
       setIsRequestingInitialAssistance(false);
     }
@@ -233,7 +238,7 @@ export default function HomePage() {
   const handleOpenAIAssistantFromSidebar = useCallback(async () => {
     setAssistingTaskDescription("How can I help you today?"); // Generic prompt for sidebar open
     setIsRequestingInitialAssistance(true);
-    setInitialAssistantOutput(null); 
+    setInitialAssistantOutput(null);
     setIsAssistantModalOpen(true);
     try {
       const result = await getStudentAssistance({ currentInquiry: "How can I help you today?" });
@@ -245,7 +250,7 @@ export default function HomePage() {
         description: "Could not get AI help at the moment.",
         variant: "destructive",
       });
-       setIsAssistantModalOpen(false); 
+       setIsAssistantModalOpen(false);
     } finally {
       setIsRequestingInitialAssistance(false);
     }
@@ -255,15 +260,15 @@ export default function HomePage() {
   if (!isMounted) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <Header onAddTask={() => {}} /> 
+        <Header onAddTask={() => {}} />
         <div className="flex flex-1 overflow-hidden">
           <div className="hidden md:block h-svh bg-muted animate-pulse w-[var(--sidebar-width-icon)] group-data-[state=expanded]:group-data-[collapsible=icon]:w-[var(--sidebar-width)]" />
           <main className="flex-1 p-4 md:p-6 overflow-y-auto">
             <div className="container mx-auto w-full">
               <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                {[...Array(6)].map((_, i) => ( 
-                  <div key={i} className="h-44 bg-muted rounded-lg animate-pulse"></div> 
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-44 bg-muted rounded-lg animate-pulse"></div>
                 ))}
               </div>
             </div>
@@ -276,9 +281,9 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header onAddTask={handleOpenAddForm} />
-      <div className="flex flex-1 overflow-hidden"> 
-        <AppSidebar 
-          tasks={tasks} 
+      <div className="flex flex-1 overflow-hidden">
+        <AppSidebar
+          tasks={tasks}
           onSuggestPriorities={handleSuggestPriorities}
           isPrioritizing={isSuggestingPriorities}
           onOpenAIAssistant={handleOpenAIAssistantFromSidebar}
@@ -288,7 +293,7 @@ export default function HomePage() {
             <div className="mb-6">
                 <FilterControls currentFilter={filter} onFilterChange={setFilter} />
             </div>
-            
+
             <TaskList
               tasks={filteredTasks}
               onToggleComplete={handleToggleComplete}
@@ -337,7 +342,7 @@ export default function HomePage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <PrioritySuggestionsModal 
+      <PrioritySuggestionsModal
         isOpen={isPriorityModalOpen}
         onClose={() => setIsPriorityModalOpen(false)}
         suggestions={prioritySuggestions}
@@ -348,7 +353,7 @@ export default function HomePage() {
         isOpen={isAssistantModalOpen}
         onClose={() => {
           setIsAssistantModalOpen(false);
-          setInitialAssistantOutput(null); 
+          setInitialAssistantOutput(null);
           setAssistingTaskDescription(null); // Reset this on close
         }}
         initialAssistance={initialAssistantOutput}
