@@ -34,11 +34,11 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
           </h2>
         </div>
       </SidebarHeader>
-      <SidebarSeparator className="mx-2 my-0 w-auto bg-sidebar-border group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden" />
+      <SidebarSeparator className="mx-2 my-0 w-auto bg-sidebar-border" /> 
       
       <SidebarContent className="p-0">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-4"> {/* Reduced space-y from 6 to 4 for a tighter feel */}
+          <div className="p-4 space-y-2"> {/* Reduced space-y for tighter feel */}
             
             {/* Performance Metrics Section */}
             <div className="space-y-2">
@@ -46,7 +46,7 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
               <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
                 <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
                   <BarChartBig className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
-                  <h3 className="text-md font-medium">
+                  <h3 className="text-md font-medium"> {/* Adjusted font size */}
                     Performance
                   </h3>
                 </div>
@@ -75,7 +75,7 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
               </div>
             </div>
 
-            <SidebarSeparator className="mx-0 my-0 w-full bg-sidebar-border group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden" />
+            <SidebarSeparator className="mx-0 my-0 w-full bg-sidebar-border" />
 
             {/* Task Insights Section */}
             <div className="space-y-2">
@@ -83,7 +83,7 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
               <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
                 <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
                   <Activity className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
-                  <h3 className="text-md font-medium">
+                  <h3 className="text-md font-medium"> {/* Adjusted font size */}
                     Task Insights
                   </h3>
                 </div>
@@ -110,7 +110,7 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
               </div>
             </div>
 
-            <SidebarSeparator className="mx-0 my-0 w-full bg-sidebar-border group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden" />
+            <SidebarSeparator className="mx-0 my-0 w-full bg-sidebar-border" />
 
             {/* AI Assistant Section */}
             <div className="space-y-2">
@@ -118,7 +118,7 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
               <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
                 <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
                   <Brain className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
-                  <h3 className="text-md font-medium">
+                  <h3 className="text-md font-medium"> {/* Adjusted font size */}
                     AI Assistant
                   </h3>
                 </div>
