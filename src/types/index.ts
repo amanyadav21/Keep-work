@@ -22,6 +22,7 @@ export interface PrioritizedTaskSuggestion {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  timestamp: number; // Added timestamp
 }
 
 export interface StudentAssistantInput {
@@ -34,3 +35,4 @@ export interface StudentAssistantOutput {
   assistantResponse: string;
   identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "unknown";
 }
+
