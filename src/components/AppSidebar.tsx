@@ -38,77 +38,100 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
       
       <SidebarContent className="p-0">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-6">
+          <div className="p-4 space-y-4"> {/* Reduced space-y from 6 to 4 for a tighter feel */}
+            
             {/* Performance Metrics Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80 group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center">
-                <BarChartBig className="h-5 w-5 text-sidebar-primary" />
-                <h3 className="text-md font-medium group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
-                  Performance
-                </h3>
-              </div>
-              {/* Content for expanded view */}
-              <div className="group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
+            <div className="space-y-2">
+              {/* Expanded View Header & Content */}
+              <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
+                <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
+                  <BarChartBig className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
+                  <h3 className="text-md font-medium">
+                    Performance
+                  </h3>
+                </div>
                 <Card className="bg-sidebar-accent/50 border-sidebar-border shadow-sm">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3"> {/* Reduced padding */}
                     <p className="text-sm text-sidebar-foreground/70">
                       Performance metrics and charts will be displayed here.
                     </p>
                   </CardContent>
                 </Card>
               </div>
-              {/* Icon for collapsed view */}
-               <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:block text-center py-2")}>
-                 <BarChartBig className="h-5 w-5 text-sidebar-primary mx-auto" />
+              {/* Collapsed View Icon */}
+              <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:flex group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center group-data-[state=collapsed]:group-data-[collapsible=icon]:py-1")}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-sidebar-accent/70" aria-label="Performance">
+                        <BarChartBig className="h-5 w-5 text-sidebar-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="bg-popover text-popover-foreground">
+                      <p>Performance</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
 
             <SidebarSeparator className="mx-0 my-0 w-full bg-sidebar-border group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden" />
 
-            {/* Task Summary Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80 group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center">
-                <Activity className="h-5 w-5 text-sidebar-primary" />
-                <h3 className="text-md font-medium group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
-                  Task Insights
-                </h3>
-              </div>
-              {/* Content for expanded view */}
-              <div className="group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
+            {/* Task Insights Section */}
+            <div className="space-y-2">
+               {/* Expanded View Header & Content */}
+              <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
+                <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
+                  <Activity className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
+                  <h3 className="text-md font-medium">
+                    Task Insights
+                  </h3>
+                </div>
                 <TaskStats
                   tasks={tasks}
                   onSuggestPriorities={onSuggestPriorities}
                   isPrioritizing={isPrioritizing}
                 />
               </div>
-              {/* Icon for collapsed view */}
-               <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:block text-center py-2")}>
-                <Activity className="h-5 w-5 text-sidebar-primary mx-auto" />
+              {/* Collapsed View Icon */}
+              <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:flex group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center group-data-[state=collapsed]:group-data-[collapsible=icon]:py-1")}>
+                 <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-sidebar-accent/70" aria-label="Task Insights">
+                        <Activity className="h-5 w-5 text-sidebar-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="bg-popover text-popover-foreground">
+                      <p>Task Insights</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
 
             <SidebarSeparator className="mx-0 my-0 w-full bg-sidebar-border group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden" />
 
             {/* AI Assistant Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80 group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center">
-                <Brain className="h-5 w-5 text-sidebar-primary" />
-                <h3 className="text-md font-medium group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
-                  AI Assistant
-                </h3>
-              </div>
-              {/* Content for expanded view */}
-              <div className="group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
+            <div className="space-y-2">
+              {/* Expanded View Header & Content */}
+              <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
+                <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
+                  <Brain className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
+                  <h3 className="text-md font-medium">
+                    AI Assistant
+                  </h3>
+                </div>
                 <Button 
                   variant="outline" 
-                  className="w-full border-sidebar-border hover:bg-sidebar-accent/70" 
+                  className="w-full border-sidebar-border hover:bg-sidebar-accent/70 h-9 text-sm" 
                   onClick={onOpenAIAssistant}
                 >
                   Chat with AI
                 </Button>
               </div>
-              {/* Icon for collapsed view */}
-               <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:block text-center py-2")}>
+               {/* Collapsed View Icon */}
+              <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:flex group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center group-data-[state=collapsed]:group-data-[collapsible=icon]:py-1")}>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -116,7 +139,7 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
                         variant="ghost" 
                         size="icon" 
                         onClick={onOpenAIAssistant} 
-                        className="mx-auto hover:bg-sidebar-accent/70"
+                        className="h-8 w-8 hover:bg-sidebar-accent/70"
                         aria-label="Open AI Assistant"
                       >
                         <Brain className="h-5 w-5 text-sidebar-primary" />
@@ -130,8 +153,6 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
               </div>
             </div>
             
-            {/* Future sections can be added here */}
-
           </div>
         </ScrollArea>
       </SidebarContent>
