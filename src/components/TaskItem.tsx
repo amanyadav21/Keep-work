@@ -2,13 +2,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import type { Task, TaskCategory } from '@/types';
+import type { Task, TaskCategory, Subtask } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid, isPast } from 'date-fns';
-import { Pencil, Trash2, BookOpen, Users, User, AlertTriangle, CalendarDays, Brain } from 'lucide-react';
+import { Pencil, Trash2, BookOpen, Users, User, AlertTriangle, CalendarDays, Brain, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -16,6 +17,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Separator } from './ui/separator';
+
 
 interface TaskItemProps {
   task: Task;
@@ -23,6 +26,7 @@ interface TaskItemProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onRequestAIAssistance: (task: Task) => void;
+  onToggleSubtask: (taskId: string, subtaskId: string) => void;
 }
 
 const categoryIcons: Record<TaskCategory, React.ReactNode> = {
@@ -38,7 +42,7 @@ const categoryBorderColors: Record<TaskCategory, string> = {
 };
 
 
-export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAIAssistance }: TaskItemProps) {
+export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAIAssistance, onToggleSubtask }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -100,11 +104,15 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
   
   const isOverdue = !task.isCompleted && isValid(dueDateObj) && isPast(dueDateObj);
 
+  const completedSubtasks = task.subtasks?.filter(st => st.isCompleted).length || 0;
+  const totalSubtasks = task.subtasks?.length || 0;
+  const subtaskProgress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
+
   return (
     <TooltipProvider delayDuration={300}>
       <Card 
         className={cn(
-          "group flex flex-col justify-between rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[170px]", 
+          "group flex flex-col justify-between rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px]", 
           categoryBorderColors[task.category],
           "border-l-4", 
           task.isCompleted ? "bg-muted/30 dark:bg-muted/20 opacity-80" : "bg-card"
@@ -131,6 +139,42 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
               {task.description}
             </p>
           </div>
+
+          {task.subtasks && task.subtasks.length > 0 && (
+            <div className="pl-7 space-y-1.5 mt-1 mb-2">
+              {totalSubtasks > 0 && (
+                 <div className="mb-1.5">
+                  <div className="flex justify-between items-center text-xs text-muted-foreground mb-0.5">
+                    <span>Subtasks</span>
+                    <span>{completedSubtasks}/{totalSubtasks}</span>
+                  </div>
+                  <Progress value={subtaskProgress} className="h-1.5" />
+                </div>
+              )}
+              {task.subtasks.map((subtask) => (
+                <div key={subtask.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`subtask-${subtask.id}`}
+                    checked={subtask.isCompleted}
+                    onCheckedChange={() => onToggleSubtask(task.id, subtask.id)}
+                    className="h-3.5 w-3.5"
+                    aria-labelledby={`subtask-text-${subtask.id}`}
+                  />
+                  <label
+                    htmlFor={`subtask-${subtask.id}`}
+                    id={`subtask-text-${subtask.id}`}
+                    className={cn(
+                      "text-xs text-muted-foreground break-words cursor-pointer",
+                      subtask.isCompleted ? "line-through text-muted-foreground/70" : "text-foreground/90"
+                    )}
+                  >
+                    {subtask.text}
+                  </label>
+                </div>
+              ))}
+               <Separator className="my-2" />
+            </div>
+          )}
         </CardContent>
         
         <CardFooter className="p-0 mt-auto flex flex-col items-start space-y-2">
@@ -200,5 +244,3 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
     </TooltipProvider>
   );
 }
-
-    

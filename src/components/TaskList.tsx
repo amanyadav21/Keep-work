@@ -10,10 +10,11 @@ interface TaskListProps {
   onToggleComplete: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id:string) => void;
-  onRequestAIAssistance: (task: Task) => void; // New prop
+  onRequestAIAssistance: (task: Task) => void;
+  onToggleSubtask: (taskId: string, subtaskId: string) => void;
 }
 
-export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onRequestAIAssistance }: TaskListProps) {
+export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onRequestAIAssistance, onToggleSubtask }: TaskListProps) {
   if (tasks.length === 0) {
     return (
       <div className="text-center py-16">
@@ -33,7 +34,8 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onRequestA
           onToggleComplete={onToggleComplete}
           onEdit={onEdit}
           onDelete={onDelete}
-          onRequestAIAssistance={onRequestAIAssistance} // Pass down the prop
+          onRequestAIAssistance={onRequestAIAssistance}
+          onToggleSubtask={onToggleSubtask}
         />
       ))}
     </div>

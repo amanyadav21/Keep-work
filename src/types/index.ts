@@ -1,6 +1,12 @@
 
 export type TaskCategory = "Assignment" | "Class" | "Personal";
 
+export interface Subtask {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+}
+
 export interface Task {
   id: string;
   description: string;
@@ -8,6 +14,7 @@ export interface Task {
   category: TaskCategory;
   isCompleted: boolean;
   createdAt: string; // ISO string date for reference
+  subtasks?: Subtask[];
 }
 
 export type TaskFilter = "all" | "pending" | "completed";
@@ -22,7 +29,7 @@ export interface PrioritizedTaskSuggestion {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
-  timestamp: number; // Added timestamp
+  timestamp: number; 
 }
 
 export interface StudentAssistantInput {
@@ -35,4 +42,3 @@ export interface StudentAssistantOutput {
   assistantResponse: string;
   identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "unknown";
 }
-

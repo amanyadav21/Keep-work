@@ -3,11 +3,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/Header';
-import { TaskForm } from '@/components/TaskForm';
+import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import { FilterControls } from '@/components/FilterControls';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion, StudentAssistantOutput } from '@/types';
+import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion, StudentAssistantOutput, Subtask } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal';
@@ -17,12 +17,6 @@ import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
 import { getStudentAssistance } from '@/ai/flows/student-assistant-flow';
-
-interface TaskFormData {
-  description: string;
-  dueDate: Date;
-  category: TaskCategory;
-}
 
 export default function HomePage() {
   const [tasks, setTasks] = useLocalStorage<Task[]>('studentTasks', []);
@@ -44,7 +38,7 @@ export default function HomePage() {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
 
-  const handleAddTask = (data: TaskFormData) => {
+  const handleAddTask = (data: TaskFormValues) => {
     const newTask: Task = {
       id: crypto.randomUUID(),
       description: data.description,
@@ -52,22 +46,37 @@ export default function HomePage() {
       category: data.category,
       isCompleted: false,
       createdAt: formatISO(new Date()),
+      subtasks: data.subtasks?.map(st => ({
+        id: st.id || crypto.randomUUID(), // Ensure ID for new subtasks
+        text: st.text,
+        isCompleted: st.isCompleted || false,
+      })) || [],
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
   };
 
-  const handleEditTask = (data: TaskFormData, taskId: string) => {
+  const handleEditTask = (data: TaskFormValues, taskId: string) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === taskId
-          ? { ...task, ...data, dueDate: formatISO(data.dueDate) }
+          ? { 
+              ...task, 
+              description: data.description,
+              dueDate: formatISO(data.dueDate),
+              category: data.category,
+              subtasks: data.subtasks?.map(st => ({
+                id: st.id || crypto.randomUUID(),
+                text: st.text,
+                isCompleted: st.isCompleted || false,
+              })) || [],
+            }
           : task
       )
     );
     setEditingTask(null);
   };
 
-  const handleSubmitTask = (data: TaskFormData, existingTaskId?: string) => {
+  const handleSubmitTask = (data: TaskFormValues, existingTaskId?: string) => {
     if (existingTaskId) {
       handleEditTask(data, existingTaskId);
     } else {
@@ -89,6 +98,22 @@ export default function HomePage() {
       });
     }
   };
+
+  const handleToggleSubtaskComplete = (taskId: string, subtaskId: string) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks?.map(st =>
+                st.id === subtaskId ? { ...st, isCompleted: !st.isCompleted } : st
+              ),
+            }
+          : task
+      )
+    );
+  };
+
 
   const handleOpenEditForm = (task: Task) => {
     setEditingTask(task);
@@ -206,12 +231,12 @@ export default function HomePage() {
   };
 
   const handleOpenAIAssistantFromSidebar = async () => {
-    // Ensure description is set for general inquiry to avoid issues in modal
     setAssistingTaskDescription("General Inquiry"); 
     setIsRequestingInitialAssistance(true);
     setInitialAssistantOutput(null); 
     setIsAssistantModalOpen(true);
     try {
+      // Use a generic prompt for general inquiries
       const result = await getStudentAssistance({ currentInquiry: "How can I help you today?" });
       setInitialAssistantOutput(result);
     } catch (error) {
@@ -242,7 +267,7 @@ export default function HomePage() {
               <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div>
               {/* Task List Skeleton */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                {[...Array(6)].map((_, i) => ( // Show 6 card skeletons
+                {[...Array(6)].map((_, i) => ( 
                   <div key={i} className="h-44 bg-muted rounded-lg animate-pulse"></div> 
                 ))}
               </div>
@@ -275,6 +300,7 @@ export default function HomePage() {
               onEdit={handleOpenEditForm}
               onDelete={(id) => setTaskToDelete(id)}
               onRequestAIAssistance={(task) => handleRequestInitialAIAssistance(task.description)}
+              onToggleSubtask={handleToggleSubtaskComplete}
             />
           </div>
         </main>
@@ -328,7 +354,7 @@ export default function HomePage() {
         onClose={() => {
           setIsAssistantModalOpen(false);
           setInitialAssistantOutput(null); 
-          setAssistingTaskDescription(null); // Reset task description on close
+          setAssistingTaskDescription(null);
         }}
         initialAssistance={initialAssistantOutput}
         isLoadingInitial={isRequestingInitialAssistance}
