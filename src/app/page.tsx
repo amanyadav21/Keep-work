@@ -184,13 +184,13 @@ export default function HomePage() {
     }
   };
 
-  const handleRequestInitialAIAssistance = async (task: Task) => {
-    setAssistingTaskDescription(task.description);
+  const handleRequestInitialAIAssistance = async (taskDescriptionForAI: string) => {
+    setAssistingTaskDescription(taskDescriptionForAI);
     setIsRequestingInitialAssistance(true);
     setInitialAssistantOutput(null); 
     setIsAssistantModalOpen(true);
     try {
-      const result = await getStudentAssistance({ currentInquiry: task.description });
+      const result = await getStudentAssistance({ currentInquiry: taskDescriptionForAI });
       setInitialAssistantOutput(result);
     } catch (error) {
       console.error("AI student assistance error:", error);
@@ -203,6 +203,10 @@ export default function HomePage() {
     } finally {
       setIsRequestingInitialAssistance(false);
     }
+  };
+
+  const handleOpenAIAssistantFromSidebar = async () => {
+    handleRequestInitialAIAssistance("How can I help you today?");
   };
 
 
@@ -233,6 +237,7 @@ export default function HomePage() {
           tasks={tasks} 
           onSuggestPriorities={handleSuggestPriorities}
           isPrioritizing={isSuggestingPriorities}
+          onOpenAIAssistant={handleOpenAIAssistantFromSidebar}
         />
         <main className="flex-1 overflow-y-auto container mx-auto px-4 md:px-6 pt-4 pb-6">
           <div className="mb-6">
@@ -244,7 +249,7 @@ export default function HomePage() {
             onToggleComplete={handleToggleComplete}
             onEdit={handleOpenEditForm}
             onDelete={(id) => setTaskToDelete(id)}
-            onRequestAIAssistance={handleRequestInitialAIAssistance}
+            onRequestAIAssistance={(task) => handleRequestInitialAIAssistance(task.description)}
           />
         </main>
       </div>
@@ -306,5 +311,4 @@ export default function HomePage() {
     </div>
   );
 }
-
     
