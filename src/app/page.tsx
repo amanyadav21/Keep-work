@@ -206,22 +206,18 @@ export default function HomePage() {
   };
 
   const handleOpenAIAssistantFromSidebar = async () => {
-    // For general inquiries from sidebar, set a generic initial prompt/task description
     handleRequestInitialAIAssistance("How can I help you today?");
   };
 
 
   if (!isMounted) {
-    // Consistent skeleton for better perceived performance and less layout shift
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
         <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar placeholder */}
           <div className="hidden md:block h-svh w-16 md:w-[var(--sidebar-width-icon)] lg:w-[var(--sidebar-width)] bg-muted animate-pulse" />
-          {/* Main content placeholder */}
           <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-            <div className="h-10 bg-muted-foreground/20 rounded-lg w-full sm:w-1/2 mb-4 animate-pulse"></div> {/* Filter placeholder */}
+            <div className="h-10 bg-muted-foreground/20 rounded-lg w-full sm:w-1/2 mb-4 animate-pulse"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="h-36 bg-muted-foreground/20 rounded-lg animate-pulse"></div> 
@@ -243,18 +239,20 @@ export default function HomePage() {
           isPrioritizing={isSuggestingPriorities}
           onOpenAIAssistant={handleOpenAIAssistantFromSidebar}
         />
-        <main className="flex-1 overflow-y-auto container mx-auto px-4 md:px-6 pt-4 pb-6">
-          <div className="mb-6">
-              <FilterControls currentFilter={filter} onFilterChange={setFilter} />
+        <main className="flex-1 overflow-y-auto px-4 md:px-6 pt-4 pb-6">
+          <div className="container mx-auto w-full"> {/* Ensured w-full for the inner container */}
+            <div className="mb-6">
+                <FilterControls currentFilter={filter} onFilterChange={setFilter} />
+            </div>
+            
+            <TaskList
+              tasks={filteredTasks}
+              onToggleComplete={handleToggleComplete}
+              onEdit={handleOpenEditForm}
+              onDelete={(id) => setTaskToDelete(id)}
+              onRequestAIAssistance={(task) => handleRequestInitialAIAssistance(task.description)}
+            />
           </div>
-          
-          <TaskList
-            tasks={filteredTasks}
-            onToggleComplete={handleToggleComplete}
-            onEdit={handleOpenEditForm}
-            onDelete={(id) => setTaskToDelete(id)}
-            onRequestAIAssistance={(task) => handleRequestInitialAIAssistance(task.description)}
-          />
         </main>
       </div>
 
@@ -306,7 +304,7 @@ export default function HomePage() {
         onClose={() => {
           setIsAssistantModalOpen(false);
           setInitialAssistantOutput(null); 
-          setAssistingTaskDescription(null); // Reset assisting task description on close
+          setAssistingTaskDescription(null);
         }}
         initialAssistance={initialAssistantOutput}
         isLoadingInitial={isRequestingInitialAssistance}
@@ -315,4 +313,6 @@ export default function HomePage() {
     </div>
   );
 }
+    
+
     
