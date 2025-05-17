@@ -21,7 +21,7 @@ interface StudentAssistantModalProps {
   onClose: () => void;
   initialAssistance: StudentAssistantOutput | null;
   isLoadingInitial: boolean;
-  taskDescription: string | null;
+  taskDescription: string | null; // Can be null if opened for general inquiry
 }
 
 const TaskTypeIcon: React.FC<{ type: StudentAssistantOutput['identifiedTaskType'] | undefined }> = ({ type }) => {
@@ -56,40 +56,42 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     if (!viewport) return;
 
     const handleScroll = () => {
+      if (!viewport) return;
       const { scrollTop, scrollHeight, clientHeight } = viewport;
       const atBottom = scrollHeight - scrollTop - clientHeight < 50; 
       setIsUserScrolledUp(!atBottom);
-      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50);
+      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50); // Only show if significant scroll up
     };
 
     viewport.addEventListener('scroll', handleScroll);
     return () => viewport.removeEventListener('scroll', handleScroll);
-  }, [isOpen]);
+  }, [isOpen]); // Re-attach if modal reopens
 
 
   useEffect(() => {
     if (isOpen) {
-      if (taskDescription && initialAssistance && !isLoadingInitial) {
+      const firstUserMessageContent = taskDescription || "How can I help you today?";
+      const firstUserMessage: ChatMessage = { role: 'user', content: firstUserMessageContent, timestamp: Date.now() };
+      
+      if (initialAssistance && !isLoadingInitial) {
         latestIdentifiedType.current = initialAssistance.identifiedTaskType;
         setChatMessages([
-          { role: 'user', content: taskDescription, timestamp: Date.now() },
+          firstUserMessage,
           { role: 'assistant', content: initialAssistance.assistantResponse, timestamp: Date.now() }
         ]);
-      } else if (taskDescription && isLoadingInitial) {
-        setChatMessages([{ role: 'user', content: taskDescription, timestamp: Date.now() }]);
+      } else if (isLoadingInitial) {
+        setChatMessages([firstUserMessage]);
         latestIdentifiedType.current = undefined;
-      } else if (!taskDescription && initialAssistance && !isLoadingInitial) { 
-        latestIdentifiedType.current = initialAssistance.identifiedTaskType;
-        setChatMessages([
-           { role: 'user', content: "How can I help you today?", timestamp: Date.now() }, 
-           { role: 'assistant', content: initialAssistance.assistantResponse, timestamp: Date.now() }
-        ]);
-      } else if (!taskDescription && isLoadingInitial) { 
-         setChatMessages([{ role: 'user', content: "How can I help you today?", timestamp: Date.now() }]);
-         latestIdentifiedType.current = undefined;
+      } else { // Not loading and no initial assistance (e.g. error or modal opened without initial call)
+        setChatMessages([firstUserMessage]); // Show just the initial prompt
+        latestIdentifiedType.current = undefined;
       }
-      setCurrentUserInput(""); 
+      setCurrentUserInput("");
+      setIsUserScrolledUp(false); // Reset scroll state on open
+      setShowScrollToBottom(false);
+       setTimeout(() => scrollToBottom("smooth"), 100); // Scroll to bottom on open
     } else { 
+      // Reset state when modal closes
       setChatMessages([]);
       setCurrentUserInput("");
       latestIdentifiedType.current = undefined;
@@ -97,33 +99,42 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
       setShowScrollToBottom(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, initialAssistance, isLoadingInitial, taskDescription]);
+  }, [isOpen, initialAssistance, isLoadingInitial, taskDescription]); // taskDescription is key for initial setup
 
   useEffect(() => {
-    if (chatMessages.length > 0 && !isUserScrolledUp) {
+    if (chatMessages.length > 0 && !isUserScrolledUp && isOpen) { // Ensure modal is open
       setTimeout(() => scrollToBottom("smooth"), 100);
     }
-  }, [chatMessages, isUserScrolledUp]);
+  }, [chatMessages, isUserScrolledUp, isOpen]);
 
 
   const handleSendFollowUp = async () => {
-    if (!currentUserInput.trim() || (!taskDescription && chatMessages.length === 0 && !(initialAssistance && chatMessages.length > 0))) return;
-
+    if (!currentUserInput.trim()) return;
 
     const userMessage: ChatMessage = { role: 'user', content: currentUserInput, timestamp: Date.now() };
     const currentFollowUpQuery = currentUserInput;
     
+    // Add user message optimistically
     setChatMessages(prev => [...prev, userMessage]);
     setCurrentUserInput(""); 
     setIsSendingFollowUp(true);
     setIsUserScrolledUp(false); 
 
     try {
+      // Prepare history, exclude the very first user message if it was the initial task prompt.
+      // The originalTaskContext handles the initial task.
+      const historyForAI = chatMessages.length > 0 && chatMessages[0].role === 'user' && chatMessages[0].content === (taskDescription || "How can I help you today?")
+        ? chatMessages.slice(1) // Exclude the very first user message if it's the initial prompt
+        : chatMessages;
+
       const flowInput: StudentAssistantInput = {
         currentInquiry: currentFollowUpQuery,
-        conversationHistory: chatMessages.length > 1 ? chatMessages.slice(0, -1) : [], 
+        // Send chat history for follow-ups. For the first actual follow-up, chatMessages would be [initialUser, initialBot, currentFollowUpUser]
+        // So, we send history up to the message before the current user's input.
+        conversationHistory: historyForAI.length > 0 ? historyForAI : [],
         originalTaskContext: taskDescription || (chatMessages[0]?.role === 'user' ? chatMessages[0].content : "General Inquiry"),
       };
+
       const result = await getStudentAssistance(flowInput);
       latestIdentifiedType.current = result.identifiedTaskType;
       setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
@@ -145,12 +156,13 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
   }
 
   const isEssentiallyLoading = isLoadingInitial || isSendingFollowUp;
-  const canSendMessage = currentUserInput.trim() && !isEssentiallyLoading;
+  // Can send if input is not empty, not loading, and (there's an initial task OR there are already messages meaning conversation started)
+  const canSendMessage = currentUserInput.trim() && !isEssentiallyLoading && (taskDescription || chatMessages.length > 0 || initialAssistance);
   
-  const effectiveTaskDescription = taskDescription || (initialAssistance ? "General Inquiry" : ""); // Handle case where modal opens with only initialAssistance (general inquiry)
+  const effectiveTaskDescription = taskDescription || (initialAssistance ? "General Inquiry" : "New Conversation");
 
   const placeholderText = 
-    (!taskDescription && chatMessages.length <=1) || (effectiveTaskDescription === "How can I help you today?" && chatMessages.length <= 1)
+    (effectiveTaskDescription === "General Inquiry" || effectiveTaskDescription === "New Conversation") && chatMessages.length <=1
     ? "Enter your general inquiry here..."
     : "Ask a follow-up question...";
 
@@ -162,7 +174,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
             <Brain className="h-6 w-6 mr-2 text-primary" />
             AI Student Assistant
           </DialogTitle>
-          {effectiveTaskDescription && (
+          {effectiveTaskDescription && effectiveTaskDescription !== "New Conversation" && (
             <div className="text-muted-foreground mt-1 text-sm flex items-center justify-between">
               <div className="truncate pr-2">
                 Context: <span className="font-medium text-foreground/90 italic ml-1">"{effectiveTaskDescription}"</span>
@@ -259,7 +271,7 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
               }}
               rows={1}
               className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
-              disabled={isLoadingInitial || isSendingFollowUp} 
+              disabled={isEssentiallyLoading || (!taskDescription && !initialAssistance && chatMessages.length === 0) } // Disable if no context at all
             />
             <Button
               onClick={handleSendFollowUp}
@@ -281,5 +293,3 @@ export function StudentAssistantModal({ isOpen, onClose, initialAssistance, isLo
     </Dialog>
   );
 }
-
-    

@@ -39,7 +39,7 @@ import { suggestTaskCategory } from "@/ai/flows/suggest-category-flow";
 const taskCategories: [TaskCategory, ...TaskCategory[]] = ["Assignment", "Class", "Personal"];
 
 const taskFormSchema = z.object({
-  description: z.string().min(3, "Description must be at least 3 characters").max(500, "Description must be at most 500 characters"), // Increased max length
+  description: z.string().min(3, "Description must be at least 3 characters").max(500, "Description must be at most 500 characters"),
   dueDate: z.date({ required_error: "Due date is required." }),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
 });
@@ -59,12 +59,12 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     defaultValues: editingTask
       ? {
           description: editingTask.description,
-          dueDate: editingTask.dueDate ? parseISO(editingTask.dueDate) : new Date(),
+          dueDate: editingTask.dueDate ? parseISO(editingTask.dueDate) : new Date(new Date().setHours(23, 59, 59, 999)), // Ensure default time for editing too
           category: editingTask.category,
         }
       : {
           description: "",
-          dueDate: new Date(new Date().setHours(23, 59, 59, 999)), 
+          dueDate: new Date(new Date().setHours(23, 59, 59, 999)), // Default to end of current day
           category: undefined,
         },
   });
@@ -73,7 +73,6 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   const descriptionValue = form.watch('description');
 
   useEffect(() => {
-    // Only suggest if not editing, description is long enough, and no category is manually set
     if (!editingTask && descriptionValue && descriptionValue.length > 10 && !form.getValues('category')) {
       const handler = setTimeout(async () => {
         setIsSuggestingCategory(true);
@@ -88,16 +87,10 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           }
         } catch (error) {
           console.error("AI category suggestion error:", error);
-          // Optionally, inform the user about the error with a toast
-          // toast({
-          //   title: "AI Suggestion Failed",
-          //   description: "Could not suggest a category at this time.",
-          //   variant: "destructive",
-          // });
         } finally {
           setIsSuggestingCategory(false);
         }
-      }, 1200); // Debounce for 1.2 seconds
+      }, 1200); 
 
       return () => {
         clearTimeout(handler);

@@ -14,7 +14,6 @@ import type { TaskCategory } from '@/types';
 
 const taskCategories: [TaskCategory, ...TaskCategory[]] = ["Assignment", "Class", "Personal"];
 
-// Schema definitions are now local to this file and not exported.
 const SuggestCategoryInputSchema = z.object({
   description: z.string().describe('The description of the task.'),
 });
@@ -58,11 +57,12 @@ const suggestCategoryFlow = ai.defineFlow(
     }
     // The Zod schema validation on output (defined in suggestCategoryPrompt)
     // already ensures the category is one of the allowed taskCategories.
-    // The explicit check below is redundant.
+    // The explicit check below is redundant and can be safely removed or commented out.
     // if (!taskCategories.includes(output.category as TaskCategory)) {
     //     console.warn(`AI returned an unexpected category: ${output.category}. This might indicate an issue with the prompt or model response if Zod validation didn't catch it.`);
+    //     // Optionally, default to a safe category or throw an error if strict adherence is critical beyond Zod.
+    //     // For example, output.category = "Personal" as TaskCategory; 
     // }
     return output;
   }
 );
-
