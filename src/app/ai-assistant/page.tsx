@@ -9,13 +9,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage } from '@/types'; 
+import type { ChatMessage } from '@/types';
 import { getStudentAssistance, type StudentAssistantInput, type StudentAssistantOutput } from '@/ai/flows/student-assistant-flow';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ArrowLeft, Brain, Loader2, Type, Code, ListChecks, HelpCircle, AlertCircle, Send, UserCircle, Bot, ChevronDown, MessageSquareText, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Loader2, Type, Code, ListChecks, HelpCircle, AlertCircle, Send, UserCircle, Bot, ChevronDown, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 const TaskTypeIcon: React.FC<{ type: StudentAssistantOutput['identifiedTaskType'] | undefined }> = ({ type }) => {
   if (!type) return <HelpCircle className="h-4 w-4" />;
@@ -25,7 +26,8 @@ const TaskTypeIcon: React.FC<{ type: StudentAssistantOutput['identifiedTaskType'
     case 'planning_reminder': return <ListChecks className="h-4 w-4" />;
     case 'general_query': return <HelpCircle className="h-4 w-4" />;
     case 'brainstorming_elaboration': return <Lightbulb className="h-4 w-4" />;
-    default: return <AlertCircle className="h-4 w-4" />;
+    case 'unknown': return <AlertCircle className="h-4 w-4" />;
+    default: return <HelpCircle className="h-4 w-4" />;
   }
 };
 
@@ -34,15 +36,14 @@ const GENERAL_INQUIRY_PLACEHOLDER = "How can I help you today?";
 function AIAssistantPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTaskDescription = searchParams.get('taskDescription') || null;
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useLocalStorage<ChatMessage[]>('aiAssistantChatMessages', []);
+  const [currentOriginalTaskContext, setCurrentOriginalTaskContext] = useLocalStorage<string | null>('aiAssistantContext', null);
+  
   const [currentUserInput, setCurrentUserInput] = useState("");
   const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(false);
   
-  const [currentOriginalTaskContext, setCurrentOriginalTaskContext] = useState<string | null>(initialTaskDescription);
-
   const { toast } = useToast();
   const latestIdentifiedType = useRef<StudentAssistantOutput['identifiedTaskType'] | undefined>(undefined);
   
@@ -55,10 +56,11 @@ function AIAssistantPageContent() {
   }, []);
   
   useEffect(() => {
-    const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]');
     if (!viewport) return;
 
     const handleScroll = () => {
+      if (!viewport) return;
       const { scrollTop, scrollHeight, clientHeight } = viewport;
       const atBottom = scrollHeight - scrollTop - clientHeight < 50; 
       setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50);
@@ -66,32 +68,67 @@ function AIAssistantPageContent() {
 
     viewport.addEventListener('scroll', handleScroll);
     return () => viewport.removeEventListener('scroll', handleScroll);
-  }, [chatMessages]); 
+  }, [chatMessages]); // Re-attach if chatMessages cause scrollHeight change
 
+  // Effect to initialize or update chat based on URL's taskDescription
   useEffect(() => {
-    if (initialTaskDescription !== currentOriginalTaskContext) {
-      setCurrentOriginalTaskContext(initialTaskDescription);
-    }
+    const initialTaskDescriptionFromUrl = searchParams.get('taskDescription');
 
-    const firstQuery = initialTaskDescription || GENERAL_INQUIRY_PLACEHOLDER;
-    const hasAIResponseForCurrentContext = chatMessages.length > 1 && chatMessages[0].content === firstQuery && chatMessages[1]?.role === 'assistant';
-
-    if (chatMessages.length === 0 || (firstQuery !== chatMessages[0]?.content && !hasAIResponseForCurrentContext)) {
-       setChatMessages([{ role: 'user', content: firstQuery, timestamp: Date.now() }]);
-       latestIdentifiedType.current = undefined;
+    if (initialTaskDescriptionFromUrl) {
+      // Navigated with a specific task in the URL
+      if (initialTaskDescriptionFromUrl !== currentOriginalTaskContext) {
+        // This is a new task context or switching from a different context
+        setCurrentOriginalTaskContext(initialTaskDescriptionFromUrl);
+        setChatMessages([{ role: 'user', content: initialTaskDescriptionFromUrl, timestamp: Date.now() }]);
+        latestIdentifiedType.current = undefined;
+      } else {
+        // It's the same task context, messages from localStorage are loaded.
+        // If chatMessages is empty for some reason, re-initialize.
+        if (chatMessages.length === 0 || 
+            (chatMessages.length === 1 && chatMessages[0].content !== initialTaskDescriptionFromUrl && chatMessages[0].role === 'user')) {
+           setChatMessages([{ role: 'user', content: initialTaskDescriptionFromUrl, timestamp: Date.now() }]);
+           latestIdentifiedType.current = undefined;
+        }
+      }
+    } else {
+      // General inquiry mode (no taskDescription in URL)
+      if (currentOriginalTaskContext && currentOriginalTaskContext !== GENERAL_INQUIRY_PLACEHOLDER) {
+        // Previously was on a specific task, now in general mode: reset for a fresh general chat.
+        setCurrentOriginalTaskContext(GENERAL_INQUIRY_PLACEHOLDER);
+        setChatMessages([{ role: 'user', content: GENERAL_INQUIRY_PLACEHOLDER, timestamp: Date.now() }]);
+        latestIdentifiedType.current = undefined;
+      } else {
+        // Continuing a general chat or starting one for the first time.
+        // Ensure currentOriginalTaskContext is set to the placeholder if it's null.
+        if (!currentOriginalTaskContext) {
+            setCurrentOriginalTaskContext(GENERAL_INQUIRY_PLACEHOLDER);
+        }
+        // If chat is empty or looks like it needs re-initialization for general inquiry
+        if (chatMessages.length === 0 || 
+            (chatMessages.length === 1 && chatMessages[0].content !== GENERAL_INQUIRY_PLACEHOLDER && chatMessages[0].role === 'user')) {
+           setChatMessages([{ role: 'user', content: GENERAL_INQUIRY_PLACEHOLDER, timestamp: Date.now() }]);
+           latestIdentifiedType.current = undefined;
+        }
+        // Otherwise, existing general chat messages (if any) from localStorage are fine.
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTaskDescription]); 
+  }, [searchParams, setCurrentOriginalTaskContext, setChatMessages]); // currentOriginalTaskContext and chatMessages removed to avoid loops with useLocalStorage
 
 
+  // Effect to trigger the initial AI call if chatMessages indicates a new inquiry
   useEffect(() => {
+    // Only make an initial AI call if there's exactly one message and it's from the user,
+    // and we are not already loading.
     if (chatMessages.length === 1 && chatMessages[0].role === 'user' && !isLoadingInitial) {
       setIsLoadingInitial(true);
       setCurrentUserInput(""); 
       
       const userFirstMessage = chatMessages[0].content;
+      // Use the currentOriginalTaskContext from state (which is now backed by localStorage)
+      const contextForAICall = currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER;
 
-      getStudentAssistance({ currentInquiry: userFirstMessage, originalTaskContext: currentOriginalTaskContext ?? userFirstMessage })
+      getStudentAssistance({ currentInquiry: userFirstMessage, originalTaskContext: contextForAICall })
         .then(result => {
           latestIdentifiedType.current = result.identifiedTaskType;
           setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
@@ -110,44 +147,45 @@ function AIAssistantPageContent() {
         });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatMessages, currentOriginalTaskContext, toast]); 
+  }, [chatMessages, toast]); // isLoadingInitial and currentOriginalTaskContext are implicitly handled by chatMessages update.
+
 
   useEffect(() => {
     if (chatMessages.length > 0) { 
-      const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]');
       if (viewport) {
         const { scrollTop, scrollHeight, clientHeight } = viewport;
-        const isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 50;
+        const isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 50; // Tolerance
+        // Only auto-scroll if user is near the bottom or it's the user's own message
         if (isScrolledToBottom || chatMessages[chatMessages.length - 1].role === 'user') { 
           scrollToBottom("smooth");
         }
       } else { 
+        // Fallback for initial render or if viewport not found immediately
         scrollToBottom("smooth");
       }
     }
   }, [chatMessages, scrollToBottom]);
 
-  const handleSendFollowUp = useCallback(async (inquiry?: string) => {
-    const currentFollowUpQuery = inquiry || currentUserInput;
-    if (!currentFollowUpQuery.trim()) return;
+  const handleSendFollowUp = useCallback(async () => {
+    if (!currentUserInput.trim()) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: currentFollowUpQuery, timestamp: Date.now() };
+    const userMessage: ChatMessage = { role: 'user', content: currentUserInput, timestamp: Date.now() };
     
     setChatMessages(prev => [...prev, userMessage]);
-    if (!inquiry) { 
-        setCurrentUserInput(""); 
-    }
+    setCurrentUserInput(""); 
     setIsSendingFollowUp(true);
 
     try {
-      const historyForAI = chatMessages.filter(msg => 
-        !(msg.role === 'user' && msg.content === (currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER) && chatMessages.indexOf(msg) === 0)
+      // Filter out the very first user message if it's the initial context, to avoid redundancy
+      const historyForAI = chatMessages.filter((msg, index) => 
+        !(msg.role === 'user' && msg.content === currentOriginalTaskContext && index === 0 && chatMessages.length > 1)
       );
       
       const flowInput: StudentAssistantInput = {
-        currentInquiry: currentFollowUpQuery,
+        currentInquiry: userMessage.content, // Use the content of the new user message
         conversationHistory: historyForAI.length > 0 ? historyForAI : [],
-        originalTaskContext: currentOriginalTaskContext || (chatMessages[0]?.role === 'user' ? chatMessages[0].content : GENERAL_INQUIRY_PLACEHOLDER),
+        originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER,
       };
 
       const result = await getStudentAssistance(flowInput);
@@ -170,7 +208,7 @@ function AIAssistantPageContent() {
   const canSendMessage = currentUserInput.trim() && !isProcessing;
   
   const placeholderText = 
-    (!currentOriginalTaskContext || currentOriginalTaskContext === GENERAL_INQUIRY_PLACEHOLDER) && chatMessages.length <=1
+    (!currentOriginalTaskContext || currentOriginalTaskContext === GENERAL_INQUIRY_PLACEHOLDER)
     ? "Enter your general inquiry here..."
     : "Ask a follow-up question or type your inquiry...";
 
@@ -194,7 +232,7 @@ function AIAssistantPageContent() {
       {/* Context Header */}
       {displayContext && (
         <div className="p-3 border-b bg-muted/30 sticky top-[calc(var(--header-height,69px))] z-10">
-          <div className="text-sm flex items-center justify-between max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Constrain context header content */}
+          <div className="text-sm flex items-center justify-between max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="truncate pr-2">
               <span className="font-medium text-foreground/80">Context:</span> 
               <span className="italic ml-1.5 text-foreground/90">"{displayContext}"</span>
@@ -319,3 +357,6 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
+
+
+    
