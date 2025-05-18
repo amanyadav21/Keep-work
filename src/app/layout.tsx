@@ -1,16 +1,16 @@
 
 import type { Metadata } from 'next';
-import { Roboto, Roboto_Mono } from 'next/font/google'; 
+import { Roboto, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { SidebarProvider } from '@/components/ui/sidebar';
+// SidebarProvider is removed as the sidebar is being removed.
 
 // Setup Roboto font
 const roboto = Roboto({
   variable: '--font-sans',
   subsets: ['latin'],
-  weight: ['400', '500', '700'], 
+  weight: ['400', '500', '700'],
 });
 
 const robotoMono = Roboto_Mono({
@@ -30,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body 
+      <body
         className={`${roboto.variable} ${robotoMono.variable} font-sans antialiased`}
         suppressHydrationWarning={true}
       >
@@ -40,13 +40,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider collapsible="icon">
-            {children}
-          </SidebarProvider>
+          {/* SidebarProvider removed */}
+          {children}
           <Toaster />
         </ThemeProvider>
       </body>
     </html>
   );
 }
-

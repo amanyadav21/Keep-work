@@ -8,11 +8,11 @@ import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import { FilterControls } from '@/components/FilterControls';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import type { Task, TaskCategory, TaskFilter, PrioritizedTaskSuggestion } from '@/types';
+import type { Task, TaskFilter, PrioritizedTaskSuggestion } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal';
-import { AppSidebar } from '@/components/AppSidebar';
+import { DashboardSection } from '@/components/DashboardSection'; // New Dashboard section
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
@@ -115,7 +115,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     );
   }, [setTasks]);
 
-
   const handleOpenEditForm = useCallback((task: Task) => {
     setEditingTask(task);
     setIsFormOpen(true);
@@ -152,7 +151,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   }, [tasks, isMounted]);
-
 
   const filteredTasks = useMemo(() => {
     if (!isMounted) return [];
@@ -210,24 +208,24 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     }
   }, [pendingTasksForAI, tasks, toast]);
 
-
   if (!isMounted) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
-        <div className="flex flex-1 overflow-hidden">
-          <div className="hidden md:block h-svh bg-muted animate-pulse w-[var(--sidebar-width-icon)]" />
-          <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-            <div className="container mx-auto w-full">
-              <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-[180px] bg-muted rounded-lg animate-pulse"></div>
-                ))}
-              </div>
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+          <div className="container mx-auto w-full">
+            <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div> {/* Filter placeholder */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-[180px] bg-muted rounded-lg animate-pulse"></div>
+              ))}
             </div>
-          </main>
-        </div>
+             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Dashboard skeleton */}
+              <div className="h-60 bg-muted rounded-lg animate-pulse"></div>
+              <div className="h-60 bg-muted rounded-lg animate-pulse"></div>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -235,28 +233,28 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header onAddTask={handleOpenAddForm} />
-      <div className="flex flex-1 overflow-hidden">
-        <AppSidebar
-          tasks={tasks}
-          onSuggestPriorities={handleSuggestPriorities}
-          isPrioritizing={isSuggestingPriorities}
-        />
-        <main className="flex-1 overflow-y-auto px-4 md:px-6 pt-4 pb-6">
-          <div className="container mx-auto w-full">
-            <div className="mb-6">
-                <FilterControls currentFilter={filter} onFilterChange={setFilter} />
-            </div>
-
-            <TaskList
-              tasks={filteredTasks}
-              onToggleComplete={handleToggleComplete}
-              onEdit={handleOpenEditForm}
-              onDelete={(id) => setTaskToDelete(id)}
-              onToggleSubtask={handleToggleSubtaskComplete}
-            />
+      {/* Main content area for tasks */}
+      <main className="flex-1 overflow-y-auto px-4 md:px-6 pt-4 pb-6">
+        <div className="container mx-auto w-full">
+          <div className="mb-6">
+            <FilterControls currentFilter={filter} onFilterChange={setFilter} />
           </div>
-        </main>
-      </div>
+          <TaskList
+            tasks={filteredTasks}
+            onToggleComplete={handleToggleComplete}
+            onEdit={handleOpenEditForm}
+            onDelete={(id) => setTaskToDelete(id)}
+            onToggleSubtask={handleToggleSubtaskComplete}
+          />
+        </div>
+      </main>
+
+      {/* Dashboard Section below tasks */}
+      <DashboardSection
+        tasks={tasks}
+        onSuggestPriorities={handleSuggestPriorities}
+        isPrioritizing={isSuggestingPriorities}
+      />
 
       <Dialog open={isFormOpen} onOpenChange={(open) => {
         setIsFormOpen(open);
@@ -309,4 +307,3 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     </div>
   );
 }
-
