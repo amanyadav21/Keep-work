@@ -85,7 +85,7 @@ function AIAssistantPageContent() {
         // It's the same task context, messages from localStorage are loaded.
         // If chatMessages is empty for some reason, re-initialize.
         if (chatMessages.length === 0 || 
-            (chatMessages.length === 1 && chatMessages[0].content !== initialTaskDescriptionFromUrl && chatMessages[0].role === 'user')) {
+            (chatMessages.length > 0 && chatMessages[0].content !== initialTaskDescriptionFromUrl && chatMessages[0].role === 'user')) {
            setChatMessages([{ role: 'user', content: initialTaskDescriptionFromUrl, timestamp: Date.now() }]);
            latestIdentifiedType.current = undefined;
         }
@@ -105,7 +105,7 @@ function AIAssistantPageContent() {
         }
         // If chat is empty or looks like it needs re-initialization for general inquiry
         if (chatMessages.length === 0 || 
-            (chatMessages.length === 1 && chatMessages[0].content !== GENERAL_INQUIRY_PLACEHOLDER && chatMessages[0].role === 'user')) {
+            (chatMessages.length > 0 && chatMessages[0].content !== GENERAL_INQUIRY_PLACEHOLDER && chatMessages[0].role === 'user')) {
            setChatMessages([{ role: 'user', content: GENERAL_INQUIRY_PLACEHOLDER, timestamp: Date.now() }]);
            latestIdentifiedType.current = undefined;
         }
@@ -113,7 +113,7 @@ function AIAssistantPageContent() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, setCurrentOriginalTaskContext, setChatMessages]); // currentOriginalTaskContext and chatMessages removed to avoid loops with useLocalStorage
+  }, [searchParams]); // currentOriginalTaskContext, setChatMessages removed to avoid loops with useLocalStorage + searchParams dependency
 
 
   // Effect to trigger the initial AI call if chatMessages indicates a new inquiry
@@ -121,10 +121,21 @@ function AIAssistantPageContent() {
     // Only make an initial AI call if there's exactly one message and it's from the user,
     // and we are not already loading.
     if (chatMessages.length === 1 && chatMessages[0].role === 'user' && !isLoadingInitial) {
+      const userFirstMessage = chatMessages[0].content;
+      // Prevent AI call if first message is identical to the currentOriginalTaskContext
+      // AND there are more than 1 messages already (implying we already fetched initial response)
+      // This condition is a bit complex, aiming to avoid re-fetching when navigating back to a task
+      // for which history is already loaded.
+      const lastAIMessageIndex = chatMessages.slice().reverse().findIndex(m => m.role === 'assistant');
+      if (lastAIMessageIndex !== -1 && chatMessages.length > 1) {
+        // We have previous AI messages, so initial assistance likely already happened for this context
+        return;
+      }
+
+
       setIsLoadingInitial(true);
       setCurrentUserInput(""); 
       
-      const userFirstMessage = chatMessages[0].content;
       // Use the currentOriginalTaskContext from state (which is now backed by localStorage)
       const contextForAICall = currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER;
 
@@ -147,7 +158,7 @@ function AIAssistantPageContent() {
         });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatMessages, toast]); // isLoadingInitial and currentOriginalTaskContext are implicitly handled by chatMessages update.
+  }, [chatMessages, toast, currentOriginalTaskContext]); // isLoadingInitial removed to ensure flow runs when chatMessages is set.
 
 
   useEffect(() => {
@@ -162,7 +173,7 @@ function AIAssistantPageContent() {
         }
       } else { 
         // Fallback for initial render or if viewport not found immediately
-        scrollToBottom("smooth");
+        scrollToBottom("auto"); // Use auto for initial potentially large scroll
       }
     }
   }, [chatMessages, scrollToBottom]);
@@ -202,7 +213,7 @@ function AIAssistantPageContent() {
     } finally {
       setIsSendingFollowUp(false);
     }
-  }, [currentUserInput, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setCurrentUserInput, setIsSendingFollowUp]);
+  }, [currentUserInput, chatMessages, currentOriginalTaskContext, toast, setChatMessages]);
 
   const isProcessing = isLoadingInitial || isSendingFollowUp;
   const canSendMessage = currentUserInput.trim() && !isProcessing;
@@ -233,9 +244,9 @@ function AIAssistantPageContent() {
       {displayContext && (
         <div className="p-3 border-b bg-muted/30 sticky top-[calc(var(--header-height,69px))] z-10">
           <div className="text-sm flex items-center justify-between max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="truncate pr-2">
+            <div className="min-w-0 flex-1 pr-2"> {/* Ensure this div can shrink and truncate its child */}
               <span className="font-medium text-foreground/80">Context:</span> 
-              <span className="italic ml-1.5 text-foreground/90">"{displayContext}"</span>
+              <span className="italic ml-1.5 text-foreground/90 truncate">"{displayContext}"</span>
             </div>
             {latestIdentifiedType.current && (
                 <Badge variant="outline" className="capitalize text-xs py-0.5 whitespace-nowrap shrink-0">
@@ -357,6 +368,3 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
-
-
-    
