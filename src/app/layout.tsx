@@ -4,9 +4,7 @@ import { Roboto, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
-// SidebarProvider is removed as the sidebar is being removed.
 
-// Setup Roboto font
 const roboto = Roboto({
   variable: '--font-sans',
   subsets: ['latin'],
@@ -38,9 +36,8 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
+          // disableTransitionOnChange prop removed
         >
-          {/* SidebarProvider removed */}
           {children}
           <Toaster />
         </ThemeProvider>
