@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, memo } from 'react'; // Import memo
+import { useState, useEffect, memo } from 'react'; 
 import type { Task, TaskCategory, Subtask } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -45,7 +45,7 @@ const categoryBorderColors: Record<TaskCategory, string> = {
 function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
-  const [showActions, setShowActions] = useState(false);
+  // Removed showActions state and related onMouseEnter/onMouseLeave
 
 
   useEffect(() => {
@@ -117,8 +117,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           "border-l-4", 
           task.isCompleted ? "bg-muted/30 dark:bg-muted/20 opacity-80" : "bg-card"
         )}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
+        // Removed onMouseEnter and onMouseLeave
       >
         <CardContent className="p-0 space-y-2 flex-grow">
           <div className="flex items-start space-x-3 mb-2">
@@ -206,7 +205,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 
           <div className={cn(
               "flex items-center space-x-1 mt-2 transition-opacity duration-200 w-full justify-end",
-              showActions || task.isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              // Simplified logic: always show if completed, otherwise rely on group-hover
+              task.isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -248,3 +248,4 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
+
