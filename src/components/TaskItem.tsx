@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, memo } from 'react'; 
+import { useState, useEffect, memo } from 'react';
 import type { Task, TaskCategory, Subtask } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -45,13 +45,11 @@ const categoryBorderColors: Record<TaskCategory, string> = {
 function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
-  // Removed showActions state and related onMouseEnter/onMouseLeave
-
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  
+
   useEffect(() => {
     if (!isMounted || !task.dueDate) return;
     if (task.isCompleted) {
@@ -71,7 +69,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
         setTimeLeft("Past due");
         return;
       }
-      
+
       const diffMillis = dueDateObj.getTime() - now.getTime();
 
       if (diffMillis <= 0) {
@@ -85,23 +83,23 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 
       let timeLeftString = "";
       if (days > 0) timeLeftString += `${days}d `;
-      if (hours > 0 || days > 0) timeLeftString += `${hours}h `; 
-      if (minutes > 0 || (days === 0 && hours === 0)) timeLeftString += `${minutes}m `; 
-      
+      if (hours > 0 || days > 0) timeLeftString += `${hours}h `;
+      if (minutes > 0 || (days === 0 && hours === 0)) timeLeftString += `${minutes}m `;
+
       timeLeftString += "left";
-      
+
       setTimeLeft(timeLeftString.trim());
     };
 
     calculateTimeLeft();
-    const intervalId = setInterval(calculateTimeLeft, 60000); 
+    const intervalId = setInterval(calculateTimeLeft, 60000);
 
     return () => clearInterval(intervalId);
   }, [task.dueDate, task.isCompleted, isMounted]);
 
   const dueDateObj = parseISO(task.dueDate);
   const formattedDueDate = isValid(dueDateObj) ? format(dueDateObj, "MMM d") : "";
-  
+
   const isOverdue = !task.isCompleted && isValid(dueDateObj) && isPast(dueDateObj);
 
   const completedSubtasks = task.subtasks?.filter(st => st.isCompleted).length || 0;
@@ -110,14 +108,13 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 
   return (
     <TooltipProvider delayDuration={300}>
-      <Card 
+      <Card
         className={cn(
-          "group flex flex-col justify-between rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px]", 
+          "group flex flex-col justify-between rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px]",
           categoryBorderColors[task.category],
-          "border-l-4", 
+          "border-l-4",
           task.isCompleted ? "bg-muted/30 dark:bg-muted/20 opacity-80" : "bg-card"
         )}
-        // Removed onMouseEnter and onMouseLeave
       >
         <CardContent className="p-0 space-y-2 flex-grow">
           <div className="flex items-start space-x-3 mb-2">
@@ -128,10 +125,10 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               aria-labelledby={`task-desc-${task.id}`}
               className="mt-1 shrink-0"
             />
-            <p 
+            <p
               id={`task-desc-${task.id}`}
               className={cn(
-                "text-base font-medium text-foreground break-words", 
+                "text-base font-medium text-foreground break-words",
                 task.isCompleted ? "line-through text-muted-foreground" : ""
               )}
             >
@@ -175,10 +172,10 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             </div>
           )}
         </CardContent>
-        
-        <CardFooter className="p-0 mt-auto flex flex-col items-start space-y-2">
-          <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
-            <div className="flex items-center space-x-2">
+
+        <CardFooter className="p-0 mt-auto flex flex-col items-start space-y-1.5"> {/* Reduced space-y */}
+          <div className="flex items-center justify-between w-full text-xs"> {/* justify-between now active */}
+            <div className="flex items-center space-x-2 text-muted-foreground">
               <Badge variant="outline" className="py-0.5 px-1.5 text-xs flex items-center border-dashed">
                 {categoryIcons[task.category]}
                 <span className="ml-1">{task.category}</span>
@@ -190,22 +187,20 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 </div>
               )}
             </div>
-          </div>
-
-          {(isMounted && timeLeft) && (
+            {/* Time Left moved to this row, on the right */}
+            {(isMounted && timeLeft) && (
               <p className={cn(
-                "text-xs font-medium",
-                isOverdue || timeLeft === "Past due" ? "text-destructive" : task.isCompleted ? "text-green-600 dark:text-green-500" : "text-primary",
-                "w-full" 
+                "font-medium", // text-xs will be inherited from parent, or can be re-added if needed
+                isOverdue || timeLeft === "Past due" ? "text-destructive" : task.isCompleted ? "text-green-600 dark:text-green-500" : "text-primary"
               )}>
-                {isOverdue && !task.isCompleted ? <AlertTriangle className="inline h-3 w-3 mr-1" /> : null}
+                {isOverdue && !task.isCompleted && <AlertTriangle className="inline h-3 w-3 mr-1" />}
                 {timeLeft}
               </p>
             )}
+          </div>
 
           <div className={cn(
-              "flex items-center space-x-1 mt-2 transition-opacity duration-200 w-full justify-end",
-              // Simplified logic: always show if completed, otherwise rely on group-hover
+              "flex items-center space-x-1 transition-opacity duration-200 w-full justify-end", // Removed mt-2
               task.isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}>
               <Tooltip>
