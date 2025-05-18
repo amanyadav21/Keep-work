@@ -65,7 +65,7 @@ interface TaskFormProps {
 
 export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   const { toast } = useToast();
-  const form = useForm<TaskFormValues>({
+  form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: editingTask
       ? {

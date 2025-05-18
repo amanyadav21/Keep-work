@@ -17,7 +17,7 @@ import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
 import { Button } from '@/components/ui/button';
-import { Brain } from 'lucide-react';
+import { Brain, Loader2 } from 'lucide-react'; // Added Loader2
 
 interface HomePageProps {
   params: Record<string, never>;
@@ -121,7 +121,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   }, []);
 
   const handleOpenAddForm = useCallback(() => {
-    setEditingTask(null);
+    setEditingTask(null); // Ensure editingTask is cleared
     setIsFormOpen(true);
   }, []);
 
@@ -211,10 +211,10 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   if (!isMounted) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <Header onAddTask={() => {}} /> {/* Pass dummy onAddTask for skeleton */}
+        <Header onAddTask={() => {}} />
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           <div className="container mx-auto w-full max-w-6xl">
-            <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div> {/* Filter placeholder */}
+            <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="h-[180px] bg-muted rounded-lg animate-pulse"></div>

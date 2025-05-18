@@ -98,48 +98,48 @@ function AIAssistantPageContent() {
     
     if (needsChatReset) {
       setCurrentOriginalTaskContext(intendedContext);
-      setChatMessages([{ role: 'user', content: intendedContext, timestamp: Date.now() }]);
+      const firstUserMessage: ChatMessage = { role: 'user', content: intendedContext, timestamp: Date.now() };
+      setChatMessages([firstUserMessage]);
       latestIdentifiedType.current = undefined;
-      // Setting isLoadingInitial here if a new conversation is definitely starting
-      // and we expect an AI call. The next effect will pick this up.
-      // This will be true if chatMessages becomes length 1 with a user message
-      // AND no AI response already exists for it.
-      if (chatMessages.length <=1 || chatMessages[1]?.role !== 'assistant') {
+      // Only set isLoadingInitial if we are truly starting a new conversation that requires an AI call
+      // and there isn't already an AI response for this exact intendedContext.
+      if (chatMessages.length <= 1 || (chatMessages[0]?.content === intendedContext && chatMessages[1]?.role !== 'assistant')) {
          setIsLoadingInitial(true);
+      } else {
+         setIsLoadingInitial(false); // If chat was reset but an existing AI response matches, don't load.
       }
     }
-  }, [mounted, searchParams, currentOriginalTaskContext, chatMessages, setCurrentOriginalTaskContext, setChatMessages]);
+  }, [mounted, searchParams, currentOriginalTaskContext, setCurrentOriginalTaskContext, setChatMessages, chatMessages]); // Added chatMessages
 
   useEffect(() => {
     if (!mounted || !isLoadingInitial || chatMessages.length === 0 || chatMessages[0].role !== 'user') {
       if (isLoadingInitial && (chatMessages.length === 0 || chatMessages[0].role !== 'user')) {
-        // If isLoadingInitial is true but conditions for AI call aren't met, reset it.
         setIsLoadingInitial(false);
       }
       return;
     }
     
-    const hasExistingAIResponseForFirstMessage = chatMessages.length > 1 && chatMessages[1].role === 'assistant';
-    if (hasExistingAIResponseForFirstMessage && chatMessages[0].content === (currentOriginalTaskContext || chatMessages[0].content)) {
+    // Check if an AI response already exists for the *very first* user message
+    const hasExistingAIResponseForFirstMessage = chatMessages.length > 1 && chatMessages[1].role === 'assistant' && chatMessages[0].content === currentOriginalTaskContext;
+
+    if (hasExistingAIResponseForFirstMessage) {
       const lastMessage = chatMessages[chatMessages.length -1];
       if(lastMessage.role === 'assistant' && lastMessage.identifiedTaskType){
         latestIdentifiedType.current = lastMessage.identifiedTaskType;
       }
-      setIsLoadingInitial(false); // Ensure loading is off if we found an existing response
+      setIsLoadingInitial(false);
       return;
     }
 
-
-    if (chatMessages.length !== 1) { // Only proceed if it's the *very first* user message.
-      setIsLoadingInitial(false); // Not the scenario for initial loading.
+    // Only proceed if it's the very first user message and no AI response exists for it yet.
+    if (chatMessages.length !== 1) { 
+      setIsLoadingInitial(false); 
       return;
     }
-
 
     const userFirstMessage = chatMessages[0].content;
     const contextForAICall = currentOriginalTaskContext || userFirstMessage;
 
-    // setIsLoadingInitial(true); // This is now set in the previous effect more deterministically
     setCurrentUserInput(""); 
 
     getStudentAssistance({ currentInquiry: userFirstMessage, originalTaskContext: contextForAICall })
@@ -159,7 +159,7 @@ function AIAssistantPageContent() {
       .finally(() => {
         setIsLoadingInitial(false);
       });
-  }, [mounted, chatMessages, currentOriginalTaskContext, toast, isLoadingInitial, setChatMessages]); // setIsLoadingInitial dependency is important here
+  }, [mounted, chatMessages, currentOriginalTaskContext, toast, isLoadingInitial, setChatMessages]); 
 
   useEffect(() => {
     if (!mounted) return;
@@ -189,14 +189,13 @@ function AIAssistantPageContent() {
     setIsSendingFollowUp(true);
 
     try {
-      // Filter out the very first user message if it's the same as originalTaskContext to avoid redundancy
+      // Exclude the very first user message from history if it was the original task context.
       const historyForAI = currentChatHistoryForAICall.filter((msg, index) =>
         !(index === 0 && msg.role === 'user' && msg.content === currentOriginalTaskContext && currentChatHistoryForAICall.length > 1)
       );
       
       const flowInput: StudentAssistantInput = {
         currentInquiry: userMessage.content,
-        // Pass an empty array if historyForAI is just the current user message (length 1)
         conversationHistory: historyForAI.length > 1 ? historyForAI.slice(0, -1) : [],
         originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER,
       };
@@ -375,5 +374,3 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
-
-    
