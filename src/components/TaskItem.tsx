@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react'; // Import memo
 import type { Task, TaskCategory, Subtask } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid, isPast } from 'date-fns';
 import { Pencil, Trash2, BookOpen, Users, User, AlertTriangle, CalendarDays, Brain, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link'; // Import Link
+import Link from 'next/link';
 import {
   Tooltip,
   TooltipContent,
@@ -26,7 +26,6 @@ interface TaskItemProps {
   onToggleComplete: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
-  // onRequestAIAssistance: (task: Task) => void; // Prop removed
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
 }
 
@@ -43,7 +42,7 @@ const categoryBorderColors: Record<TaskCategory, string> = {
 };
 
 
-export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskItemProps) {
+function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -247,3 +246,5 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onToggleSub
     </TooltipProvider>
   );
 }
+
+export const TaskItem = memo(TaskItemComponent);

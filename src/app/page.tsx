@@ -15,7 +15,6 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
-// StudentAssistantModal and related imports/logic are removed
 
 interface HomePageProps {
   params: { [key: string]: string | string[] | undefined };
@@ -33,13 +32,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
   const [prioritySuggestions, setPrioritySuggestions] = useState<PrioritizedTaskSuggestion[]>([]);
   const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
-
-  // Removed state related to StudentAssistantModal
-  // const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
-  // const [initialAssistantOutput, setInitialAssistantOutput] = useState<StudentAssistantOutput | null>(null);
-  // const [isRequestingInitialAssistance, setIsRequestingInitialAssistance] = useState(false);
-  // const [assistingTaskDescription, setAssistingTaskDescription] = useState<string | null>(null);
-
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
@@ -92,12 +84,12 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   }, [handleAddTask, handleEditTask]);
 
   const handleToggleComplete = useCallback((id: string) => {
+    const task = tasks.find(t => t.id === id);
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
       )
     );
-     const task = tasks.find(t => t.id === id);
     if (task) {
       toast({
         title: `Task ${!task.isCompleted ? "Completed" : "Marked Pending"}`,
@@ -124,12 +116,12 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   const handleOpenEditForm = useCallback((task: Task) => {
     setEditingTask(task);
     setIsFormOpen(true);
-  }, []);
+  }, [setEditingTask, setIsFormOpen]);
 
   const handleOpenAddForm = useCallback(() => {
     setEditingTask(null);
     setIsFormOpen(true);
-  }, []);
+  }, [setEditingTask, setIsFormOpen]);
 
   const handleDeleteTask = useCallback((id: string) => {
     const task = tasks.find(t => t.id === id);
@@ -215,8 +207,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     }
   }, [pendingTasksForAI, tasks, toast]);
 
-  // Removed handleRequestInitialAIAssistance and handleOpenAIAssistantFromSidebar
-
 
   if (!isMounted) {
     return (
@@ -247,7 +237,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           tasks={tasks}
           onSuggestPriorities={handleSuggestPriorities}
           isPrioritizing={isSuggestingPriorities}
-          // onOpenAIAssistant prop removed
         />
         <main className="flex-1 overflow-y-auto px-4 md:px-6 pt-4 pb-6">
           <div className="container mx-auto w-full">
@@ -260,7 +249,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
               onToggleComplete={handleToggleComplete}
               onEdit={handleOpenEditForm}
               onDelete={(id) => setTaskToDelete(id)}
-              // onRequestAIAssistance prop removed
               onToggleSubtask={handleToggleSubtaskComplete}
             />
           </div>
@@ -309,8 +297,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         suggestions={prioritySuggestions}
         isLoading={isSuggestingPriorities}
       />
-
-      {/* StudentAssistantModal removed */}
     </div>
   );
 }

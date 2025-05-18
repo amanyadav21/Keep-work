@@ -70,36 +70,53 @@ function AIAssistantPageContent() {
     return () => viewport.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Effect to fetch initial AI response if taskDescription is provided
   useEffect(() => {
-    const firstQuery = currentTaskContext || "How can I help you today?";
-    const userMessage: ChatMessage = { role: 'user', content: firstQuery, timestamp: Date.now() };
-    setChatMessages([userMessage]);
-    
-    setIsLoadingInitial(true);
-    setCurrentUserInput("");
-    latestIdentifiedType.current = undefined;
-    
-    getStudentAssistance({ currentInquiry: firstQuery, originalTaskContext: currentOriginalTaskContext ?? firstQuery })
-      .then(result => {
-        latestIdentifiedType.current = result.identifiedTaskType;
-        setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
-      })
-      .catch(error => {
-        console.error("Initial AI assistance error:", error);
-        toast({
-          title: "AI Assistance Failed",
-          description: "Could not get an initial response.",
-          variant: "destructive",
+    if (initialTaskDescription !== currentTaskContext) { // Prevent re-fetch if context is manually changed then page reloaded
+      setCurrentTaskContext(initialTaskDescription);
+      setCurrentOriginalTaskContext(initialTaskDescription);
+    }
+    const firstQuery = initialTaskDescription || "How can I help you today?";
+    // Only set initial user message if chat is empty or context truly changes
+    if (chatMessages.length === 0 || (initialTaskDescription && chatMessages[0]?.content !== firstQuery)) {
+       const userMessage: ChatMessage = { role: 'user', content: firstQuery, timestamp: Date.now() };
+       setChatMessages([userMessage]);
+    } else if (chatMessages.length > 0 && !initialTaskDescription && chatMessages[0]?.content !== firstQuery) {
+      // Handle case where user navigates directly to /ai-assistant then back, then to /ai-assistant again
+       const userMessage: ChatMessage = { role: 'user', content: firstQuery, timestamp: Date.now() };
+       setChatMessages([userMessage]);
+    }
+
+
+    // Only fetch if there's no AI response yet for this context or if it's a general inquiry with no AI response.
+    const shouldFetchInitial = chatMessages.length <= 1 || 
+                              (chatMessages.length > 0 && chatMessages[chatMessages.length-1].role === 'user');
+
+    if (shouldFetchInitial) {
+      setIsLoadingInitial(true);
+      setCurrentUserInput("");
+      latestIdentifiedType.current = undefined;
+      
+      getStudentAssistance({ currentInquiry: firstQuery, originalTaskContext: initialTaskDescription ?? firstQuery })
+        .then(result => {
+          latestIdentifiedType.current = result.identifiedTaskType;
+          setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
+        })
+        .catch(error => {
+          console.error("Initial AI assistance error:", error);
+          toast({
+            title: "AI Assistance Failed",
+            description: "Could not get an initial response.",
+            variant: "destructive",
+          });
+          setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't process that initial request.", timestamp: Date.now() }]);
+        })
+        .finally(() => {
+          setIsLoadingInitial(false);
+          scrollToBottom("smooth");
         });
-        setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't process that initial request.", timestamp: Date.now() }]);
-      })
-      .finally(() => {
-        setIsLoadingInitial(false);
-        scrollToBottom("smooth");
-      });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTaskContext, currentOriginalTaskContext, toast]); // Rerun if initial task context changes
+  }, [initialTaskDescription, toast]); // Only re-run when initialTaskDescription (from URL) changes
 
   useEffect(() => {
     if (chatMessages.length > 0 && !isUserScrolledUp) { 
@@ -107,7 +124,7 @@ function AIAssistantPageContent() {
     }
   }, [chatMessages, isUserScrolledUp, scrollToBottom]);
 
-  const handleSendFollowUp = async (inquiry?: string) => {
+  const handleSendFollowUp = useCallback(async (inquiry?: string) => {
     const currentFollowUpQuery = inquiry || currentUserInput;
     if (!currentFollowUpQuery.trim()) return;
 
@@ -121,13 +138,15 @@ function AIAssistantPageContent() {
     setIsUserScrolledUp(false); 
 
     try {
+      // Filter out the initial user message if it was the same as the original task context
       const historyForAI = chatMessages.filter(msg => 
         !(msg.role === 'user' && msg.content === (currentOriginalTaskContext || "How can I help you today?"))
       );
 
       const flowInput: StudentAssistantInput = {
         currentInquiry: currentFollowUpQuery,
-        conversationHistory: historyForAI.length > 0 ? historyForAI : [],
+        // Pass the filtered history, or an empty array if historyForAI becomes empty
+        conversationHistory: historyForAI.length > 0 ? historyForAI : [], 
         originalTaskContext: currentOriginalTaskContext || (chatMessages[0]?.role === 'user' ? chatMessages[0].content : "General Inquiry"),
       };
 
@@ -145,20 +164,20 @@ function AIAssistantPageContent() {
     } finally {
       setIsSendingFollowUp(false);
     }
-  };
+  }, [currentUserInput, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setCurrentUserInput, setIsSendingFollowUp, setIsUserScrolledUp]);
 
-  const handleBrainstormRequest = () => {
+  const handleBrainstormRequest = useCallback(() => {
     const contextForBrainstorm = currentOriginalTaskContext && currentOriginalTaskContext !== "How can I help you today?"
                                  ? currentOriginalTaskContext 
                                  : (chatMessages.length > 0 ? [...chatMessages].reverse().find(msg => msg.role === 'user')?.content || "the current topic" : "the current topic");
     handleSendFollowUp(`Help me brainstorm ideas for: "${contextForBrainstorm}"`);
-  };
+  },[currentOriginalTaskContext, chatMessages, handleSendFollowUp]);
 
   const isEssentiallyLoading = isLoadingInitial || isSendingFollowUp;
   const canSendMessage = currentUserInput.trim() && !isEssentiallyLoading;
   
   const placeholderText = 
-    (!currentTaskContext || currentTaskContext === "How can I help you today?") && chatMessages.length <=1
+    (!currentOriginalTaskContext || currentOriginalTaskContext === "How can I help you today?") && chatMessages.length <=1
     ? "Enter your general inquiry here..."
     : "Ask a follow-up question...";
 
@@ -175,12 +194,11 @@ function AIAssistantPageContent() {
           </Button>
           <h1 className="text-xl font-semibold text-foreground">AI Student Assistant</h1>
         </div>
-        {/* Optional ThemeToggle or other actions can go here */}
       </header>
 
       {/* Context Header */}
       {currentOriginalTaskContext && currentOriginalTaskContext !== "How can I help you today?" && (
-        <div className="p-3 border-b bg-muted/30 sticky top-[calc(var(--header-height,69px))] z-10"> {/* Adjust top value based on actual header height */}
+        <div className="p-3 border-b bg-muted/30 sticky top-[calc(var(--header-height,69px))] z-10">
           <div className="text-sm flex items-center justify-between">
             <div className="truncate pr-2">
               <span className="font-medium text-foreground/80">Context:</span> 
