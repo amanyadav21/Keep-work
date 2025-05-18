@@ -41,9 +41,6 @@ function AIAssistantPageContent() {
   const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(false);
   
-  // currentTaskContext is effectively the user's first message.
-  // currentOriginalTaskContext is the underlying task description if provided, otherwise the first message.
-  const [currentTaskContext, setCurrentTaskContext] = useState<string | null>(initialTaskDescription);
   const [currentOriginalTaskContext, setCurrentOriginalTaskContext] = useState<string | null>(initialTaskDescription);
 
   const { toast } = useToast();
@@ -63,42 +60,34 @@ function AIAssistantPageContent() {
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = viewport;
-      // Show button if not at bottom and there's enough content to scroll
       const atBottom = scrollHeight - scrollTop - clientHeight < 50; 
       setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50);
     };
 
     viewport.addEventListener('scroll', handleScroll);
     return () => viewport.removeEventListener('scroll', handleScroll);
-  }, [chatMessages]); // Re-evaluate on chatMessages change for scrollHeight updates
+  }, [chatMessages]); 
 
   useEffect(() => {
-    // Update contexts if initialTaskDescription from URL changes
     if (initialTaskDescription !== currentOriginalTaskContext) {
       setCurrentOriginalTaskContext(initialTaskDescription);
-      // If it's a new task, the first message in chat becomes this task
-      setCurrentTaskContext(initialTaskDescription); 
     }
 
     const firstQuery = initialTaskDescription || GENERAL_INQUIRY_PLACEHOLDER;
-
-    // Only set initial user message if chat is empty OR if the context truly changes AND no AI response for it yet
     const hasAIResponseForCurrentContext = chatMessages.length > 1 && chatMessages[0].content === firstQuery && chatMessages[1]?.role === 'assistant';
 
     if (chatMessages.length === 0 || (firstQuery !== chatMessages[0]?.content && !hasAIResponseForCurrentContext)) {
        setChatMessages([{ role: 'user', content: firstQuery, timestamp: Date.now() }]);
-       latestIdentifiedType.current = undefined; // Reset identified type for new context
+       latestIdentifiedType.current = undefined;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTaskDescription]); // Only re-run when initialTaskDescription (from URL) changes
+  }, [initialTaskDescription]); 
 
 
   useEffect(() => {
-    // This effect handles fetching the initial AI response when chatMessages is updated
-    // (e.g., by the previous useEffect setting the first user message).
     if (chatMessages.length === 1 && chatMessages[0].role === 'user' && !isLoadingInitial) {
       setIsLoadingInitial(true);
-      setCurrentUserInput(""); // Clear any pending input
+      setCurrentUserInput(""); 
       
       const userFirstMessage = chatMessages[0].content;
 
@@ -118,11 +107,10 @@ function AIAssistantPageContent() {
         })
         .finally(() => {
           setIsLoadingInitial(false);
-          // scrollToBottom("smooth"); // Scroll is handled by the other useEffect watching chatMessages
         });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatMessages, currentOriginalTaskContext, toast]); // Dependencies: chatMessages, currentOriginalTaskContext, toast
+  }, [chatMessages, currentOriginalTaskContext, toast]); 
 
   useEffect(() => {
     if (chatMessages.length > 0) { 
@@ -130,10 +118,10 @@ function AIAssistantPageContent() {
       if (viewport) {
         const { scrollTop, scrollHeight, clientHeight } = viewport;
         const isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 50;
-        if (isScrolledToBottom || chatMessages[chatMessages.length - 1].role === 'user') { // Always scroll if user just sent
+        if (isScrolledToBottom || chatMessages[chatMessages.length - 1].role === 'user') { 
           scrollToBottom("smooth");
         }
-      } else { // Fallback if viewport not found yet (e.g., initial render)
+      } else { 
         scrollToBottom("smooth");
       }
     }
@@ -152,7 +140,6 @@ function AIAssistantPageContent() {
     setIsSendingFollowUp(true);
 
     try {
-      // Prepare history for AI: exclude the very first user message if it's the same as originalTaskContext
       const historyForAI = chatMessages.filter(msg => 
         !(msg.role === 'user' && msg.content === (currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER) && chatMessages.indexOf(msg) === 0)
       );
@@ -160,7 +147,7 @@ function AIAssistantPageContent() {
       const flowInput: StudentAssistantInput = {
         currentInquiry: currentFollowUpQuery,
         conversationHistory: historyForAI.length > 0 ? historyForAI : [],
-        originalTaskContext: currentOriginalTaskContext || (chatMessages[0]?.role === 'user' ? chatMessages[0].content : "General Inquiry"),
+        originalTaskContext: currentOriginalTaskContext || (chatMessages[0]?.role === 'user' ? chatMessages[0].content : GENERAL_INQUIRY_PLACEHOLDER),
       };
 
       const result = await getStudentAssistance(flowInput);
@@ -179,13 +166,6 @@ function AIAssistantPageContent() {
     }
   }, [currentUserInput, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setCurrentUserInput, setIsSendingFollowUp]);
 
-  const handleBrainstormRequest = useCallback(() => {
-    const contextForBrainstorm = currentOriginalTaskContext && currentOriginalTaskContext !== GENERAL_INQUIRY_PLACEHOLDER
-                                 ? currentOriginalTaskContext 
-                                 : (chatMessages.length > 0 ? [...chatMessages].reverse().find(msg => msg.role === 'user')?.content || "the current topic" : "the current topic");
-    handleSendFollowUp(`Help me brainstorm ideas for: "${contextForBrainstorm}"`);
-  },[currentOriginalTaskContext, chatMessages, handleSendFollowUp]);
-
   const isProcessing = isLoadingInitial || isSendingFollowUp;
   const canSendMessage = currentUserInput.trim() && !isProcessing;
   
@@ -193,9 +173,6 @@ function AIAssistantPageContent() {
     (!currentOriginalTaskContext || currentOriginalTaskContext === GENERAL_INQUIRY_PLACEHOLDER) && chatMessages.length <=1
     ? "Enter your general inquiry here..."
     : "Ask a follow-up question or type your inquiry...";
-
-  const showBrainstormButton = !isProcessing && 
-                              (currentOriginalTaskContext && currentOriginalTaskContext !== GENERAL_INQUIRY_PLACEHOLDER);
 
   const displayContext = currentOriginalTaskContext && currentOriginalTaskContext !== GENERAL_INQUIRY_PLACEHOLDER 
                        ? currentOriginalTaskContext 
@@ -294,22 +271,6 @@ function AIAssistantPageContent() {
         )}
       </div>
       
-      {/* Brainstorm Button Area */}
-      {showBrainstormButton && (
-        <div className="p-2 px-4 border-t bg-background sticky bottom-[calc(var(--input-area-height,88px)+var(--footer-height,45px))] z-10">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full" 
-            onClick={handleBrainstormRequest}
-            disabled={isProcessing}
-          >
-            <Lightbulb className="mr-2 h-4 w-4" />
-            Brainstorm ideas for "{currentOriginalTaskContext}"
-          </Button>
-        </div>
-      )}
-
       {/* Input Area */}
       <div className="p-4 border-t bg-background sticky bottom-[var(--footer-height,45px)] z-10"> 
         <div className="flex items-start space-x-2">
