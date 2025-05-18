@@ -12,7 +12,7 @@ export default {
   	extend: {
       fontFamily: {
         sans: ['var(--font-sans)', ...defaultTheme.fontFamily.sans],
-        mono: ['var(--font-mono)', ...defaultTheme.fontFamily.mono],
+        mono: [...defaultTheme.fontFamily.mono], // var(--font-mono) removed
       },
   		colors: {
   			background: 'hsl(var(--background))',
