@@ -19,6 +19,8 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
         return JSON.parse(item) as T;
       } else {
         // If no item in localStorage, store the initialValue there and return it.
+        // This ensures consistency if initialValue itself is used by the component
+        // before this hook fully "settles" with a value from storage.
         window.localStorage.setItem(key, JSON.stringify(initialValue));
         return initialValue;
       }
@@ -26,6 +28,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
       console.error(`Error reading/initializing localStorage key "${key}":`, error);
       // In case of an error (e.g., parsing error, localStorage disabled),
       // attempt to set initialValue in localStorage, then return initialValue.
+      // This ensures the app can still function with the initialValue even if localStorage fails.
       try {
           window.localStorage.setItem(key, JSON.stringify(initialValue));
       } catch (writeError) {
@@ -36,6 +39,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
   });
 
   // Effect to update localStorage when storedValue or key changes.
+  // This effect runs after the initial render and on subsequent updates to storedValue.
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {

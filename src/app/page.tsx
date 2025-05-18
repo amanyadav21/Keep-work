@@ -17,7 +17,7 @@ import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
 import { Button } from '@/components/ui/button';
-import { Brain, Loader2 } from 'lucide-react'; // Added Loader2
+import { Brain, Loader2 } from 'lucide-react'; 
 
 interface HomePageProps {
   params: Record<string, never>;
