@@ -15,13 +15,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import Link from 'next/link'; // Import Link
+import Link from 'next/link';
 
 interface AppSidebarProps {
   tasks: Task[];
   onSuggestPriorities: () => void;
   isPrioritizing: boolean;
-  // onOpenAIAssistant: () => void; // Prop removed
 }
 
 export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing }: AppSidebarProps) {
@@ -35,7 +34,7 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing }: AppSi
           </h2>
         </div>
       </SidebarHeader>
-      <SidebarSeparator className="mx-2 my-0 w-auto bg-sidebar-border" /> 
+      <SidebarSeparator/> 
       
       <SidebarContent className="p-0">
         <ScrollArea className="h-full">
@@ -99,46 +98,6 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing }: AppSi
                     </TooltipTrigger>
                     <TooltipContent side="right" className="bg-popover text-popover-foreground">
                       <p>Task Insights</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
-
-            <SidebarSeparator />
-
-            <div className="space-y-2">
-              <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
-                <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
-                  <Brain className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
-                  <h3 className="text-md font-medium">
-                    AI Assistant
-                  </h3>
-                </div>
-                <Button 
-                  asChild
-                  variant="outline" 
-                  className="w-full border-sidebar-border hover:bg-sidebar-accent/70 h-9 text-sm" 
-                >
-                  <Link href="/ai-assistant">Chat with AI</Link>
-                </Button>
-              </div>
-               <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:flex group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center group-data-[state=collapsed]:group-data-[collapsible=icon]:py-1")}>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        asChild
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 hover:bg-sidebar-accent/70"
-                        aria-label="Open AI Assistant"
-                      >
-                        <Link href="/ai-assistant"><Brain className="h-5 w-5 text-sidebar-primary" /></Link>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="bg-popover text-popover-foreground">
-                      <p>AI Assistant</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

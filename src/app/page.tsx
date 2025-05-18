@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
@@ -15,6 +16,8 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
+import { Button } from '@/components/ui/button';
+import { MessageSquareText } from 'lucide-react';
 
 interface HomePageProps {
   params: { [key: string]: string | string[] | undefined };
@@ -297,6 +300,13 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         suggestions={prioritySuggestions}
         isLoading={isSuggestingPriorities}
       />
+
+      <Button asChild size="lg" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-30 p-0">
+        <Link href="/ai-assistant" aria-label="Open AI Assistant">
+          <MessageSquareText className="h-6 w-6" />
+        </Link>
+      </Button>
     </div>
   );
 }
+
