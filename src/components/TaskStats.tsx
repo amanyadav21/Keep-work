@@ -4,7 +4,7 @@
 import type { Task } from '@/types';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Activity, CheckCircle, Sparkles, Brain } from 'lucide-react'; // Removed ListTodo from imports
+import { Activity, CheckCircle, Sparkles, Brain, ClipboardList } from 'lucide-react'; // Added ClipboardList
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
@@ -66,7 +66,7 @@ export function TaskStats({ tasks, onSuggestPriorities, isPrioritizing }: TaskSt
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-md">
-                {/* ListTodo icon was here, now removed. The text "Pending" and count will remain. */}
+                <ClipboardList className="h-5 w-5 text-primary" /> 
                 <div>
                     <p className="text-muted-foreground">Pending</p>
                     <p className="font-semibold text-lg text-foreground">{pendingTasks}</p>
