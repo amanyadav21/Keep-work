@@ -15,15 +15,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import Link from 'next/link'; // Import Link
 
 interface AppSidebarProps {
   tasks: Task[];
   onSuggestPriorities: () => void;
   isPrioritizing: boolean;
-  onOpenAIAssistant: () => void;
+  // onOpenAIAssistant: () => void; // Prop removed
 }
 
-export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenAIAssistant }: AppSidebarProps) {
+export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing }: AppSidebarProps) {
   return (
     <Sidebar side="left" variant="sidebar" collapsible="icon">
       <SidebarHeader className="p-4">
@@ -38,27 +39,24 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
       
       <SidebarContent className="p-0">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-2"> {/* Reduced space-y for tighter feel */}
+          <div className="p-4 space-y-2">
             
-            {/* Performance Metrics Section */}
             <div className="space-y-2">
-              {/* Expanded View Header & Content */}
               <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
                 <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
                   <BarChartBig className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
-                  <h3 className="text-md font-medium"> {/* Adjusted font size */}
+                  <h3 className="text-md font-medium">
                     Performance
                   </h3>
                 </div>
                 <Card className="bg-sidebar-accent/50 border-sidebar-border shadow-sm">
-                  <CardContent className="p-3"> {/* Reduced padding */}
+                  <CardContent className="p-3">
                     <p className="text-sm text-sidebar-foreground/70">
                       Performance metrics and charts will be displayed here.
                     </p>
                   </CardContent>
                 </Card>
               </div>
-              {/* Collapsed View Icon */}
               <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:flex group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center group-data-[state=collapsed]:group-data-[collapsible=icon]:py-1")}>
                 <TooltipProvider>
                   <Tooltip>
@@ -75,15 +73,13 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
               </div>
             </div>
 
-            <SidebarSeparator className="mx-0 my-0 w-full bg-sidebar-border" />
+            <SidebarSeparator />
 
-            {/* Task Insights Section */}
             <div className="space-y-2">
-               {/* Expanded View Header & Content */}
               <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
                 <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
                   <Activity className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
-                  <h3 className="text-md font-medium"> {/* Adjusted font size */}
+                  <h3 className="text-md font-medium">
                     Task Insights
                   </h3>
                 </div>
@@ -93,7 +89,6 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
                   isPrioritizing={isPrioritizing}
                 />
               </div>
-              {/* Collapsed View Icon */}
               <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:flex group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center group-data-[state=collapsed]:group-data-[collapsible=icon]:py-1")}>
                  <TooltipProvider>
                   <Tooltip>
@@ -110,39 +105,36 @@ export function AppSidebar({ tasks, onSuggestPriorities, isPrioritizing, onOpenA
               </div>
             </div>
 
-            <SidebarSeparator className="mx-0 my-0 w-full bg-sidebar-border" />
+            <SidebarSeparator />
 
-            {/* AI Assistant Section */}
             <div className="space-y-2">
-              {/* Expanded View Header & Content */}
               <div className="group-data-[state=expanded]:group-data-[collapsible=icon]:block group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden">
                 <div className="flex items-center gap-2 mb-2 px-1 text-sidebar-foreground/80">
                   <Brain className="h-5 w-5 text-sidebar-primary flex-shrink-0" />
-                  <h3 className="text-md font-medium"> {/* Adjusted font size */}
+                  <h3 className="text-md font-medium">
                     AI Assistant
                   </h3>
                 </div>
                 <Button 
+                  asChild
                   variant="outline" 
                   className="w-full border-sidebar-border hover:bg-sidebar-accent/70 h-9 text-sm" 
-                  onClick={onOpenAIAssistant}
                 >
-                  Chat with AI
+                  <Link href="/ai-assistant">Chat with AI</Link>
                 </Button>
               </div>
-               {/* Collapsed View Icon */}
-              <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:flex group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center group-data-[state=collapsed]:group-data-[collapsible=icon]:py-1")}>
+               <div className={cn("hidden", "group-data-[state=collapsed]:group-data-[collapsible=icon]:flex group-data-[state=collapsed]:group-data-[collapsible=icon]:justify-center group-data-[state=collapsed]:group-data-[collapsible=icon]:py-1")}>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
+                        asChild
                         variant="ghost" 
                         size="icon" 
-                        onClick={onOpenAIAssistant} 
                         className="h-8 w-8 hover:bg-sidebar-accent/70"
                         aria-label="Open AI Assistant"
                       >
-                        <Brain className="h-5 w-5 text-sidebar-primary" />
+                        <Link href="/ai-assistant"><Brain className="h-5 w-5 text-sidebar-primary" /></Link>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="bg-popover text-popover-foreground">

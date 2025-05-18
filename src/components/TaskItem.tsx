@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid, isPast } from 'date-fns';
 import { Pencil, Trash2, BookOpen, Users, User, AlertTriangle, CalendarDays, Brain, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link'; // Import Link
 import {
   Tooltip,
   TooltipContent,
@@ -25,7 +26,7 @@ interface TaskItemProps {
   onToggleComplete: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
-  onRequestAIAssistance: (task: Task) => void;
+  // onRequestAIAssistance: (task: Task) => void; // Prop removed
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
 }
 
@@ -42,7 +43,7 @@ const categoryBorderColors: Record<TaskCategory, string> = {
 };
 
 
-export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAIAssistance, onToggleSubtask }: TaskItemProps) {
+export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -210,8 +211,10 @@ export function TaskItem({ task, onToggleComplete, onEdit, onDelete, onRequestAI
             )}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => onRequestAIAssistance(task)} aria-label="Get AI Assistance" className="h-7 w-7 text-primary hover:text-primary/80">
-                    <Brain className="h-4 w-4" />
+                  <Button asChild variant="ghost" size="icon" aria-label="Get AI Assistance" className="h-7 w-7 text-primary hover:text-primary/80">
+                    <Link href={`/ai-assistant?taskDescription=${encodeURIComponent(task.description)}`}>
+                      <Brain className="h-4 w-4" />
+                    </Link>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
