@@ -20,13 +20,11 @@ import { Button } from '@/components/ui/button';
 import { MessageSquareText } from 'lucide-react';
 
 interface HomePageProps {
-  // For the root page, params is always an empty object.
-  // Using a more specific type might help with Next.js's internal checks.
-  params: Record<string, never>;
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Record<string, never>; // For the root page, params is always an empty object.
+  searchParams?: { [key: string]: string | string[] | undefined }; // Made searchParams optional
 }
 
-export default function HomePage({ params, searchParams }: HomePageProps) {
+export default function HomePage({ params, searchParams = {} }: HomePageProps) { // Default searchParams to {}
   const [tasks, setTasks] = useLocalStorage<Task[]>('studentTasks', []);
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -310,3 +308,4 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     </div>
   );
 }
+
