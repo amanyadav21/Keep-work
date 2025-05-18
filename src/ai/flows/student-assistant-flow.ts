@@ -104,14 +104,18 @@ const studentAssistantGenkitFlow = ai.defineFlow(
     outputSchema: StudentAssistantOutputSchema,
   },
   async (input) => {
+    // Basic validation for current inquiry
     if (!input.currentInquiry.trim()) {
         return {
-            identifiedTaskType: "unknown" as const,
+            identifiedTaskType: "unknown" as const, // Ensure it's a literal type
             assistantResponse: "Please provide a task, question, or follow-up."
         };
     }
     const {output} = await studentAssistantPrompt(input);
+    // Ensure output is not null or undefined before returning
     if (!output) {
+      // This case should ideally be rare if the prompt is well-defined and the model behaves.
+      // However, it's good practice to handle it.
       throw new Error('AI assistant failed to generate a response or return valid output.');
     }
     return output;

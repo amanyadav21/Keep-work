@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import type { Task, TaskCategory, Subtask } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { suggestTaskCategory } from "@/ai/flows/suggest-category-flow";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -72,7 +72,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           description: editingTask.description,
           dueDate: editingTask.dueDate ? parseISO(editingTask.dueDate) : new Date(new Date().setHours(23, 59, 59, 999)),
           category: editingTask.category,
-          subtasks: editingTask.subtasks?.map(st => ({...st})) || [], // Ensure new array of objects
+          subtasks: editingTask.subtasks?.map(st => ({...st})) || [],
         }
       : {
           description: "",
@@ -90,6 +90,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   const [newSubtaskText, setNewSubtaskText] = useState("");
   const [isSuggestingCategory, setIsSuggestingCategory] = useState(false);
   const descriptionValue = form.watch('description');
+  const newSubtaskInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!editingTask && descriptionValue && descriptionValue.length > 10 && !form.getValues('category')) {
@@ -121,6 +122,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     if (newSubtaskText.trim()) {
       append({ id: crypto.randomUUID(), text: newSubtaskText.trim(), isCompleted: false });
       setNewSubtaskText("");
+      newSubtaskInputRef.current?.focus(); // Re-focus the input field
     }
   };
 
@@ -227,6 +229,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           <FormLabel className="flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" /> Subtasks / Checklist</FormLabel>
           <div className="flex gap-2">
             <Input
+              ref={newSubtaskInputRef}
               type="text"
               placeholder="Add a subtask..."
               value={newSubtaskText}
@@ -253,13 +256,16 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                         onCheckedChange={(checked) => {
                           update(index, { ...field, isCompleted: !!checked });
                         }}
-                        id={`subtask-form-${field.id}`}
+                        id={`subtask-form-${field.id || index}`} // Use index as fallback for key if id is not yet assigned
                         aria-label={`Mark subtask ${field.text} as completed`}
                       />
                     <Input
                       {...form.register(`subtasks.${index}.text`)}
                       defaultValue={field.text}
-                      className="flex-grow h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className={cn(
+                        "flex-grow h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+                        field.isCompleted ? "line-through text-muted-foreground" : ""
+                      )}
                       aria-label={`Edit subtask ${field.text}`}
                     />
                     <Button

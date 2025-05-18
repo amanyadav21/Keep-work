@@ -143,7 +143,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   }, [setTasks, tasks, toast]);
 
   const sortedTasks = useMemo(() => {
-    if (!isMounted) return [];
+    if (!isMounted) return []; // Prevent computations if not mounted
     return [...tasks].sort((a, b) => {
       if (a.isCompleted !== b.isCompleted) {
         return a.isCompleted ? 1 : -1;
@@ -153,13 +153,14 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       if (dueDateA !== dueDateB) {
         return dueDateA - dueDateB;
       }
+      // Fallback sort by creation date if due dates are the same
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   }, [tasks, isMounted]);
 
 
   const filteredTasks = useMemo(() => {
-    if (!isMounted) return [];
+    if (!isMounted) return []; // Prevent computations if not mounted
     switch (filter) {
       case 'pending':
         return sortedTasks.filter(task => !task.isCompleted);
@@ -191,14 +192,14 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     }
     setIsSuggestingPriorities(true);
     setIsPriorityModalOpen(true);
-    setPrioritySuggestions([]);
+    setPrioritySuggestions([]); // Clear previous suggestions
     try {
       const result = await suggestTaskPriorities({ tasks: pendingTasksForAI });
       const enrichedSuggestions = result.prioritizedSuggestions.map(suggestion => {
         const task = tasks.find(t => t.id === suggestion.taskId);
         return {
           ...suggestion,
-          description: task ? task.description : "Unknown Task",
+          description: task ? task.description : "Unknown Task", // Add task description for display
         };
       });
       setPrioritySuggestions(enrichedSuggestions);
@@ -217,7 +218,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   const handleRequestInitialAIAssistance = useCallback(async (taskDescriptionForAI: string) => {
     setAssistingTaskDescription(taskDescriptionForAI);
     setIsRequestingInitialAssistance(true);
-    setInitialAssistantOutput(null);
+    setInitialAssistantOutput(null); // Clear previous output
     setIsAssistantModalOpen(true);
     try {
       const result = await getStudentAssistance({ currentInquiry: taskDescriptionForAI });
@@ -229,7 +230,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         description: "Could not get AI help for this task at the moment.",
         variant: "destructive",
       });
-       setIsAssistantModalOpen(false);
+       setIsAssistantModalOpen(false); // Close modal on error
     } finally {
       setIsRequestingInitialAssistance(false);
     }
@@ -241,6 +242,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     setInitialAssistantOutput(null);
     setIsAssistantModalOpen(true);
     try {
+      // For a general opening from sidebar, we can directly provide a generic first response or let the AI generate one.
+      // Here, we are fetching an AI response to "How can I help you today?"
       const result = await getStudentAssistance({ currentInquiry: "How can I help you today?" });
       setInitialAssistantOutput(result);
     } catch (error) {
@@ -258,17 +261,21 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
 
   if (!isMounted) {
+    // Improved Skeleton Loader
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
         <div className="flex flex-1 overflow-hidden">
-          <div className="hidden md:block h-svh bg-muted animate-pulse w-[var(--sidebar-width-icon)] group-data-[state=expanded]:group-data-[collapsible=icon]:w-[var(--sidebar-width)]" />
+          {/* Sidebar Skeleton - simplified as AppSidebar handles its own initial placeholder */}
+          <div className="hidden md:block h-svh bg-muted animate-pulse w-[var(--sidebar-width-icon)]" />
           <main className="flex-1 p-4 md:p-6 overflow-y-auto">
             <div className="container mx-auto w-full">
+              {/* Filter Controls Skeleton */}
               <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div>
+              {/* Task List Skeleton */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-44 bg-muted rounded-lg animate-pulse"></div>
+                  <div key={i} className="h-[180px] bg-muted rounded-lg animate-pulse"></div>
                 ))}
               </div>
             </div>
@@ -308,7 +315,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
       <Dialog open={isFormOpen} onOpenChange={(open) => {
         setIsFormOpen(open);
-        if (!open) setEditingTask(null);
+        if (!open) setEditingTask(null); // Reset editingTask when form is closed
       }}>
         <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg">
           <DialogHeader className="pb-2">
@@ -353,12 +360,12 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         isOpen={isAssistantModalOpen}
         onClose={() => {
           setIsAssistantModalOpen(false);
-          setInitialAssistantOutput(null);
+          setInitialAssistantOutput(null); // Clear initial assistance when closing
           setAssistingTaskDescription(null); // Reset this on close
         }}
         initialAssistance={initialAssistantOutput}
         isLoadingInitial={isRequestingInitialAssistance}
-        taskDescription={assistingTaskDescription}
+        taskDescription={assistingTaskDescription} // Pass the task description for context
       />
     </div>
   );
