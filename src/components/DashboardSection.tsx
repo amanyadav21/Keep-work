@@ -14,7 +14,7 @@ interface DashboardSectionProps {
 
 export function DashboardSection({ tasks, onSuggestPriorities, isPrioritizing }: DashboardSectionProps) {
   return (
-    <section className="container mx-auto w-full py-8 space-y-6">
+    <section className="container mx-auto w-full max-w-6xl py-8 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Performance Metrics Section */}
         <Card className="shadow-sm rounded-lg border">
@@ -36,32 +36,11 @@ export function DashboardSection({ tasks, onSuggestPriorities, isPrioritizing }:
         </Card>
 
         {/* Task Insights Section */}
-        <div className="space-y-2">
-           {/* TaskStats is already a Card, so no need to wrap it in another Card if it styles itself.
-               If TaskStats is not a Card, we can wrap it:
-           <Card className="shadow-sm rounded-lg border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center font-medium">
-                <Activity className="mr-2 h-5 w-5 text-primary" />
-                Task Insights
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TaskStats
-                tasks={tasks}
-                onSuggestPriorities={onSuggestPriorities}
-                isPrioritizing={isPrioritizing}
-              />
-            </CardContent>
-           </Card>
-           */}
-           {/* Directly using TaskStats as it is already a Card component */}
            <TaskStats
               tasks={tasks}
               onSuggestPriorities={onSuggestPriorities}
               isPrioritizing={isPrioritizing}
             />
-        </div>
       </div>
     </section>
   );

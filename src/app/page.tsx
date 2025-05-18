@@ -17,14 +17,14 @@ import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
 import { Button } from '@/components/ui/button';
-import { Brain } from 'lucide-react'; // Changed from MessageSquareText to Brain
+import { Brain } from 'lucide-react';
 
 interface HomePageProps {
-  params: Record<string, never>; 
+  params: Record<string, never>;
   searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function HomePage({ params, searchParams = {} }: HomePageProps) { 
+export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   const [tasks, setTasks] = useLocalStorage<Task[]>('studentTasks', []);
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -213,14 +213,14 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} /> {/* Pass dummy onAddTask for skeleton */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          <div className="container mx-auto w-full">
+          <div className="container mx-auto w-full max-w-6xl">
             <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div> {/* Filter placeholder */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="h-[180px] bg-muted rounded-lg animate-pulse"></div>
               ))}
             </div>
-             <div className="container mx-auto w-full py-8 space-y-6 mt-6">
+             <div className="container mx-auto w-full max-w-6xl py-8 space-y-6 mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="h-60 bg-muted rounded-lg animate-pulse"></div>
                     <div className="h-60 bg-muted rounded-lg animate-pulse"></div>
@@ -237,7 +237,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       <Header onAddTask={handleOpenAddForm} />
       
       <main className="flex-1 overflow-y-auto px-4 md:px-6 pt-4 pb-6">
-        <div className="container mx-auto w-full">
+        <div className="container mx-auto w-full max-w-6xl">
           <div className="mb-6">
             <FilterControls currentFilter={filter} onFilterChange={setFilter} />
           </div>
@@ -302,10 +302,9 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
 
       <Button asChild size="lg" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-30 p-0">
         <Link href="/ai-assistant" aria-label="Open AI Assistant">
-          <Brain className="h-6 w-6" /> {/* Changed from MessageSquareText to Brain */}
+          <Brain className="h-6 w-6" />
         </Link>
       </Button>
     </div>
   );
 }
-
