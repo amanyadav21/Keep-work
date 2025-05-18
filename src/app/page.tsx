@@ -12,7 +12,7 @@ import type { Task, TaskFilter, PrioritizedTaskSuggestion } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal';
-import { DashboardSection } from '@/components/DashboardSection'; // New Dashboard section
+import { DashboardSection } from '@/components/DashboardSection';
 import { formatISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
@@ -20,7 +20,9 @@ import { Button } from '@/components/ui/button';
 import { MessageSquareText } from 'lucide-react';
 
 interface HomePageProps {
-  params: { [key: string]: string | string[] | undefined };
+  // For the root page, params is always an empty object.
+  // Using a more specific type might help with Next.js's internal checks.
+  params: Record<string, never>;
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
@@ -118,12 +120,12 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   const handleOpenEditForm = useCallback((task: Task) => {
     setEditingTask(task);
     setIsFormOpen(true);
-  }, [setEditingTask, setIsFormOpen]);
+  }, []);
 
   const handleOpenAddForm = useCallback(() => {
     setEditingTask(null);
     setIsFormOpen(true);
-  }, [setEditingTask, setIsFormOpen]);
+  }, []);
 
   const handleDeleteTask = useCallback((id: string) => {
     const task = tasks.find(t => t.id === id);
@@ -211,7 +213,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   if (!isMounted) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <Header onAddTask={() => {}} />
+        <Header onAddTask={() => {}} /> {/* Pass dummy onAddTask for skeleton */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           <div className="container mx-auto w-full">
             <div className="h-10 bg-muted rounded-lg w-full sm:w-3/4 md:w-1/2 mb-6 animate-pulse"></div> {/* Filter placeholder */}
@@ -220,9 +222,11 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
                 <div key={i} className="h-[180px] bg-muted rounded-lg animate-pulse"></div>
               ))}
             </div>
-             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Dashboard skeleton */}
-              <div className="h-60 bg-muted rounded-lg animate-pulse"></div>
-              <div className="h-60 bg-muted rounded-lg animate-pulse"></div>
+             <div className="container mx-auto w-full py-8 space-y-6 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="h-60 bg-muted rounded-lg animate-pulse"></div>
+                    <div className="h-60 bg-muted rounded-lg animate-pulse"></div>
+                </div>
             </div>
           </div>
         </main>
@@ -233,7 +237,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header onAddTask={handleOpenAddForm} />
-      {/* Main content area for tasks */}
+      
       <main className="flex-1 overflow-y-auto px-4 md:px-6 pt-4 pb-6">
         <div className="container mx-auto w-full">
           <div className="mb-6">
@@ -249,7 +253,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         </div>
       </main>
 
-      {/* Dashboard Section below tasks */}
       <DashboardSection
         tasks={tasks}
         onSuggestPriorities={handleSuggestPriorities}
