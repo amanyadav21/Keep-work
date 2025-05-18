@@ -45,3 +45,5 @@ export function DashboardSection({ tasks, onSuggestPriorities, isPrioritizing }:
     </section>
   );
 }
+
+    

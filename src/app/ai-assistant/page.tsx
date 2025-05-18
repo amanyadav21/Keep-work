@@ -84,51 +84,54 @@ function AIAssistantPageContent() {
   useEffect(() => {
     if (!mounted) return;
 
-    const initialTaskDescriptionFromUrl = searchParams.get('taskDescription');
+    const initialTaskDescFromUrl = searchParams.get('taskDescription');
+    const intendedContext = initialTaskDescFromUrl || GENERAL_INQUIRY_PLACEHOLDER;
 
-    if (initialTaskDescriptionFromUrl) {
-      if (initialTaskDescriptionFromUrl !== currentOriginalTaskContext) {
-        setCurrentOriginalTaskContext(initialTaskDescriptionFromUrl);
-        setChatMessages([{ role: 'user', content: initialTaskDescriptionFromUrl, timestamp: Date.now() }]);
-        latestIdentifiedType.current = undefined;
-      } else {
-        if (chatMessages.length === 0 ||
-            (chatMessages.length > 0 && chatMessages[0].content !== initialTaskDescriptionFromUrl && chatMessages[0].role === 'user')) {
-           setChatMessages([{ role: 'user', content: initialTaskDescriptionFromUrl, timestamp: Date.now() }]);
-           latestIdentifiedType.current = undefined;
-        }
-      }
-    } else { 
-      if (currentOriginalTaskContext && currentOriginalTaskContext !== GENERAL_INQUIRY_PLACEHOLDER) {
-        setCurrentOriginalTaskContext(GENERAL_INQUIRY_PLACEHOLDER);
-        setChatMessages([{ role: 'user', content: GENERAL_INQUIRY_PLACEHOLDER, timestamp: Date.now() }]);
-        latestIdentifiedType.current = undefined;
-      } else {
-        if (!currentOriginalTaskContext) {
-            setCurrentOriginalTaskContext(GENERAL_INQUIRY_PLACEHOLDER);
-        }
-        if (chatMessages.length === 0 ||
-            (chatMessages.length > 0 && chatMessages[0].content !== GENERAL_INQUIRY_PLACEHOLDER && chatMessages[0].role === 'user')) {
-           setChatMessages([{ role: 'user', content: GENERAL_INQUIRY_PLACEHOLDER, timestamp: Date.now() }]);
-           latestIdentifiedType.current = undefined;
-        }
+    let needsChatReset = false;
+
+    if (intendedContext !== currentOriginalTaskContext) {
+      needsChatReset = true;
+    } else if (chatMessages.length === 0 || (chatMessages[0]?.role === 'user' && chatMessages[0]?.content !== intendedContext)) {
+      // Context is the same, but chat is empty or first message doesn't match
+      needsChatReset = true;
+    }
+    
+    if (needsChatReset) {
+      setCurrentOriginalTaskContext(intendedContext);
+      setChatMessages([{ role: 'user', content: intendedContext, timestamp: Date.now() }]);
+      latestIdentifiedType.current = undefined;
+      // Setting isLoadingInitial here if a new conversation is definitely starting
+      // and we expect an AI call. The next effect will pick this up.
+      // This will be true if chatMessages becomes length 1 with a user message
+      // AND no AI response already exists for it.
+      if (chatMessages.length <=1 || chatMessages[1]?.role !== 'assistant') {
+         setIsLoadingInitial(true);
       }
     }
-  }, [mounted, searchParams, currentOriginalTaskContext, setCurrentOriginalTaskContext, chatMessages, setChatMessages]);
+  }, [mounted, searchParams, currentOriginalTaskContext, chatMessages, setCurrentOriginalTaskContext, setChatMessages]);
 
   useEffect(() => {
-    if (!mounted || isLoadingInitial || chatMessages.length !== 1 || chatMessages[0].role !== 'user') {
+    if (!mounted || !isLoadingInitial || chatMessages.length === 0 || chatMessages[0].role !== 'user') {
+      if (isLoadingInitial && (chatMessages.length === 0 || chatMessages[0].role !== 'user')) {
+        // If isLoadingInitial is true but conditions for AI call aren't met, reset it.
+        setIsLoadingInitial(false);
+      }
       return;
     }
     
     const hasExistingAIResponseForFirstMessage = chatMessages.length > 1 && chatMessages[1].role === 'assistant';
     if (hasExistingAIResponseForFirstMessage && chatMessages[0].content === (currentOriginalTaskContext || chatMessages[0].content)) {
-      // If first message matches context and there's an AI response, assume it's for this context and don't re-fetch.
-      // This handles cases like returning to a chat after navigating away and back.
       const lastMessage = chatMessages[chatMessages.length -1];
       if(lastMessage.role === 'assistant' && lastMessage.identifiedTaskType){
         latestIdentifiedType.current = lastMessage.identifiedTaskType;
       }
+      setIsLoadingInitial(false); // Ensure loading is off if we found an existing response
+      return;
+    }
+
+
+    if (chatMessages.length !== 1) { // Only proceed if it's the *very first* user message.
+      setIsLoadingInitial(false); // Not the scenario for initial loading.
       return;
     }
 
@@ -136,7 +139,7 @@ function AIAssistantPageContent() {
     const userFirstMessage = chatMessages[0].content;
     const contextForAICall = currentOriginalTaskContext || userFirstMessage;
 
-    setIsLoadingInitial(true);
+    // setIsLoadingInitial(true); // This is now set in the previous effect more deterministically
     setCurrentUserInput(""); 
 
     getStudentAssistance({ currentInquiry: userFirstMessage, originalTaskContext: contextForAICall })
@@ -156,7 +159,7 @@ function AIAssistantPageContent() {
       .finally(() => {
         setIsLoadingInitial(false);
       });
-  }, [mounted, chatMessages, currentOriginalTaskContext, toast, isLoadingInitial, setChatMessages]);
+  }, [mounted, chatMessages, currentOriginalTaskContext, toast, isLoadingInitial, setChatMessages]); // setIsLoadingInitial dependency is important here
 
   useEffect(() => {
     if (!mounted) return;
@@ -186,12 +189,14 @@ function AIAssistantPageContent() {
     setIsSendingFollowUp(true);
 
     try {
+      // Filter out the very first user message if it's the same as originalTaskContext to avoid redundancy
       const historyForAI = currentChatHistoryForAICall.filter((msg, index) =>
         !(index === 0 && msg.role === 'user' && msg.content === currentOriginalTaskContext && currentChatHistoryForAICall.length > 1)
       );
-
+      
       const flowInput: StudentAssistantInput = {
         currentInquiry: userMessage.content,
+        // Pass an empty array if historyForAI is just the current user message (length 1)
         conversationHistory: historyForAI.length > 1 ? historyForAI.slice(0, -1) : [],
         originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER,
       };
@@ -243,7 +248,7 @@ function AIAssistantPageContent() {
       {mounted && displayContext && (
         <div className="p-3 border-b bg-muted/30 sticky top-[calc(var(--header-height,69px))] z-10">
           <div className="text-sm flex items-center justify-between max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="min-w-0 flex-1 pr-2 overflow-hidden"> {/* Added overflow-hidden */}
+            <div className="min-w-0 flex-1 pr-2 overflow-hidden">
               <span className="font-medium text-foreground/80">Context:</span>
               <span className="italic ml-1.5 text-foreground/90 truncate">"{displayContext}"</span>
             </div>
@@ -260,7 +265,7 @@ function AIAssistantPageContent() {
       <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
         <div className="flex-1 min-h-0 relative flex flex-col">
           <ScrollArea className="absolute inset-0" ref={scrollAreaRef} tabIndex={0} style={{outline: 'none'}}>
-            <div className="p-4 space-y-4">
+            <div className="px-4 pt-4 pb-12 space-y-4"> {/* Increased pb for scroll-to-bottom button clearance */}
               {!mounted ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
@@ -350,7 +355,7 @@ function AIAssistantPageContent() {
               className="h-10 w-10 flex-shrink-0"
               aria-label="Send follow-up question"
             >
-              {isSendingFollowUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -370,3 +375,5 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
+
+    
