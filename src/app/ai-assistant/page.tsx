@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage } from '@/types'; // Directly use StudentAssistantOutput where needed
+import type { ChatMessage } from '@/types'; 
 import { getStudentAssistance, type StudentAssistantInput, type StudentAssistantOutput } from '@/ai/flows/student-assistant-flow';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -194,7 +194,7 @@ function AIAssistantPageContent() {
       {/* Context Header */}
       {displayContext && (
         <div className="p-3 border-b bg-muted/30 sticky top-[calc(var(--header-height,69px))] z-10">
-          <div className="text-sm flex items-center justify-between">
+          <div className="text-sm flex items-center justify-between max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Constrain context header content */}
             <div className="truncate pr-2">
               <span className="font-medium text-foreground/80">Context:</span> 
               <span className="italic ml-1.5 text-foreground/90">"{displayContext}"</span>
@@ -209,96 +209,99 @@ function AIAssistantPageContent() {
         </div>
       )}
 
-      {/* Chat Area & Scroll Button */}
-      <div className="flex-1 min-h-0 relative flex flex-col"> 
-        <ScrollArea className="absolute inset-0" ref={scrollAreaRef}>
-          <div className="p-4 space-y-4">
-            {isLoadingInitial && chatMessages.length <=1 && (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
-                <p>Thinking...</p>
-                <p className="text-sm">Your AI assistant is generating an initial response.</p>
-              </div>
-            )}
-            {chatMessages.map((msg, index) => (
-              <div 
-                key={index} 
-                className={cn(
-                  "flex items-end space-x-2 w-full", 
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                )}
-              >
-                {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 self-start mt-1 mb-1" />}
-                <div
+      {/* Main Content Wrapper - Constrained Width */}
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Chat Area & Scroll Button */}
+        <div className="flex-1 min-h-0 relative flex flex-col"> 
+          <ScrollArea className="absolute inset-0" ref={scrollAreaRef}>
+            <div className="p-4 space-y-4">
+              {isLoadingInitial && chatMessages.length <=1 && (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
+                  <p>Thinking...</p>
+                  <p className="text-sm">Your AI assistant is generating an initial response.</p>
+                </div>
+              )}
+              {chatMessages.map((msg, index) => (
+                <div 
+                  key={index} 
                   className={cn(
-                    "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border text-sm text-foreground",
-                    msg.role === 'user' 
-                      ? 'bg-primary/10 border-primary/30' 
-                      : 'bg-muted/50 border-muted'
+                    "flex items-end space-x-2 w-full", 
+                    msg.role === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
-                  <div className={cn("text-xs mt-1.5", msg.role === 'user' ? 'text-right' : 'text-left', 'text-muted-foreground/70')}>
-                    {msg.timestamp ? format(msg.timestamp, "p") : ''}
+                  {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 self-start mt-1 mb-1" />}
+                  <div
+                    className={cn(
+                      "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border text-sm text-foreground",
+                      msg.role === 'user' 
+                        ? 'bg-primary/10 border-primary/30' 
+                        : 'bg-muted/50 border-muted'
+                    )}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                    <div className={cn("text-xs mt-1.5", msg.role === 'user' ? 'text-right' : 'text-left', 'text-muted-foreground/70')}>
+                      {msg.timestamp ? format(msg.timestamp, "p") : ''}
+                    </div>
+                  </div>
+                  {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 self-start mt-1 mb-1" />}
+                </div>
+              ))}
+              {isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length -1].role === 'user' && (
+                <div className="flex items-end space-x-2 justify-start">
+                  <Bot className="h-6 w-6 text-primary flex-shrink-0 self-start mt-1 animate-pulse" />
+                  <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
+                    Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
                   </div>
                 </div>
-                {msg.role === 'user' && <UserCircle className="h-6 w-6 text-muted-foreground flex-shrink-0 self-start mt-1 mb-1" />}
-              </div>
-            ))}
-             {isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length -1].role === 'user' && (
-              <div className="flex items-end space-x-2 justify-start">
-                <Bot className="h-6 w-6 text-primary flex-shrink-0 self-start mt-1 animate-pulse" />
-                <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
-                  Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} style={{ height: '1px' }} /> {/* Scroll target */}
-          </div>
-        </ScrollArea>
-        {showScrollToBottom && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute bottom-4 right-4 h-9 w-9 rounded-full shadow-md bg-background hover:bg-muted z-20"
-            onClick={() => scrollToBottom('smooth')}
-            aria-label="Scroll to bottom"
-          >
-            <ChevronDown className="h-5 w-5" />
-          </Button>
-        )}
-      </div>
-      
-      {/* Input Area */}
-      <div className="p-4 border-t bg-background sticky bottom-[var(--footer-height,45px)] z-10"> 
-        <div className="flex items-start space-x-2">
-          <Textarea
-            placeholder={placeholderText}
-            value={currentUserInput}
-            onChange={(e) => setCurrentUserInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (canSendMessage) handleSendFollowUp();
-              }
-            }}
-            rows={1}
-            className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
-            disabled={isProcessing}
-          />
-          <Button
-            onClick={()=>handleSendFollowUp()}
-            disabled={!canSendMessage}
-            size="icon"
-            className="h-10 w-10 flex-shrink-0"
-            aria-label="Send follow-up question"
-          >
-            {isSendingFollowUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
+              )}
+              <div ref={messagesEndRef} style={{ height: '1px' }} /> {/* Scroll target */}
+            </div>
+          </ScrollArea>
+          {showScrollToBottom && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute bottom-4 right-4 h-9 w-9 rounded-full shadow-md bg-background hover:bg-muted z-20"
+              onClick={() => scrollToBottom('smooth')}
+              aria-label="Scroll to bottom"
+            >
+              <ChevronDown className="h-5 w-5" />
+            </Button>
+          )}
         </div>
-      </div>
+        
+        {/* Input Area */}
+        <div className="p-4 border-t bg-background"> 
+          <div className="flex items-start space-x-2">
+            <Textarea
+              placeholder={placeholderText}
+              value={currentUserInput}
+              onChange={(e) => setCurrentUserInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (canSendMessage) handleSendFollowUp();
+                }
+              }}
+              rows={1}
+              className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
+              disabled={isProcessing}
+            />
+            <Button
+              onClick={()=>handleSendFollowUp()}
+              disabled={!canSendMessage}
+              size="icon"
+              className="h-10 w-10 flex-shrink-0"
+              aria-label="Send follow-up question"
+            >
+              {isSendingFollowUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+      </div> {/* End Main Content Wrapper */}
 
       {/* Footer Note */}
       <div className="p-3 text-center border-t text-xs text-muted-foreground bg-background sticky bottom-0 z-10">
@@ -316,4 +319,3 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
-
