@@ -49,6 +49,12 @@ export type StudentAssistantOutput = z.infer<typeof StudentAssistantOutputSchema
  * @returns A promise that resolves to the AI's assistance and identified task type for the current inquiry.
  */
 export async function getStudentAssistance(input: StudentAssistantInput): Promise<StudentAssistantOutput> {
+  if (!input.currentInquiry || input.currentInquiry.trim() === "") {
+    return {
+      identifiedTaskType: "unknown" as const,
+      assistantResponse: "Please provide a task, question, or some text to get assistance.",
+    };
+  }
   return studentAssistantGenkitFlow(input);
 }
 
@@ -104,7 +110,7 @@ const studentAssistantGenkitFlow = ai.defineFlow(
     outputSchema: StudentAssistantOutputSchema,
   },
   async (input) => {
-    // Basic validation for current inquiry
+    // Basic validation for current inquiry - redundant now due to the check in getStudentAssistance, but harmless.
     if (!input.currentInquiry.trim()) {
         return {
             identifiedTaskType: "unknown" as const, // Ensure it's a literal type
@@ -121,3 +127,4 @@ const studentAssistantGenkitFlow = ai.defineFlow(
     return output;
   }
 );
+

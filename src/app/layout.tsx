@@ -1,6 +1,6 @@
 
 import type { Metadata } from 'next';
-import { Roboto, Roboto_Mono } from 'next/font/google'; // Changed from Inter to Roboto
+import { Roboto, Roboto_Mono } from 'next/font/google'; 
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -10,7 +10,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 const roboto = Roboto({
   variable: '--font-sans',
   subsets: ['latin'],
-  weight: ['400', '500', '700'], // Added common weights
+  weight: ['400', '500', '700'], 
 });
 
 const robotoMono = Roboto_Mono({
@@ -40,7 +40,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider collapsible="icon"> {/* Ensure collapsible type is set */}
+          <SidebarProvider collapsible="icon">
             {children}
           </SidebarProvider>
           <Toaster />
@@ -49,3 +49,4 @@ export default function RootLayout({
     </html>
   );
 }
+
