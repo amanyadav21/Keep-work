@@ -18,6 +18,5 @@ export const ai = genkit({
   plugins: [
     googleAI({ apiKey: apiKey }) // Explicitly pass the API key
   ],
-  model: 'googleai/gemini-1.5-flash-latest', // Updated model identifier
+  model: 'googleai/gemini-pro', // Reverted to gemini-pro as a trial
 });
-
