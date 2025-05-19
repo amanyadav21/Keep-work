@@ -23,7 +23,7 @@ const ChatMessageSchema = z.object({
 });
 
 const StudentAssistantInputSchema = z.object({
-  currentInquiry: z.string().describe("The student's current task, question, or follow-up inquiry. This could also be a request to brainstorm or elaborate on a previous topic."),
+  currentInquiry: z.string().describe("The student's current task, question, or follow-up inquiry. This could also be a request to elaborate or brainstorm on a previous topic."),
   conversationHistory: z.array(ChatMessageSchema).optional().describe("The history of the conversation so far, if any."),
   originalTaskContext: z.string().optional().describe("The description of the very first task or question that started this interaction, for context persistence. The AI should refer to this if the current inquiry is a request to elaborate or brainstorm on it.")
 });
@@ -127,5 +127,3 @@ const studentAssistantGenkitFlow = ai.defineFlow(
     return output;
   }
 );
-
-    

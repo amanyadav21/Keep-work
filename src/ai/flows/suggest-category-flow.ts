@@ -73,5 +73,3 @@ const suggestCategoryFlow = ai.defineFlow(
     return output;
   }
 );
-
-    
