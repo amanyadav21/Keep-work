@@ -173,10 +173,10 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           )}
         </CardContent>
 
-        <CardFooter className="p-0 mt-auto flex flex-col items-start space-y-1.5"> {/* Reduced space-y */}
-          <div className="flex items-center justify-between w-full text-xs"> {/* justify-between now active */}
+        <CardFooter className="p-0 mt-auto flex flex-col items-start space-y-1.5">
+          <div className="flex items-center justify-between w-full text-xs">
             <div className="flex items-center space-x-2 text-muted-foreground">
-              <Badge variant="outline" className="py-0.5 px-1.5 text-xs flex items-center border-dashed">
+              <Badge variant="outline" className={cn("py-0.5 px-1.5 text-xs flex items-center border-dashed", task.isCompleted ? "text-muted-foreground" : "text-primary")}>
                 {categoryIcons[task.category]}
                 <span className="ml-1">{task.category}</span>
               </Badge>
@@ -187,10 +187,9 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 </div>
               )}
             </div>
-            {/* Time Left moved to this row, on the right */}
             {(isMounted && timeLeft) && (
               <p className={cn(
-                "font-medium", // text-xs will be inherited from parent, or can be re-added if needed
+                "font-medium",
                 isOverdue || timeLeft === "Past due" ? "text-destructive" : task.isCompleted ? "text-green-600 dark:text-green-500" : "text-primary"
               )}>
                 {isOverdue && !task.isCompleted && <AlertTriangle className="inline h-3 w-3 mr-1" />}
@@ -200,7 +199,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           </div>
 
           <div className={cn(
-              "flex items-center space-x-1 transition-opacity duration-200 w-full justify-end", // Removed mt-2
+              "flex items-center space-x-1 transition-opacity duration-200 w-full justify-end",
               task.isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}>
               <Tooltip>
