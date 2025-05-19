@@ -123,8 +123,10 @@ const studentAssistantGenkitFlow = ai.defineFlow(
     if (!output) {
       // This case should ideally be rare if the prompt is well-defined and the model behaves.
       // However, it's good practice to handle it.
-      throw new Error('AI assistant failed to generate a response or return valid output.');
+      throw new Error('AI assistant failed to generate a response or return valid output. If you see persistent API errors, please check your Google Cloud project settings: ensure the "Generative Language API" is enabled, billing is active, and your API key has the correct permissions and is not blocked.');
     }
     return output;
   }
 );
+
+    
