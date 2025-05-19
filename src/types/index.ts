@@ -1,4 +1,6 @@
 
+import type { User as FirebaseUserType } from 'firebase/auth'; // Import Firebase User type
+
 export type TaskCategory = "Assignment" | "Class" | "Personal";
 
 export interface Subtask {
@@ -15,6 +17,7 @@ export interface Task {
   isCompleted: boolean;
   createdAt: string; // ISO string date for reference
   subtasks?: Subtask[];
+  userId?: string; // Optional: to explicitly store the user ID with the task
 }
 
 export type TaskFilter = "all" | "pending" | "completed";
@@ -29,16 +32,20 @@ export interface PrioritizedTaskSuggestion {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
-  timestamp: number; 
+  timestamp: number;
+  identifiedTaskType?: StudentAssistantOutput['identifiedTaskType'];
 }
 
 export interface StudentAssistantInput {
   currentInquiry: string;
-  conversationHistory?: ChatMessage[];
+  conversationHistory?: Omit<ChatMessage, 'identifiedTaskType'>[]; // AI doesn't need its own identified type in history
   originalTaskContext?: string; 
 }
 
 export interface StudentAssistantOutput {
   assistantResponse: string;
-  identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "unknown";
+  identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "brainstorming_elaboration" | "unknown";
 }
+
+// Firebase User type (can be extended if you store more profile info)
+export type FirebaseUser = FirebaseUserType;
