@@ -56,7 +56,16 @@ export async function getStudentAssistance(input: StudentAssistantInput): Promis
       assistantResponse: "Please provide a task, question, or some text to get assistance.",
     };
   }
-  return studentAssistantGenkitFlow(input);
+  try {
+    return await studentAssistantGenkitFlow(input);
+  } catch (error: any) {
+    if (error.message && (error.message.includes("API_KEY_SERVICE_BLOCKED") || error.message.includes("SERVICE_DISABLED") || error.message.includes("PERMISSION_DENIED"))) {
+      console.error("Student Assistant Flow Error (Google Cloud Configuration Likely):", error.message);
+      throw new Error('AI service error: Your API key might be blocked, the Generative Language API may be disabled, or billing is not configured for your Google Cloud project. Please verify your Google Cloud Console settings.');
+    }
+    console.error("Student Assistant Flow Error (Unexpected):", error);
+    throw new Error('An unexpected error occurred while trying to get AI assistance. Please try again later.');
+  }
 }
 
 const studentAssistantPrompt = ai.definePrompt({
@@ -111,18 +120,8 @@ const studentAssistantGenkitFlow = ai.defineFlow(
     outputSchema: StudentAssistantOutputSchema,
   },
   async (input) => {
-    // Basic validation for current inquiry - redundant now due to the check in getStudentAssistance, but harmless.
-    if (!input.currentInquiry.trim()) {
-        return {
-            identifiedTaskType: "unknown" as const, // Ensure it's a literal type
-            assistantResponse: "Please provide a task, question, or follow-up."
-        };
-    }
     const {output} = await studentAssistantPrompt(input);
-    // Ensure output is not null or undefined before returning
     if (!output) {
-      // This case should ideally be rare if the prompt is well-defined and the model behaves.
-      // However, it's good practice to handle it.
       throw new Error('AI assistant failed to generate a response or return valid output. If you see persistent API errors, please check your Google Cloud project settings: ensure the "Generative Language API" is enabled, billing is active, and your API key has the correct permissions and is not blocked.');
     }
     return output;

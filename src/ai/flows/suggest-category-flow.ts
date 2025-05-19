@@ -25,7 +25,22 @@ const SuggestCategoryOutputSchema = z.object({
 export type SuggestCategoryOutput = z.infer<typeof SuggestCategoryOutputSchema>;
 
 export async function suggestTaskCategory(input: SuggestCategoryInput): Promise<SuggestCategoryOutput> {
-  return suggestCategoryFlow(input);
+  if (!input.description || input.description.trim() === "") {
+    // Return a default or throw a specific error for empty descriptions
+    // For now, let's assume the model can handle it or return 'Personal' by default if really empty.
+    // Or, throw new Error("Task description cannot be empty for category suggestion.");
+    // This might be better handled in the calling component.
+  }
+  try {
+    return await suggestCategoryFlow(input);
+  } catch (error: any) {
+    if (error.message && (error.message.includes("API_KEY_SERVICE_BLOCKED") || error.message.includes("SERVICE_DISABLED") || error.message.includes("PERMISSION_DENIED"))) {
+      console.error("Suggest Category Flow Error (Google Cloud Configuration Likely):", error.message);
+      throw new Error('AI service error for category suggestion: Your API key might be blocked, the Generative Language API may be disabled, or billing is not configured for your Google Cloud project. Please verify your Google Cloud Console settings.');
+    }
+    console.error("Suggest Category Flow Error (Unexpected):", error);
+    throw new Error('An unexpected error occurred while trying to suggest a task category.');
+  }
 }
 
 const suggestCategoryPrompt = ai.definePrompt({
@@ -55,14 +70,8 @@ const suggestCategoryFlow = ai.defineFlow(
     if (!output) {
         throw new Error('AI failed to suggest a category or return valid output.');
     }
-    // The Zod schema validation on output (defined in suggestCategoryPrompt)
-    // already ensures the category is one of the allowed taskCategories.
-    // The explicit check below is redundant and can be safely removed or commented out.
-    // if (!taskCategories.includes(output.category as TaskCategory)) {
-    //     console.warn(`AI returned an unexpected category: ${output.category}. This might indicate an issue with the prompt or model response if Zod validation didn't catch it.`);
-    //     // Optionally, default to a safe category or throw an error if strict adherence is critical beyond Zod.
-    //     // For example, output.category = "Personal" as TaskCategory; 
-    // }
     return output;
   }
 );
+
+    

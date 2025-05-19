@@ -40,7 +40,19 @@ export type PrioritizeTasksOutput = z.infer<typeof PrioritizeTasksOutputSchema>;
 
 
 export async function suggestTaskPriorities(input: PrioritizeTasksInput): Promise<PrioritizeTasksOutput> {
-  return prioritizeTasksFlow(input);
+  if (input.tasks.length === 0) {
+    return { prioritizedSuggestions: [] };
+  }
+  try {
+    return await prioritizeTasksFlow(input);
+  } catch (error: any) {
+    if (error.message && (error.message.includes("API_KEY_SERVICE_BLOCKED") || error.message.includes("SERVICE_DISABLED") || error.message.includes("PERMISSION_DENIED"))) {
+      console.error("Prioritize Tasks Flow Error (Google Cloud Configuration Likely):", error.message);
+      throw new Error('AI service error for priority suggestions: Your API key might be blocked, the Generative Language API may be disabled, or billing is not configured for your Google Cloud project. Please verify your Google Cloud Console settings.');
+    }
+    console.error("Prioritize Tasks Flow Error (Unexpected):", error);
+    throw new Error('An unexpected error occurred while trying to suggest task priorities.');
+  }
 }
 
 const prioritizeTasksPrompt = ai.definePrompt({
@@ -77,9 +89,10 @@ const prioritizeTasksFlow = ai.defineFlow(
     outputSchema: PrioritizeTasksOutputSchema,
   },
   async (input) => {
-    if (input.tasks.length === 0) {
-      return { prioritizedSuggestions: [] };
-    }
+    // Redundant check, already handled in the wrapper function
+    // if (input.tasks.length === 0) {
+    //   return { prioritizedSuggestions: [] };
+    // }
     const {output} = await prioritizeTasksPrompt(input);
     if (!output) {
         throw new Error('AI failed to suggest task priorities or return valid output.');
@@ -87,3 +100,5 @@ const prioritizeTasksFlow = ai.defineFlow(
     return output;
   }
 );
+
+    
