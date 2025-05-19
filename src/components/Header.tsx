@@ -3,7 +3,6 @@ import { GraduationCap } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-// SidebarTrigger removed
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -15,7 +14,6 @@ export function Header({ onAddTask }: HeaderProps) {
     <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50">
       <div className="w-full flex justify-between items-center">
         <div className="flex items-center gap-2">
-          {/* SidebarTrigger removed */}
           <Link href="/" className="flex items-center gap-2 group">
             <GraduationCap className="h-7 w-7 text-primary group-hover:text-primary/90 transition-colors" />
             <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight group-hover:text-foreground/90 transition-colors">
