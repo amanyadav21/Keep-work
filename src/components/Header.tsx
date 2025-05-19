@@ -1,17 +1,11 @@
 
 "use client";
 
-import { GraduationCap, PlusCircle, LogOut, UserCircle, Loader2, Brain } from 'lucide-react';
+import { GraduationCap, PlusCircle, LogOut, UserCircle, Loader2 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,20 +39,7 @@ export function Header({ onAddTask }: HeaderProps) {
               <Button onClick={onAddTask} size="sm" className="rounded-full">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Task
               </Button>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button asChild variant="ghost" size="icon" aria-label="AI Assistant">
-                      <Link href="/ai-assistant">
-                        <Brain className="h-5 w-5" />
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>AI Assistant</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {/* AI Assistant button removed from here */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
