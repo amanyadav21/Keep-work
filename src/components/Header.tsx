@@ -1,9 +1,14 @@
 
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, PlusCircle, Brain } from 'lucide-react'; // Added Brain icon
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface HeaderProps {
   onAddTask: () => void;
@@ -23,6 +28,20 @@ export function Header({ onAddTask }: HeaderProps) {
           <Button onClick={onAddTask} size="sm" className="rounded-full">
             <PlusCircle className="mr-2 h-4 w-4" /> Add Task
           </Button>
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild variant="ghost" size="icon">
+                  <Link href="/ai-assistant" aria-label="Open AI Assistant">
+                    <Brain className="h-5 w-5" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>AI Student Assistant</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <ThemeToggle />
         </div>
       </div>
