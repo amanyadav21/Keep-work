@@ -19,6 +19,7 @@ const ChatMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z.string(),
   timestamp: z.number().optional(), // Timestamp is managed client-side, optional here
+  identifiedTaskType: z.enum(["writing", "coding", "planning_reminder", "general_query", "brainstorming_elaboration", "unknown"]).optional(),
 });
 
 const StudentAssistantInputSchema = z.object({
@@ -127,4 +128,3 @@ const studentAssistantGenkitFlow = ai.defineFlow(
     return output;
   }
 );
-

@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage, StudentAssistantOutput as AIOutputType } from '@/types'; // Renamed for clarity
+import type { ChatMessage, StudentAssistantOutput as AIOutputType } from '@/types';
 import { getStudentAssistance, type StudentAssistantInput } from '@/ai/flows/student-assistant-flow';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -19,7 +19,7 @@ import remarkGfm from 'remark-gfm';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
 const TaskTypeIcon: React.FC<{ type: AIOutputType['identifiedTaskType'] | undefined }> = ({ type }) => {
-  const iconClass = "h-4 w-4 text-primary"; // Apply primary color to icons
+  const iconClass = "h-4 w-4 text-primary";
   if (!type) return <HelpCircle className={iconClass} />;
   switch (type) {
     case 'writing': return <Type className={iconClass} />;
@@ -27,7 +27,7 @@ const TaskTypeIcon: React.FC<{ type: AIOutputType['identifiedTaskType'] | undefi
     case 'planning_reminder': return <ListChecks className={iconClass} />;
     case 'general_query': return <HelpCircle className={iconClass} />;
     case 'brainstorming_elaboration': return <Lightbulb className={iconClass} />;
-    case 'unknown': return <AlertCircle className={cn(iconClass, "text-destructive")} />; // Destructive color for unknown
+    case 'unknown': return <AlertCircle className={cn(iconClass, "text-destructive")} />;
     default: return <HelpCircle className={iconClass} />;
   }
 };
@@ -89,14 +89,13 @@ function AIAssistantPageContent() {
     const intendedContext = initialTaskDescFromUrl || GENERAL_INQUIRY_PLACEHOLDER;
   
     let needsChatReset = false;
+    let shouldSetLoadingInitial = false;
   
     if (intendedContext !== currentOriginalTaskContext) {
       needsChatReset = true;
     } else if (chatMessages.length === 0 && intendedContext) {
-      // If chat is empty but there's an intended context (either URL or general placeholder)
       needsChatReset = true;
     } else if (chatMessages.length > 0 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content !== intendedContext) {
-      // If chat has messages but the first user message doesn't match the intended context
       needsChatReset = true;
     }
   
@@ -105,50 +104,51 @@ function AIAssistantPageContent() {
       const firstUserMessage: ChatMessage = { role: 'user', content: intendedContext, timestamp: Date.now() };
       setChatMessages([firstUserMessage]);
       latestIdentifiedType.current = undefined;
-      
-      // Check if an AI response for this specific intendedContext already exists in the *newly set* chatMessages
-      // This scenario is unlikely here since we are resetting, but good for consistency.
-      const aiResponseAlreadyExistsForIntendedContext = 
-        chatMessages.length > 1 && 
-        chatMessages[0]?.content === intendedContext && 
-        chatMessages[1]?.role === 'assistant';
-
-      if (!aiResponseAlreadyExistsForIntendedContext) {
-         setIsLoadingInitial(true);
-      } else {
-         setIsLoadingInitial(false); 
-      }
+      shouldSetLoadingInitial = true; 
+    } else if (chatMessages.length === 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext) {
+      // Context is the same, but only the user message exists (AI response might be pending or lost)
+      shouldSetLoadingInitial = true;
     } else if (chatMessages.length > 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext && chatMessages[1]?.role === 'assistant') {
-      // Context is the same, and we already have user + AI messages from localStorage
+      // Context is the same, and we already have user + AI messages
       const aiMessage = chatMessages[1];
       if(aiMessage.identifiedTaskType){
         latestIdentifiedType.current = aiMessage.identifiedTaskType;
       }
-      setIsLoadingInitial(false);
+      shouldSetLoadingInitial = false; 
     }
+    
+    setIsLoadingInitial(shouldSetLoadingInitial);
 
-  }, [mounted, searchParams, currentOriginalTaskContext, setCurrentOriginalTaskContext, setChatMessages, setIsLoadingInitial, chatMessages]);
+  }, [mounted, searchParams, currentOriginalTaskContext, setCurrentOriginalTaskContext, setChatMessages, chatMessages]);
 
 
   useEffect(() => {
     if (!mounted || !isLoadingInitial || chatMessages.length !== 1 || chatMessages[0].role !== 'user') {
-      if (isLoadingInitial) setIsLoadingInitial(false);
+      if (isLoadingInitial && chatMessages.length > 1) setIsLoadingInitial(false); // Turn off if we already have AI response
       return;
     }
   
+    // Additional check: ensure the first message content aligns with the currentOriginalTaskContext
+    // This can prevent an AI call if the context changed rapidly before this effect ran.
     if (chatMessages[0].content !== currentOriginalTaskContext) {
-      console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt.");
+      console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed.");
       setIsLoadingInitial(false);
       return;
     }
   
     const userFirstMessage = chatMessages[0].content;
-    setCurrentUserInput("");
+    setCurrentUserInput(""); // Clear input when making initial call
   
     getStudentAssistance({ currentInquiry: userFirstMessage, originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER })
       .then(result => {
         latestIdentifiedType.current = result.identifiedTaskType;
-        setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now(), identifiedTaskType: result.identifiedTaskType }]);
+        setChatMessages(prev => {
+          // Ensure we are only adding the AI response if it's truly the initial one.
+          if (prev.length === 1 && prev[0].role === 'user') {
+            return [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now(), identifiedTaskType: result.identifiedTaskType }];
+          }
+          return prev; // Avoid duplicating AI response if state changed unexpectedly
+        });
       })
       .catch(error => {
         console.error("Initial AI assistance error:", error);
@@ -157,12 +157,17 @@ function AIAssistantPageContent() {
           description: "Could not get an initial response.",
           variant: "destructive",
         });
-        setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't process that initial request.", timestamp: Date.now() }]);
+        setChatMessages(prev => {
+           if (prev.length === 1 && prev[0].role === 'user') {
+            return [...prev, { role: 'assistant', content: "Sorry, I couldn't process that initial request.", timestamp: Date.now(), identifiedTaskType: 'unknown' }];
+          }
+          return prev;
+        });
       })
       .finally(() => {
         setIsLoadingInitial(false);
       });
-  }, [mounted, isLoadingInitial, chatMessages, currentOriginalTaskContext, toast, setChatMessages, latestIdentifiedType]);
+  }, [mounted, isLoadingInitial, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setIsLoadingInitial, setCurrentOriginalTaskContext]);
   
 
   useEffect(() => {
@@ -171,13 +176,12 @@ function AIAssistantPageContent() {
       const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]');
       if (viewport) {
         const { scrollTop, scrollHeight, clientHeight } = viewport;
-        // Auto-scroll if near bottom or if the last message was from the user (meaning AI is about to respond)
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 100; 
         if (isNearBottom || chatMessages[chatMessages.length - 1].role === 'user') {
           scrollToBottom("smooth");
         }
       } else {
-        scrollToBottom("auto"); // Fallback if viewport not found immediately
+        scrollToBottom("auto"); 
       }
     }
   }, [mounted, chatMessages, scrollToBottom]);
@@ -186,27 +190,21 @@ function AIAssistantPageContent() {
     if (!mounted || !currentUserInput.trim()) return;
 
     const userMessageContent = currentUserInput.trim();
-    const userMessage: ChatMessage = { role: 'user', content: userMessageContent, timestamp: Date.now() };
+    const newUserMessage: ChatMessage = { role: 'user', content: userMessageContent, timestamp: Date.now() };
     
-    let updatedChatHistoryForAICall: ChatMessage[] = [];
-    setChatMessages(prev => {
-      updatedChatHistoryForAICall = [...prev, userMessage];
-      return updatedChatHistoryForAICall;
-    });
+    // Prepare messages for AI: all current messages + new user message
+    const messagesForAICall = [...chatMessages, newUserMessage];
+    setChatMessages(messagesForAICall); // Optimistically update UI
 
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
-      // Exclude the very first user message from history if it was the original task context and we have more than 1 message.
-      // The originalTaskContext prop handles the very first context.
-      const historyForAI = updatedChatHistoryForAICall.filter((msg, index, arr) =>
-        !(index === 0 && msg.role === 'user' && msg.content === currentOriginalTaskContext && arr.length > 1)
-      );
+      const historyForAI = messagesForAICall.slice(0, -1); // All messages before the current user input
       
       const flowInput: StudentAssistantInput = {
-        currentInquiry: userMessage.content,
-        conversationHistory: historyForAI.length > 1 ? historyForAI.slice(0, -1) : [], // History up to before current user message
+        currentInquiry: newUserMessage.content,
+        conversationHistory: historyForAI,
         originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER,
       };
 
@@ -220,11 +218,11 @@ function AIAssistantPageContent() {
         description: "Could not get a follow-up response at this moment.",
         variant: "destructive",
       });
-      setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error trying to respond.", timestamp: Date.now() }]);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error trying to respond.", timestamp: Date.now(), identifiedTaskType: 'unknown' }]);
     } finally {
       setIsSendingFollowUp(false);
     }
-  }, [mounted, currentUserInput, currentOriginalTaskContext, toast, setChatMessages]);
+  }, [mounted, currentUserInput, currentOriginalTaskContext, toast, setChatMessages, chatMessages]); // Added chatMessages
 
   const isProcessing = isLoadingInitial || isSendingFollowUp;
   const canSendMessage = mounted && currentUserInput.trim() && !isProcessing;
@@ -274,7 +272,7 @@ function AIAssistantPageContent() {
       <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
         <div className="flex-1 min-h-0 relative flex flex-col">
           <ScrollArea className="absolute inset-0" ref={scrollAreaRef} tabIndex={0} style={{outline: 'none'}}>
-            <div className="px-4 pt-4 pb-12 space-y-4">
+            <div className="px-4 pt-4 pb-12 space-y-4"> {/* Increased pb for scroll-to-bottom button clearance */}
               {!mounted ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
@@ -384,4 +382,3 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
-
