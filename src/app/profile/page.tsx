@@ -31,7 +31,6 @@ export default function ProfilePage() {
     );
   }
 
-  // Placeholder for join date - in a real app, this would come from user data
   const joinDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date();
 
   return (
