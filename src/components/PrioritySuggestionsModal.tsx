@@ -4,23 +4,15 @@
 // This component is no longer used as AI task prioritization has been removed.
 // You can delete this file.
 
-import type { Task } from '@/types'; // PrioritizedTaskSuggestion removed
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, ListChecks, Loader2 } from 'lucide-react';
+import { Lightbulb, Loader2 } from 'lucide-react';
 
-// PrioritizedTaskSuggestion type is no longer defined in types/index.ts
-// interface PrioritizedTaskSuggestion {
-//   taskId: string;
-//   description: string;
-//   reason: string;
-// }
 
 interface PrioritySuggestionsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  // suggestions: PrioritizedTaskSuggestion[]; // This type would need to be defined locally if used
-  suggestions: Array<{taskId: string, description: string, reason: string}>;
+  suggestions: Array<{taskId: string, description: string, reason: string}>; // Kept for structure if reused
   isLoading: boolean;
 }
 
@@ -47,6 +39,7 @@ export function PrioritySuggestionsModal({ isOpen, onClose, suggestions, isLoadi
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <p>AI task prioritization feature is not active.</p>
+              <p className="text-xs mt-1">This feature will be re-enabled with a new AI service.</p>
             </div>
           )}
         </div>

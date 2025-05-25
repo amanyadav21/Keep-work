@@ -24,18 +24,12 @@ export interface Task {
 
 export type TaskFilter = "all" | "pending" | "completed";
 
-// PrioritizedTaskSuggestion removed as its AI flow is removed
-
-// For Student Assistant (Chat) - Retained for UI structure if a new AI is integrated
+// For Student Assistant (Chat)
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
-  // identifiedTaskType is specific to the previous AI's output schema
-  // If new AI has similar concept, this can be adapted.
-  identifiedTaskType?: "writing" | "coding" | "planning_reminder" | "general_query" | "brainstorming_elaboration" | "unknown";
+  // identifiedTaskType is removed as it was specific to the previous AI's output schema
 }
-
-// StudentAssistantInput and StudentAssistantOutput removed as their AI flow is removed
 
 export type FirebaseUser = FirebaseUserType;

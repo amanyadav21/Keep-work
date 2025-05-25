@@ -11,18 +11,17 @@ import { FilterControls } from '@/components/FilterControls';
 import type { Task, TaskFilter, FirebaseUser } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-// import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal'; // AI feature removed
-// import { AppSidebar } from '@/components/AppSidebar'; // Sidebar concept changed
+import { DashboardSection } from '@/components/DashboardSection';
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-// import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow'; // AI feature removed
 import { Button } from '@/components/ui/button';
-import { MessageSquareText, Search, Loader2, Brain, LayoutGrid, AlignLeft } from 'lucide-react';
+import { Bird, Brain, LayoutGrid, AlignLeft, Search, Loader2, MessageSquareText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { AppSidebar } from '@/components/AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp } from 'firebase/firestore';
-import { AppSidebar } from '@/components/AppSidebar';
+
 
 interface HomePageProps {
   params: Record<string, never>;
@@ -39,10 +38,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
-  // Priority suggestions state removed
-  // const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
-  // const [prioritySuggestions, setPrioritySuggestions] = useState<PrioritizedTaskSuggestion[]>([]);
-  // const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
 
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -253,42 +248,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     setIsFormOpen(true);
   }, [user, toast]);
 
-  // const handleSuggestPriorities = useCallback(async () => { // AI feature removed
-  //   if (!user) return;
-  //   const pendingTasks = tasks.filter(task => !task.isCompleted && !task.isTrashed);
-  //   if (pendingTasks.length === 0) {
-  //     toast({ title: "No Pending Tasks", description: "There are no pending tasks to prioritize." });
-  //     return;
-  //   }
-  //   // setIsSuggestingPriorities(true);
-  //   // setIsPriorityModalOpen(true);
-  //   // setPrioritySuggestions([]); // Clear previous suggestions
-
-  //   try {
-  //     // const flowTasks: FlowTaskInput[] = pendingTasks.map(task => ({
-  //     //   id: task.id,
-  //     //   description: task.description,
-  //     //   dueDate: task.dueDate,
-  //     //   category: task.category,
-  //     // }));
-  //     // const result = await suggestTaskPriorities({ tasks: flowTasks });
-  //     // const suggestionsWithDesc = result.prioritizedSuggestions.map(s => ({
-  //     //   ...s,
-  //     //   description: pendingTasks.find(pt => pt.id === s.taskId)?.description || 'Unknown Task',
-  //     // }));
-  //     // setPrioritySuggestions(suggestionsWithDesc);
-  //     toast({ title: "AI Feature Note", description: "AI task prioritization is currently unavailable.", variant: "default"});
-
-  //   } catch (error: any) {
-  //     console.error("Error suggesting task priorities:", error);
-  //     toast({ title: "Error", description: `Could not suggest priorities: ${error.message}`, variant: "destructive" });
-  //     // setIsPriorityModalOpen(false);
-  //   } finally {
-  //     // setIsSuggestingPriorities(false);
-  //   }
-  // }, [user, tasks, toast]);
-
-
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
       if (a.isCompleted !== b.isCompleted) {
@@ -321,21 +280,22 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   if (authLoading || !isMounted) {
     return (
        <div className="flex h-screen bg-muted/40 dark:bg-background overflow-hidden">
-        <div className="hidden md:block relative w-64 h-svh bg-sidebar-background animate-pulse" />
+        {/* Sidebar Skeleton */}
+        <div className="hidden md:block relative w-60 bg-sidebar border-r border-sidebar-border animate-pulse" />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header onAddTask={() => {}} />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
             <div className="max-w-6xl mx-auto w-full">
-              <div className="mb-6 h-10 bg-muted rounded-lg animate-pulse" /> {/* Search Bar Skeleton */}
-              <div className="mb-6 h-9 bg-muted rounded-full w-1/2 animate-pulse" /> {/* Filter Controls Skeleton */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="mb-6 h-12 bg-card rounded-lg shadow-sm border animate-pulse" /> {/* Search Bar Skeleton */}
+              <div className="mb-6 h-10 bg-muted rounded-md animate-pulse" /> {/* Filter Controls Skeleton */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="h-[220px] bg-card rounded-lg shadow-sm border animate-pulse">
+                  <div key={i} className="h-[250px] bg-card rounded-lg shadow-sm border animate-pulse">
                      <div className="h-32 bg-muted rounded-t-lg"></div>
-                      <div className="p-3 space-y-2">
-                        <div className="h-4 bg-muted rounded w-3/4"></div>
-                        <div className="h-3 bg-muted rounded w-1/2"></div>
-                        <div className="h-3 bg-muted rounded w-1/4 mt-auto"></div>
+                      <div className="p-4 space-y-3">
+                        <div className="h-5 bg-muted rounded w-3/4"></div>
+                        <div className="h-4 bg-muted rounded w-1/2"></div>
+                        <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
                       </div>
                   </div>
                 ))}
@@ -348,7 +308,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   }
 
   return (
-    <div className="flex h-screen bg-muted/40 dark:bg-background overflow-hidden">
+    <div className="flex h-screen bg-background dark:bg-background overflow-hidden">
       {user && <AppSidebar currentFilter={filter} onFilterChange={setFilter} />}
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -374,12 +334,12 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
           <>
             <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
               <div className="max-w-6xl mx-auto w-full">
-                <div className="mb-6 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <div className="mb-6 relative shadow-sm">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     type="search"
                     placeholder="Search tasks..."
-                    className="w-full pl-10 py-2 text-sm rounded-lg border-border focus:ring-primary focus:border-primary"
+                    className="w-full pl-12 py-2.5 h-12 text-base rounded-lg border-border focus:ring-primary focus:border-primary"
                     disabled // Placeholder for now
                   />
                 </div>
@@ -389,14 +349,14 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                 </div>
 
                 {isLoadingTasks ? (
-                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {[...Array(8)].map((_, i) => (
-                      <div key={i} className="bg-card rounded-lg shadow-sm border p-0 animate-pulse h-[220px]">
+                      <div key={i} className="bg-card rounded-lg shadow-sm border p-0 animate-pulse h-[250px]">
                         <div className="h-32 bg-muted rounded-t-lg"></div>
-                        <div className="p-3 space-y-2">
-                          <div className="h-4 bg-muted rounded w-3/4"></div>
-                          <div className="h-3 bg-muted rounded w-1/2"></div>
-                          <div className="h-3 bg-muted rounded w-1/4 mt-auto"></div>
+                        <div className="p-4 space-y-3">
+                          <div className="h-5 bg-muted rounded w-3/4"></div>
+                          <div className="h-4 bg-muted rounded w-1/2"></div>
+                          <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
                         </div>
                       </div>
                     ))}
@@ -412,7 +372,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                 )}
               </div>
             </main>
-            {/* DashboardSection removed from here, as per new layout */}
           </>
         )}
       </div>
@@ -455,7 +414,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* PrioritySuggestionsModal removed */}
 
           <Button asChild size="lg" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-30 p-0">
             <Link href="/ai-assistant" aria-label="Open AI Assistant">

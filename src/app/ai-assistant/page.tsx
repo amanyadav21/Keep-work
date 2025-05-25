@@ -9,8 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage } from '@/types'; // AI Output Type removed as it was Genkit specific
-// import { getStudentAssistance, type StudentAssistantInput } from '@/ai/flows/student-assistant-flow'; // AI Flow removed
+import type { ChatMessage } from '@/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, Type, Code, ListChecks, HelpCircle, AlertCircle, Send, UserCircle, Bot, ChevronDown, Lightbulb } from 'lucide-react';
@@ -18,46 +17,80 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
-// Define a placeholder type for AIOutputType as StudentAssistantOutput is removed
+// Define a placeholder type for AIOutputType as Genkit integration is removed
 type AIOutputType = {
   assistantResponse: string;
-  identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "brainstorming_elaboration" | "unknown";
-};
-// Define a placeholder type for StudentAssistantInput as it was Genkit specific
-type StudentAssistantInput = {
-  currentInquiry: string;
-  conversationHistory?: Omit<ChatMessage, 'identifiedTaskType'>[];
-  originalTaskContext?: string;
+  // identifiedTaskType is removed for simplification with OpenRouter
 };
 
+// Placeholder for the actual OpenRouter API call function
+async function getOpenRouterAssistance(
+  currentInquiry: string,
+  conversationHistory: Omit<ChatMessage, 'timestamp'>[] = [] // OpenRouter expects messages without timestamp
+): Promise<AIOutputType> {
+  console.log("Attempting to call OpenRouter with inquiry:", currentInquiry);
+  const apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
+  const siteUrl = process.env.NEXT_PUBLIC_YOUR_SITE_URL || "http://localhost:3000"; // Default for safety
+  const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Upnext Task Manager"; // Default for safety
 
-const TaskTypeIcon: React.FC<{ type: AIOutputType['identifiedTaskType'] | undefined }> = ({ type }) => {
-  const iconClass = "h-4 w-4 text-primary";
-  if (!type) return <HelpCircle className={iconClass} />;
-  switch (type) {
-    case 'writing': return <Type className={iconClass} />;
-    case 'coding': return <Code className={iconClass} />;
-    case 'planning_reminder': return <ListChecks className={iconClass} />;
-    case 'general_query': return <HelpCircle className={iconClass} />;
-    case 'brainstorming_elaboration': return <Lightbulb className={iconClass} />;
-    case 'unknown': return <AlertCircle className={cn(iconClass, "text-destructive")} />;
-    default: return <HelpCircle className={iconClass} />;
+  if (!apiKey) {
+    console.error("OpenRouter API Key is not set in environment variables.");
+    return { assistantResponse: "AI Service is not configured. Missing API Key." };
   }
-};
+
+  const messagesForAPI = [
+    { role: "system", content: "You are a helpful student assistant. Provide concise and relevant answers." },
+    ...conversationHistory.map(msg => ({ role: msg.role, content: msg.content })), // Map to exclude timestamp
+    { role: "user", content: currentInquiry }
+  ];
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": siteUrl,
+        "X-Title": siteName,
+      },
+      body: JSON.stringify({
+        model: "mistralai/mistral-7b-instruct", // Using Mistral 7B Instruct
+        messages: messagesForAPI,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      console.error("OpenRouter API Error:", response.status, errorData);
+      throw new Error(`API request failed with status ${response.status}: ${errorData.error?.message || errorData.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    const assistantMessage = data.choices?.[0]?.message?.content;
+
+    if (!assistantMessage) {
+      console.error("OpenRouter Error: No message content in response", data);
+      return { assistantResponse: "Sorry, I couldn't generate a response at this time (empty content)." };
+    }
+    return { assistantResponse: assistantMessage.trim() };
+
+  } catch (error: any) {
+    console.error("Error calling OpenRouter AI:", error);
+    let errorMessage = "Sorry, I couldn't connect to the AI assistant. Please try again later.";
+    if (error.message) {
+        errorMessage = `AI Error: ${error.message}`;
+    }
+    if (error.message && error.message.includes("API key")) {
+        errorMessage = "AI Service API key is invalid or missing. Please check configuration.";
+    }
+    return { assistantResponse: errorMessage };
+  }
+}
+
 
 const GENERAL_INQUIRY_PLACEHOLDER = "How can I help you today?";
 const SERVER_RENDER_PLACEHOLDER = "Enter your general inquiry here...";
-const AI_UNAVAILABLE_MESSAGE = "AI Assistant is currently unavailable. Please configure a new AI service or check your existing AI service integration.";
-
-// Placeholder function for getStudentAssistance
-const getStudentAssistancePlaceholder = async (input: StudentAssistantInput): Promise<AIOutputType> => {
-  console.warn("getStudentAssistance called, but AI integration is removed. Returning placeholder response.");
-  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-  return {
-    assistantResponse: AI_UNAVAILABLE_MESSAGE,
-    identifiedTaskType: "unknown",
-  };
-};
+const AI_UNAVAILABLE_MESSAGE = "AI Assistant is currently unavailable. Please check your AI service configuration.";
 
 
 function AIAssistantPageContent() {
@@ -76,8 +109,6 @@ function AIAssistantPageContent() {
   const [currentUserInput, setCurrentUserInput] = useState("");
   const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(false);
-
-  const latestIdentifiedType = useRef<AIOutputType['identifiedTaskType'] | undefined>(undefined);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,10 +132,10 @@ function AIAssistantPageContent() {
     };
 
     viewport.addEventListener('scroll', handleScroll);
-    handleScroll();
+    handleScroll(); // Initial check
 
     return () => viewport.removeEventListener('scroll', handleScroll);
-  }, [mounted, chatMessages]);
+  }, [mounted, chatMessages]); // Re-run when chatMessages change to update scroll state
 
 
   useEffect(() => {
@@ -119,26 +150,26 @@ function AIAssistantPageContent() {
     if (intendedContext !== currentOriginalTaskContext) {
       needsChatReset = true;
     } else if (chatMessages.length === 0 && intendedContext) {
-      needsChatReset = true;
+      needsChatReset = true; // Start a new chat if messages are empty for this context
     } else if (chatMessages.length > 0 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content !== intendedContext) {
+      // This handles switching contexts when messages for old context exist
       needsChatReset = true;
     }
+
 
     if (needsChatReset) {
       setCurrentOriginalTaskContext(intendedContext);
       const firstUserMessage: ChatMessage = { role: 'user', content: intendedContext, timestamp: Date.now() };
       setChatMessages([firstUserMessage]);
-      latestIdentifiedType.current = undefined;
       shouldSetLoadingInitial = true;
     } else if (chatMessages.length === 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext) {
+      // This means we've loaded from localStorage for this context, but no AI response yet, or it's a fresh start.
       shouldSetLoadingInitial = true;
     } else if (chatMessages.length > 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext && chatMessages[1]?.role === 'assistant') {
-      const aiMessage = chatMessages[1];
-      if(aiMessage.identifiedTaskType){
-        latestIdentifiedType.current = aiMessage.identifiedTaskType;
-      }
+      // Chat already initialized and AI responded for this context
       shouldSetLoadingInitial = false;
     }
+
 
     setIsLoadingInitial(shouldSetLoadingInitial);
 
@@ -147,26 +178,30 @@ function AIAssistantPageContent() {
 
   useEffect(() => {
     if (!mounted || !isLoadingInitial || chatMessages.length !== 1 || chatMessages[0].role !== 'user') {
-      if (isLoadingInitial && chatMessages.length > 1) setIsLoadingInitial(false);
+      if (isLoadingInitial && chatMessages.length > 1) setIsLoadingInitial(false); // AI response came through
       return;
+    }
+    
+    // Double check context match
+    if (chatMessages[0].content !== currentOriginalTaskContext) {
+        console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed.");
+        setIsLoadingInitial(false); // Avoid unnecessary AI call
+        return;
     }
 
-    if (chatMessages[0].content !== currentOriginalTaskContext) {
-      console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed.");
-      setIsLoadingInitial(false);
-      return;
-    }
 
     const userFirstMessage = chatMessages[0].content;
-    setCurrentUserInput("");
+    setCurrentUserInput(""); // Clear input field
 
-    getStudentAssistancePlaceholder({ currentInquiry: userFirstMessage, originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER })
+    getOpenRouterAssistance(userFirstMessage)
       .then(result => {
-        latestIdentifiedType.current = result.identifiedTaskType;
         setChatMessages(prev => {
-          if (prev.length === 1 && prev[0].role === 'user') {
-            return [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now(), identifiedTaskType: result.identifiedTaskType }];
+          // Ensure we're adding to the correct conversation
+          if (prev.length === 1 && prev[0].role === 'user' && prev[0].content === userFirstMessage) {
+            return [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }];
           }
+          // If context changed rapidly or something unexpected, don't update stale chat
+          console.warn("AI Assistant: Initial chat context changed before AI response arrived. Not updating messages.");
           return prev;
         });
       })
@@ -174,12 +209,12 @@ function AIAssistantPageContent() {
         console.error("Initial AI assistance error:", error);
         toast({
           title: "AI Assistance Failed",
-          description: AI_UNAVAILABLE_MESSAGE,
+          description: error.message || AI_UNAVAILABLE_MESSAGE,
           variant: "destructive",
         });
         setChatMessages(prev => {
-           if (prev.length === 1 && prev[0].role === 'user') {
-            return [...prev, { role: 'assistant', content: "Sorry, I couldn't process that initial request. " + AI_UNAVAILABLE_MESSAGE, timestamp: Date.now(), identifiedTaskType: 'unknown' }];
+           if (prev.length === 1 && prev[0].role === 'user' && prev[0].content === userFirstMessage) {
+            return [...prev, { role: 'assistant', content: `Sorry, I couldn't process that initial request. ${error.message || AI_UNAVAILABLE_MESSAGE}`, timestamp: Date.now() }];
           }
           return prev;
         });
@@ -187,7 +222,7 @@ function AIAssistantPageContent() {
       .finally(() => {
         setIsLoadingInitial(false);
       });
-  }, [mounted, isLoadingInitial, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setCurrentOriginalTaskContext]);
+  }, [mounted, isLoadingInitial, chatMessages, currentOriginalTaskContext, toast, setChatMessages]);
 
 
   useEffect(() => {
@@ -196,12 +231,13 @@ function AIAssistantPageContent() {
       const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]');
       if (viewport) {
         const { scrollTop, scrollHeight, clientHeight } = viewport;
+        // Scroll to bottom if user is near the bottom OR if the new message is from the user (they just sent it)
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
         if (isNearBottom || chatMessages[chatMessages.length - 1].role === 'user') {
           scrollToBottom("smooth");
         }
       } else {
-        scrollToBottom("auto");
+         scrollToBottom("auto"); // Fallback if viewport not found immediately
       }
     }
   }, [mounted, chatMessages, scrollToBottom]);
@@ -212,40 +248,36 @@ function AIAssistantPageContent() {
     const userMessageContent = currentUserInput.trim();
     const newUserMessage: ChatMessage = { role: 'user', content: userMessageContent, timestamp: Date.now() };
 
-    const messagesForAICall = [...chatMessages, newUserMessage];
-    setChatMessages(messagesForAICall);
+    // Add user message to local state immediately for responsiveness
+    const updatedChatMessages = [...chatMessages, newUserMessage];
+    setChatMessages(updatedChatMessages);
 
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
-      const historyForAI = messagesForAICall.slice(0, -1);
-
-      const flowInput: StudentAssistantInput = {
-        currentInquiry: newUserMessage.content,
-        conversationHistory: historyForAI,
-        originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER,
-      };
-
-      const result = await getStudentAssistancePlaceholder(flowInput); // Using placeholder
-      latestIdentifiedType.current = result.identifiedTaskType;
-      setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now(), identifiedTaskType: result.identifiedTaskType }]);
-    } catch (error) {
+      // Prepare conversation history for AI: exclude timestamps and potentially the very first user message if it's the originalTaskContext
+      const historyForAI = updatedChatMessages
+        .slice(0, -1) // Exclude the new user message we just added
+        .map(msg => ({ role: msg.role, content: msg.content }));
+      
+      const result = await getOpenRouterAssistance(newUserMessage.content, historyForAI);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
+    } catch (error: any) {
       console.error("AI follow-up assistance error:", error);
       toast({
         title: "AI Follow-up Failed",
-        description: AI_UNAVAILABLE_MESSAGE,
+        description: error.message || AI_UNAVAILABLE_MESSAGE,
         variant: "destructive",
       });
-      setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. " + AI_UNAVAILABLE_MESSAGE, timestamp: Date.now(), identifiedTaskType: 'unknown' }]);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error. ${error.message || AI_UNAVAILABLE_MESSAGE}`, timestamp: Date.now() }]);
     } finally {
       setIsSendingFollowUp(false);
     }
   }, [mounted, currentUserInput, currentOriginalTaskContext, toast, setChatMessages, chatMessages]);
 
   const isProcessing = isLoadingInitial || isSendingFollowUp;
-  const canSendMessage = mounted && currentUserInput.trim() && !isProcessing;
-
+  
   const placeholderText =
     !mounted
       ? SERVER_RENDER_PLACEHOLDER
@@ -262,7 +294,7 @@ function AIAssistantPageContent() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <header className="p-4 border-b bg-background sticky top-0 z-10 flex items-center justify-between">
+      <header className="p-4 border-b bg-background sticky top-0 z-10 flex items-center justify-between max-w-6xl mx-auto w-full">
         <div className='flex items-center gap-2'>
           <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
             <ArrowLeft className="h-5 w-5" />
@@ -278,12 +310,7 @@ function AIAssistantPageContent() {
               <span className="font-medium text-foreground/80">Context:</span>
               <span className="italic ml-1.5 text-foreground/90 truncate">{displayContext}</span>
             </div>
-            {latestIdentifiedType.current && (
-                <Badge variant="outline" className="capitalize text-xs py-0.5 whitespace-nowrap shrink-0">
-                <TaskTypeIcon type={latestIdentifiedType.current} />
-                <span className="ml-1.5">{latestIdentifiedType.current.replace(/_/g, ' ')}</span>
-              </Badge>
-            )}
+            {/* Removed identifiedTaskType badge as it's not part of OpenRouter simplified output */}
           </div>
         </div>
       )}
@@ -291,7 +318,7 @@ function AIAssistantPageContent() {
       <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
         <div className="flex-1 min-h-0 relative flex flex-col">
           <ScrollArea className="absolute inset-0" ref={scrollAreaRef} tabIndex={0} style={{outline: 'none'}}>
-            <div className="px-4 pt-4 pb-12 space-y-4">
+            <div className="px-4 pt-4 pb-12 space-y-4"> {/* Increased pb for scroll to bottom button clearance */}
               {!mounted ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
@@ -342,7 +369,7 @@ function AIAssistantPageContent() {
                   )}
                 </>
               )}
-              <div ref={messagesEndRef} style={{ height: '1px' }} />
+              <div ref={messagesEndRef} style={{ height: '1px' }} /> {/* Scroll target */}
             </div>
           </ScrollArea>
           {mounted && showScrollToBottom && (
@@ -367,16 +394,16 @@ function AIAssistantPageContent() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  if (canSendMessage) handleSendFollowUp();
+                  if (!isProcessing && currentUserInput.trim()) handleSendFollowUp();
                 }
               }}
               rows={1}
               className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
-              disabled={!mounted || isProcessing || true} // AI feature removed, so input is always disabled
+              disabled={!mounted || isProcessing}
             />
             <Button
-              onClick={()=>handleSendFollowUp()}
-              disabled={!canSendMessage || true} // AI feature removed, so button is always disabled
+              onClick={handleSendFollowUp}
+              disabled={!mounted || isProcessing || !currentUserInput.trim()}
               size="icon"
               className="h-10 w-10 flex-shrink-0"
               aria-label="Send follow-up question"
@@ -385,7 +412,7 @@ function AIAssistantPageContent() {
             </Button>
           </div>
             <p className="text-xs text-center text-muted-foreground pt-2">
-                Note: AI features are currently unavailable. Integrate your AI service to enable chat.
+                AI responses are powered by Mistral 7B Instruct via OpenRouter.
             </p>
         </div>
       </div>

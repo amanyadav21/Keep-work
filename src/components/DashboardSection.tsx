@@ -5,19 +5,15 @@ import type { Task } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { BarChartBig, Activity, ListChecks, ClipboardList, Lightbulb } from 'lucide-react';
+import { BarChartBig, Activity, ListChecks, ClipboardList, Lightbulb, Loader2 } from 'lucide-react';
 import { useMemo } from 'react';
 
 interface DashboardSectionProps {
   tasks: Task[];
-  // onSuggestPriorities: () => void; // AI feature removed
-  // isPrioritizing: boolean; // AI feature removed
 }
 
 export function DashboardSection({
   tasks,
-  // onSuggestPriorities, // AI feature removed
-  // isPrioritizing, // AI feature removed
 }: DashboardSectionProps) {
   const totalTasks = tasks.length;
   const completedTasks = useMemo(() => tasks.filter(task => task.isCompleted).length, [tasks]);
@@ -72,23 +68,6 @@ export function DashboardSection({
               <p className="text-2xl font-bold text-foreground">{completedTasks}</p>
             </div>
           </div>
-
-          {/* AI Priority Suggestion Button Removed */}
-          {/*
-          <Button
-            onClick={onSuggestPriorities}
-            className="w-full mt-2"
-            variant="outline"
-            disabled={isPrioritizing || pendingTasks === 0}
-          >
-            {isPrioritizing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Lightbulb className="mr-2 h-4 w-4" />
-            )}
-            {pendingTasks === 0 ? "No Tasks to Prioritize" : "Suggest Priorities (AI)"}
-          </Button>
-          */}
            <p className="text-xs text-center text-muted-foreground pt-2">
                 Note: AI task prioritization is currently unavailable.
             </p>
