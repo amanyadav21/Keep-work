@@ -20,18 +20,17 @@ import useLocalStorage from '@/hooks/useLocalStorage';
 // Define a placeholder type for AIOutputType as Genkit integration is removed
 type AIOutputType = {
   assistantResponse: string;
-  // identifiedTaskType is removed for simplification with OpenRouter
 };
 
-// Placeholder for the actual OpenRouter API call function
+// Updated OpenRouter API call function
 async function getOpenRouterAssistance(
   currentInquiry: string,
-  conversationHistory: Omit<ChatMessage, 'timestamp'>[] = [] // OpenRouter expects messages without timestamp
+  conversationHistory: Omit<ChatMessage, 'timestamp'>[] = []
 ): Promise<AIOutputType> {
   console.log("Attempting to call OpenRouter with inquiry:", currentInquiry);
   const apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
-  const siteUrl = process.env.NEXT_PUBLIC_YOUR_SITE_URL || "http://localhost:3000"; // Default for safety
-  const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Upnext Task Manager"; // Default for safety
+  const siteUrl = process.env.NEXT_PUBLIC_YOUR_SITE_URL || "http://localhost:3000";
+  const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "TaskWise Student";
 
   if (!apiKey) {
     console.error("OpenRouter API Key is not set in environment variables.");
@@ -40,7 +39,7 @@ async function getOpenRouterAssistance(
 
   const messagesForAPI = [
     { role: "system", content: "You are a helpful student assistant. Provide concise and relevant answers." },
-    ...conversationHistory.map(msg => ({ role: msg.role, content: msg.content })), // Map to exclude timestamp
+    ...conversationHistory.map(msg => ({ role: msg.role, content: msg.content })),
     { role: "user", content: currentInquiry }
   ];
 
@@ -50,11 +49,11 @@ async function getOpenRouterAssistance(
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": siteUrl,
-        "X-Title": siteName,
+        "HTTP-Referer": siteUrl, // Optional
+        "X-Title": siteName,     // Optional
       },
       body: JSON.stringify({
-        model: "mistralai/mistral-7b-instruct", // Using Mistral 7B Instruct
+        model: "mistralai/mistral-7b-instruct:free", // Using Mistral 7B Instruct (free version)
         messages: messagesForAPI,
       }),
     });
@@ -80,8 +79,11 @@ async function getOpenRouterAssistance(
     if (error.message) {
         errorMessage = `AI Error: ${error.message}`;
     }
-    if (error.message && error.message.includes("API key")) {
+    if (error.message && error.message.toLowerCase().includes("api key")) {
         errorMessage = "AI Service API key is invalid or missing. Please check configuration.";
+    }
+     if (error.message && error.message.toLowerCase().includes("blocked")) {
+        errorMessage = "AI request was blocked. Please check your OpenRouter account or API key settings.";
     }
     return { assistantResponse: errorMessage };
   }
@@ -115,7 +117,9 @@ function AIAssistantPageContent() {
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior }), 0);
+    setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior });
+    }, 0);
   }, []);
 
   useEffect(() => {
@@ -127,15 +131,15 @@ function AIAssistantPageContent() {
     const handleScroll = () => {
       if (!viewport) return;
       const { scrollTop, scrollHeight, clientHeight } = viewport;
-      const atBottom = scrollHeight - scrollTop - clientHeight < 50;
-      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50);
+      const atBottom = scrollHeight - scrollTop - clientHeight < 50; // User is considered at bottom if less than 50px from it
+      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50); // Show button if not at bottom and there's enough content to scroll
     };
 
     viewport.addEventListener('scroll', handleScroll);
     handleScroll(); // Initial check
 
     return () => viewport.removeEventListener('scroll', handleScroll);
-  }, [mounted, chatMessages]); // Re-run when chatMessages change to update scroll state
+  }, [mounted, chatMessages]);
 
 
   useEffect(() => {
@@ -150,9 +154,8 @@ function AIAssistantPageContent() {
     if (intendedContext !== currentOriginalTaskContext) {
       needsChatReset = true;
     } else if (chatMessages.length === 0 && intendedContext) {
-      needsChatReset = true; // Start a new chat if messages are empty for this context
+      needsChatReset = true; 
     } else if (chatMessages.length > 0 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content !== intendedContext) {
-      // This handles switching contexts when messages for old context exist
       needsChatReset = true;
     }
 
@@ -163,10 +166,8 @@ function AIAssistantPageContent() {
       setChatMessages([firstUserMessage]);
       shouldSetLoadingInitial = true;
     } else if (chatMessages.length === 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext) {
-      // This means we've loaded from localStorage for this context, but no AI response yet, or it's a fresh start.
       shouldSetLoadingInitial = true;
     } else if (chatMessages.length > 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext && chatMessages[1]?.role === 'assistant') {
-      // Chat already initialized and AI responded for this context
       shouldSetLoadingInitial = false;
     }
 
@@ -178,29 +179,25 @@ function AIAssistantPageContent() {
 
   useEffect(() => {
     if (!mounted || !isLoadingInitial || chatMessages.length !== 1 || chatMessages[0].role !== 'user') {
-      if (isLoadingInitial && chatMessages.length > 1) setIsLoadingInitial(false); // AI response came through
+      if (isLoadingInitial && chatMessages.length > 1) setIsLoadingInitial(false); 
       return;
     }
     
-    // Double check context match
     if (chatMessages[0].content !== currentOriginalTaskContext) {
         console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed.");
-        setIsLoadingInitial(false); // Avoid unnecessary AI call
+        setIsLoadingInitial(false); 
         return;
     }
 
-
     const userFirstMessage = chatMessages[0].content;
-    setCurrentUserInput(""); // Clear input field
+    setCurrentUserInput(""); 
 
     getOpenRouterAssistance(userFirstMessage)
       .then(result => {
         setChatMessages(prev => {
-          // Ensure we're adding to the correct conversation
           if (prev.length === 1 && prev[0].role === 'user' && prev[0].content === userFirstMessage) {
             return [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }];
           }
-          // If context changed rapidly or something unexpected, don't update stale chat
           console.warn("AI Assistant: Initial chat context changed before AI response arrived. Not updating messages.");
           return prev;
         });
@@ -231,13 +228,12 @@ function AIAssistantPageContent() {
       const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]');
       if (viewport) {
         const { scrollTop, scrollHeight, clientHeight } = viewport;
-        // Scroll to bottom if user is near the bottom OR if the new message is from the user (they just sent it)
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
         if (isNearBottom || chatMessages[chatMessages.length - 1].role === 'user') {
           scrollToBottom("smooth");
         }
       } else {
-         scrollToBottom("auto"); // Fallback if viewport not found immediately
+         scrollToBottom("auto"); 
       }
     }
   }, [mounted, chatMessages, scrollToBottom]);
@@ -248,7 +244,6 @@ function AIAssistantPageContent() {
     const userMessageContent = currentUserInput.trim();
     const newUserMessage: ChatMessage = { role: 'user', content: userMessageContent, timestamp: Date.now() };
 
-    // Add user message to local state immediately for responsiveness
     const updatedChatMessages = [...chatMessages, newUserMessage];
     setChatMessages(updatedChatMessages);
 
@@ -256,9 +251,8 @@ function AIAssistantPageContent() {
     setIsSendingFollowUp(true);
 
     try {
-      // Prepare conversation history for AI: exclude timestamps and potentially the very first user message if it's the originalTaskContext
       const historyForAI = updatedChatMessages
-        .slice(0, -1) // Exclude the new user message we just added
+        .slice(0, -1) 
         .map(msg => ({ role: msg.role, content: msg.content }));
       
       const result = await getOpenRouterAssistance(newUserMessage.content, historyForAI);
@@ -274,7 +268,7 @@ function AIAssistantPageContent() {
     } finally {
       setIsSendingFollowUp(false);
     }
-  }, [mounted, currentUserInput, currentOriginalTaskContext, toast, setChatMessages, chatMessages]);
+  }, [mounted, currentUserInput, toast, setChatMessages, chatMessages]); // Removed currentOriginalTaskContext as it's implicitly handled by history
 
   const isProcessing = isLoadingInitial || isSendingFollowUp;
   
@@ -310,14 +304,13 @@ function AIAssistantPageContent() {
               <span className="font-medium text-foreground/80">Context:</span>
               <span className="italic ml-1.5 text-foreground/90 truncate">{displayContext}</span>
             </div>
-            {/* Removed identifiedTaskType badge as it's not part of OpenRouter simplified output */}
           </div>
         </div>
       )}
 
       <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
         <div className="flex-1 min-h-0 relative flex flex-col">
-          <ScrollArea className="absolute inset-0" ref={scrollAreaRef} tabIndex={0} style={{outline: 'none'}}>
+          <ScrollArea className="absolute inset-0 min-h-0" ref={scrollAreaRef} tabIndex={0} style={{outline: 'none'}}>
             <div className="px-4 pt-4 pb-12 space-y-4"> {/* Increased pb for scroll to bottom button clearance */}
               {!mounted ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -412,7 +405,7 @@ function AIAssistantPageContent() {
             </Button>
           </div>
             <p className="text-xs text-center text-muted-foreground pt-2">
-                AI responses are powered by Mistral 7B Instruct via OpenRouter.
+                AI responses are powered by Mistral 7B Instruct (Free) via OpenRouter.
             </p>
         </div>
       </div>
