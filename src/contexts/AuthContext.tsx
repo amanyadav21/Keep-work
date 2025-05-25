@@ -8,7 +8,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  type User as FirebaseUser, // Renaming to avoid conflict if you have your own User type
+  type User as FirebaseUserType, // Renaming to avoid conflict if you have your own User type
   type AuthError
 } from 'firebase/auth';
 import { auth } from '@/firebase/config';
@@ -16,17 +16,17 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
-  user: FirebaseUser | null;
+  user: FirebaseUserType | null;
   loading: boolean;
-  signUp: (email: string, pass: string) => Promise<FirebaseUser | null>;
-  logIn: (email: string, pass: string) => Promise<FirebaseUser | null>;
+  signUp: (email: string, pass: string) => Promise<FirebaseUserType | null>;
+  logIn: (email: string, pass: string) => Promise<FirebaseUserType | null>;
   logOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<FirebaseUserType | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signUp = async (email: string, pass: string): Promise<FirebaseUser | null> => {
+  const signUp = async (email: string, pass: string): Promise<FirebaseUserType | null> => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
@@ -50,14 +50,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       const authError = error as AuthError;
       console.error("Signup error:", authError);
-      toast({ title: "Signup Failed", description: authError.message || "An unexpected error occurred.", variant: "destructive" });
+      let description = "An unexpected error occurred during signup. Please try again.";
+      if (authError.code === 'auth/email-already-in-use') {
+        description = "This email address is already in use. Please try logging in or use a different email.";
+      } else if (authError.code === 'auth/weak-password') {
+        description = "The password is too weak. Please choose a stronger password.";
+      } else if (authError.message) {
+        description = authError.message;
+      }
+      toast({ title: "Signup Failed", description, variant: "destructive" });
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const logIn = async (email: string, pass: string): Promise<FirebaseUser | null> => {
+  const logIn = async (email: string, pass: string): Promise<FirebaseUserType | null> => {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
@@ -68,7 +76,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       const authError = error as AuthError;
       console.error("Login error:", authError);
-      toast({ title: "Login Failed", description: authError.message || "Invalid credentials or unexpected error.", variant: "destructive" });
+      let description = "An unexpected error occurred during login. Please try again.";
+      if (authError.code === 'auth/invalid-credential' || authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
+        description = "Invalid email or password. Please check your credentials and try again.";
+      } else if (authError.code === 'auth/user-disabled') {
+        description = "This user account has been disabled.";
+      } else if (authError.message) {
+        description = authError.message; // Use Firebase's message for other specific errors
+      }
+      toast({ title: "Login Failed", description, variant: "destructive" });
       return null;
     } finally {
       setLoading(false);
