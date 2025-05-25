@@ -11,7 +11,7 @@ import { FilterControls } from '@/components/FilterControls';
 import type { Task, TaskFilter, FirebaseUser } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AppSidebar } from '@/components/AppSidebar';
+// AppSidebar is no longer used directly here, it's part of RootLayout
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -19,15 +19,15 @@ import { Brain, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
-import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { DashboardSection } from '@/components/DashboardSection';
 
 interface HomePageProps {
-  params: Record<string, never>;
-  searchParams?: { [key: string]: string | string[] | undefined };
+  params: Record<string, never>; // For root page, params is always empty
+  searchParams: { [key: string]: string | string[] | undefined }; // Made non-optional
 }
 
-export default function HomePage({ params, searchParams = {} }: HomePageProps) {
+export default function HomePage({ params, searchParams }: HomePageProps) {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -60,7 +60,8 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
           } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
             dueDate = data.dueDate;
           } else {
-            console.warn(`Invalid or missing dueDate for task ${doc.id}: ${data.dueDate}. Defaulting to now.`);
+            // Fallback if dueDate is missing or invalid, can also log a warning
+            // console.warn(`Invalid or missing dueDate for task ${doc.id}: ${data.dueDate}. Defaulting to now.`);
             dueDate = new Date().toISOString();
           }
 
@@ -70,7 +71,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
           } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
             createdAt = data.createdAt;
           } else {
-            console.warn(`Invalid or missing createdAt for task ${doc.id}: ${data.createdAt}. Defaulting to now.`);
+             // console.warn(`Invalid or missing createdAt for task ${doc.id}: ${data.createdAt}. Defaulting to now.`);
             createdAt = new Date().toISOString();
           }
           
@@ -89,6 +90,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
             createdAt,
             isTrashed: data.isTrashed || false,
             trashedAt,
+            subtasks: data.subtasks || [],
           } as Task;
         });
         setTasks(tasksData);
@@ -218,7 +220,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     }
   }, [user, tasks, toast]);
 
-  const handleMoveToTrash = useCallback(async (id: string) => {
+  const handleDeleteTask = useCallback(async (id: string) => {
     if (!user) return;
     const task = tasks.find(t => t.id === id);
     if (!task) return;
@@ -264,7 +266,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       }
       const createdAtA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
       const createdAtB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
-      return createdAtA - createdAtB;
+      return createdAtA - createdAtB; // Fallback to createdAt if due dates are same
     });
   }, [tasks]);
 
@@ -282,9 +284,11 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
 
 
   if (authLoading || !isMounted) {
+    // Enhanced Skeleton Loader
     return (
       <div className="flex h-screen bg-background dark:bg-background overflow-hidden">
-        <AppSidebar currentFilter={filter} onFilterChange={setFilter} />
+        {/* Sidebar placeholder (if sidebar were always visible, or to maintain space) */}
+        {/* <div className="hidden md:block w-64 bg-muted animate-pulse" /> */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header onAddTask={() => {}} />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
@@ -316,9 +320,8 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
 
   return (
     <div className="flex h-screen bg-background dark:bg-background overflow-hidden">
-      {user && <AppSidebar currentFilter={filter} onFilterChange={setFilter} />}
-
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* AppSidebar is rendered by RootLayout now */}
+      <div className="flex-1 flex flex-col overflow-hidden"> {/* Main content area wrapper */}
         <Header onAddTask={handleOpenAddForm} />
 
         {!user ? (
@@ -377,7 +380,9 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                     onToggleSubtask={handleToggleSubtaskComplete}
                   />
                 )}
-                <DashboardSection tasks={tasks} />
+                <DashboardSection
+                  tasks={tasks}
+                />
               </div>
             </main>
           </>
@@ -415,7 +420,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => taskToDelete && handleMoveToTrash(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                <AlertDialogAction onClick={() => taskToDelete && handleDeleteTask(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                   Move to Trash
                 </AlertDialogAction>
               </AlertDialogFooter>
