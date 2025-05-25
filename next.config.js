@@ -1,6 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   // The env block here was for client-side exposure and is not needed for server-side API key access
   // or for NEXT_PUBLIC_ prefixed variables.
   // Server-side code (like Genkit flows) will use process.env.GOOGLE_API_KEY directly,
