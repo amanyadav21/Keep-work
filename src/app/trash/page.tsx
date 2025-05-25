@@ -161,7 +161,7 @@ export default function TrashPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleEmptyTrash}>Yes, Empty Trash</AlertDialogAction>
+                  <AlertDialogAction onClick={handleEmptyTrash} className="bg-destructive hover:bg-destructive/90">Yes, Empty Trash</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -221,7 +221,7 @@ export default function TrashPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeletePermanently(task.id)}>Delete Permanently</AlertDialogAction>
+                          <AlertDialogAction onClick={() => handleDeletePermanently(task.id)} className="bg-destructive hover:bg-destructive/90">Delete Permanently</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -235,4 +235,3 @@ export default function TrashPage() {
     </div>
   );
 }
-

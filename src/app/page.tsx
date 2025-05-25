@@ -15,7 +15,7 @@ import { DashboardSection } from '@/components/DashboardSection';
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Bird, Brain, LayoutGrid, AlignLeft, Search, Loader2, MessageSquareText } from 'lucide-react';
+import { MessageSquareText, Search, Loader2, Brain } from 'lucide-react'; // Bird, LayoutGrid, AlignLeft removed
 import { Input } from '@/components/ui/input';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -280,7 +280,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   if (authLoading || !isMounted) {
     return (
        <div className="flex h-screen bg-muted/40 dark:bg-background overflow-hidden">
-        {/* Sidebar Skeleton */}
+        {/* Sidebar Skeleton - kept for structure if re-added, hidden if no user */}
         <div className="hidden md:block relative w-60 bg-sidebar border-r border-sidebar-border animate-pulse" />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header onAddTask={() => {}} />
@@ -370,6 +370,8 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                     onToggleSubtask={handleToggleSubtaskComplete}
                   />
                 )}
+                 {/* DashboardSection moved below TaskList */}
+                <DashboardSection tasks={tasks} />
               </div>
             </main>
           </>
