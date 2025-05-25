@@ -1,5 +1,5 @@
 
-import type { User as FirebaseUserType } from 'firebase/auth'; // Import Firebase User type
+import type { User as FirebaseUserType } from 'firebase/auth';
 
 export type TaskCategory = "Assignment" | "Class" | "Personal";
 
@@ -17,35 +17,25 @@ export interface Task {
   isCompleted: boolean;
   createdAt: string; // ISO string date for reference
   subtasks?: Subtask[];
-  userId?: string; // Optional: to explicitly store the user ID with the task
+  userId?: string;
+  isTrashed?: boolean;
+  trashedAt?: string | null; // ISO string date or null
 }
 
 export type TaskFilter = "all" | "pending" | "completed";
 
-export interface PrioritizedTaskSuggestion {
-  taskId: string;
-  description: string; 
-  reason: string;
-}
+// PrioritizedTaskSuggestion removed as its AI flow is removed
 
-// For Student Assistant Flow
+// For Student Assistant (Chat) - Retained for UI structure if a new AI is integrated
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
-  identifiedTaskType?: StudentAssistantOutput['identifiedTaskType'];
+  // identifiedTaskType is specific to the previous AI's output schema
+  // If new AI has similar concept, this can be adapted.
+  identifiedTaskType?: "writing" | "coding" | "planning_reminder" | "general_query" | "brainstorming_elaboration" | "unknown";
 }
 
-export interface StudentAssistantInput {
-  currentInquiry: string;
-  conversationHistory?: Omit<ChatMessage, 'identifiedTaskType'>[]; // AI doesn't need its own identified type in history
-  originalTaskContext?: string; 
-}
+// StudentAssistantInput and StudentAssistantOutput removed as their AI flow is removed
 
-export interface StudentAssistantOutput {
-  assistantResponse: string;
-  identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "brainstorming_elaboration" | "unknown";
-}
-
-// Firebase User type (can be extended if you store more profile info)
 export type FirebaseUser = FirebaseUserType;

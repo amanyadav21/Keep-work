@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; 
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -34,7 +34,7 @@ import { format, parseISO } from "date-fns";
 import type { Task, TaskCategory, Subtask } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
-import { suggestTaskCategory } from "@/ai/flows/suggest-category-flow";
+// import { suggestTaskCategory } from "@/ai/flows/suggest-category-flow"; // AI feature removed
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -88,41 +88,47 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   });
 
   const [newSubtaskText, setNewSubtaskText] = useState("");
-  const [isSuggestingCategory, setIsSuggestingCategory] = useState(false);
+  // const [isSuggestingCategory, setIsSuggestingCategory] = useState(false); // AI feature removed
   const descriptionValue = form.watch('description');
   const newSubtaskInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!editingTask && descriptionValue && descriptionValue.length > 10 && !form.getValues('category')) {
-      const handler = setTimeout(async () => {
-        setIsSuggestingCategory(true);
-        try {
-          const result = await suggestTaskCategory({ description: descriptionValue });
-          if (result && result.category) {
-            form.setValue('category', result.category, { shouldValidate: true });
-            toast({
-              title: "AI Suggestion",
-              description: `We've suggested category: "${result.category}".`,
-            });
-          }
-        } catch (error) {
-          console.error("AI category suggestion error:", error);
-        } finally {
-          setIsSuggestingCategory(false);
-        }
-      }, 1200); 
+  // useEffect(() => { // AI Category Suggestion Logic Removed
+  //   if (!editingTask && descriptionValue && descriptionValue.length > 10 && !form.getValues('category')) {
+  //     const handler = setTimeout(async () => {
+  //       setIsSuggestingCategory(true);
+  //       try {
+  //         // const result = await suggestTaskCategory({ description: descriptionValue });
+  //         // if (result && result.category) {
+  //         //   form.setValue('category', result.category, { shouldValidate: true });
+  //         //   toast({
+  //         //     title: "AI Suggestion",
+  //         //     description: `We've suggested category: "${result.category}".`,
+  //         //   });
+  //         // }
+  //         toast({
+  //           title: "AI Feature Note",
+  //           description: "AI category suggestion is currently unavailable.",
+  //           variant: "default"
+  //         });
+  //       } catch (error) {
+  //         console.error("AI category suggestion error:", error);
+  //         // toast({ title: "AI Error", description: "Could not get category suggestion.", variant: "destructive"});
+  //       } finally {
+  //         setIsSuggestingCategory(false);
+  //       }
+  //     }, 1200);
 
-      return () => {
-        clearTimeout(handler);
-      };
-    }
-  }, [descriptionValue, editingTask, form, toast]);
+  //     return () => {
+  //       clearTimeout(handler);
+  //     };
+  //   }
+  // }, [descriptionValue, editingTask, form, toast]);
 
   const handleAddSubtask = () => {
     if (newSubtaskText.trim()) {
       append({ id: crypto.randomUUID(), text: newSubtaskText.trim(), isCompleted: false });
       setNewSubtaskText("");
-      newSubtaskInputRef.current?.focus(); // Re-focus the input field
+      newSubtaskInputRef.current?.focus();
     }
   };
 
@@ -132,7 +138,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
       title: editingTask ? "Task Updated" : "Task Added",
       description: `"${data.description.substring(0, 30)}${data.description.length > 30 ? "..." : ""}" ${editingTask ? 'updated' : 'added'}.`,
     });
-    onClose(); 
+    onClose();
   };
 
   return (
@@ -145,9 +151,9 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
             <FormItem>
               <FormLabel>Task Description</FormLabel>
               <FormControl>
-                <Textarea 
-                  placeholder="E.g., Finish reading Chapter 3 for History class..." 
-                  {...field} 
+                <Textarea
+                  placeholder="E.g., Finish reading Chapter 3 for History class..."
+                  {...field}
                   className="min-h-[100px] resize-none"
                 />
               </FormControl>
@@ -186,7 +192,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))} 
+                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))}
                       initialFocus
                     />
                   </PopoverContent>
@@ -202,7 +208,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
               <FormItem>
                 <FormLabel className="flex items-center">
                   Category
-                  {isSuggestingCategory && <Loader2 className="ml-2 h-4 w-4 animate-spin text-primary" />}
+                  {/* {isSuggestingCategory && <Loader2 className="ml-2 h-4 w-4 animate-spin text-primary" />} AI feature removed */}
                 </FormLabel>
                 <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                   <FormControl>
@@ -256,7 +262,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                         onCheckedChange={(checked) => {
                           update(index, { ...field, isCompleted: !!checked });
                         }}
-                        id={`subtask-form-${field.id || index}`} // Use index as fallback for key if id is not yet assigned
+                        id={`subtask-form-${field.id || index}`}
                         aria-label={`Mark subtask ${field.text} as completed`}
                       />
                     <Input
@@ -289,7 +295,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" className="min-w-[120px]">
+          <Button type="submit" className="min-w-[120px]" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {editingTask ? <Save className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
             {editingTask ? "Save Changes" : "Add Task"}

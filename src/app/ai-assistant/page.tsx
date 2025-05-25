@@ -9,14 +9,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage, StudentAssistantOutput as AIOutputType } from '@/types';
-import { getStudentAssistance, type StudentAssistantInput } from '@/ai/flows/student-assistant-flow';
+import type { ChatMessage } from '@/types'; // AI Output Type removed as it was Genkit specific
+// import { getStudentAssistance, type StudentAssistantInput } from '@/ai/flows/student-assistant-flow'; // AI Flow removed
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, Type, Code, ListChecks, HelpCircle, AlertCircle, Send, UserCircle, Bot, ChevronDown, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useLocalStorage from '@/hooks/useLocalStorage';
+
+// Define a placeholder type for AIOutputType as StudentAssistantOutput is removed
+type AIOutputType = {
+  assistantResponse: string;
+  identifiedTaskType: "writing" | "coding" | "planning_reminder" | "general_query" | "brainstorming_elaboration" | "unknown";
+};
+// Define a placeholder type for StudentAssistantInput as it was Genkit specific
+type StudentAssistantInput = {
+  currentInquiry: string;
+  conversationHistory?: Omit<ChatMessage, 'identifiedTaskType'>[];
+  originalTaskContext?: string;
+};
+
 
 const TaskTypeIcon: React.FC<{ type: AIOutputType['identifiedTaskType'] | undefined }> = ({ type }) => {
   const iconClass = "h-4 w-4 text-primary";
@@ -34,6 +47,18 @@ const TaskTypeIcon: React.FC<{ type: AIOutputType['identifiedTaskType'] | undefi
 
 const GENERAL_INQUIRY_PLACEHOLDER = "How can I help you today?";
 const SERVER_RENDER_PLACEHOLDER = "Enter your general inquiry here...";
+const AI_UNAVAILABLE_MESSAGE = "AI Assistant is currently unavailable. Please configure a new AI service or check your existing AI service integration.";
+
+// Placeholder function for getStudentAssistance
+const getStudentAssistancePlaceholder = async (input: StudentAssistantInput): Promise<AIOutputType> => {
+  console.warn("getStudentAssistance called, but AI integration is removed. Returning placeholder response.");
+  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+  return {
+    assistantResponse: AI_UNAVAILABLE_MESSAGE,
+    identifiedTaskType: "unknown",
+  };
+};
+
 
 function AIAssistantPageContent() {
   const router = useRouter();
@@ -71,12 +96,12 @@ function AIAssistantPageContent() {
     const handleScroll = () => {
       if (!viewport) return;
       const { scrollTop, scrollHeight, clientHeight } = viewport;
-      const atBottom = scrollHeight - scrollTop - clientHeight < 50; 
-      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50); 
+      const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50);
     };
 
     viewport.addEventListener('scroll', handleScroll);
-    handleScroll(); 
+    handleScroll();
 
     return () => viewport.removeEventListener('scroll', handleScroll);
   }, [mounted, chatMessages]);
@@ -84,13 +109,13 @@ function AIAssistantPageContent() {
 
   useEffect(() => {
     if (!mounted) return;
-  
+
     const initialTaskDescFromUrl = searchParams.get('taskDescription');
     const intendedContext = initialTaskDescFromUrl || GENERAL_INQUIRY_PLACEHOLDER;
-  
+
     let needsChatReset = false;
     let shouldSetLoadingInitial = false;
-  
+
     if (intendedContext !== currentOriginalTaskContext) {
       needsChatReset = true;
     } else if (chatMessages.length === 0 && intendedContext) {
@@ -98,25 +123,23 @@ function AIAssistantPageContent() {
     } else if (chatMessages.length > 0 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content !== intendedContext) {
       needsChatReset = true;
     }
-  
+
     if (needsChatReset) {
       setCurrentOriginalTaskContext(intendedContext);
       const firstUserMessage: ChatMessage = { role: 'user', content: intendedContext, timestamp: Date.now() };
       setChatMessages([firstUserMessage]);
       latestIdentifiedType.current = undefined;
-      shouldSetLoadingInitial = true; 
+      shouldSetLoadingInitial = true;
     } else if (chatMessages.length === 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext) {
-      // Context is the same, but only the user message exists (AI response might be pending or lost)
       shouldSetLoadingInitial = true;
     } else if (chatMessages.length > 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext && chatMessages[1]?.role === 'assistant') {
-      // Context is the same, and we already have user + AI messages
       const aiMessage = chatMessages[1];
       if(aiMessage.identifiedTaskType){
         latestIdentifiedType.current = aiMessage.identifiedTaskType;
       }
-      shouldSetLoadingInitial = false; 
+      shouldSetLoadingInitial = false;
     }
-    
+
     setIsLoadingInitial(shouldSetLoadingInitial);
 
   }, [mounted, searchParams, currentOriginalTaskContext, setCurrentOriginalTaskContext, setChatMessages, chatMessages]);
@@ -124,42 +147,39 @@ function AIAssistantPageContent() {
 
   useEffect(() => {
     if (!mounted || !isLoadingInitial || chatMessages.length !== 1 || chatMessages[0].role !== 'user') {
-      if (isLoadingInitial && chatMessages.length > 1) setIsLoadingInitial(false); // Turn off if we already have AI response
+      if (isLoadingInitial && chatMessages.length > 1) setIsLoadingInitial(false);
       return;
     }
-  
-    // Additional check: ensure the first message content aligns with the currentOriginalTaskContext
-    // This can prevent an AI call if the context changed rapidly before this effect ran.
+
     if (chatMessages[0].content !== currentOriginalTaskContext) {
       console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed.");
       setIsLoadingInitial(false);
       return;
     }
-  
+
     const userFirstMessage = chatMessages[0].content;
-    setCurrentUserInput(""); // Clear input when making initial call
-  
-    getStudentAssistance({ currentInquiry: userFirstMessage, originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER })
+    setCurrentUserInput("");
+
+    getStudentAssistancePlaceholder({ currentInquiry: userFirstMessage, originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER })
       .then(result => {
         latestIdentifiedType.current = result.identifiedTaskType;
         setChatMessages(prev => {
-          // Ensure we are only adding the AI response if it's truly the initial one.
           if (prev.length === 1 && prev[0].role === 'user') {
             return [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now(), identifiedTaskType: result.identifiedTaskType }];
           }
-          return prev; // Avoid duplicating AI response if state changed unexpectedly
+          return prev;
         });
       })
       .catch(error => {
         console.error("Initial AI assistance error:", error);
         toast({
           title: "AI Assistance Failed",
-          description: "Could not get an initial response.",
+          description: AI_UNAVAILABLE_MESSAGE,
           variant: "destructive",
         });
         setChatMessages(prev => {
            if (prev.length === 1 && prev[0].role === 'user') {
-            return [...prev, { role: 'assistant', content: "Sorry, I couldn't process that initial request.", timestamp: Date.now(), identifiedTaskType: 'unknown' }];
+            return [...prev, { role: 'assistant', content: "Sorry, I couldn't process that initial request. " + AI_UNAVAILABLE_MESSAGE, timestamp: Date.now(), identifiedTaskType: 'unknown' }];
           }
           return prev;
         });
@@ -167,8 +187,8 @@ function AIAssistantPageContent() {
       .finally(() => {
         setIsLoadingInitial(false);
       });
-  }, [mounted, isLoadingInitial, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setIsLoadingInitial, setCurrentOriginalTaskContext]);
-  
+  }, [mounted, isLoadingInitial, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setCurrentOriginalTaskContext]);
+
 
   useEffect(() => {
     if (!mounted) return;
@@ -176,12 +196,12 @@ function AIAssistantPageContent() {
       const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]');
       if (viewport) {
         const { scrollTop, scrollHeight, clientHeight } = viewport;
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100; 
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
         if (isNearBottom || chatMessages[chatMessages.length - 1].role === 'user') {
           scrollToBottom("smooth");
         }
       } else {
-        scrollToBottom("auto"); 
+        scrollToBottom("auto");
       }
     }
   }, [mounted, chatMessages, scrollToBottom]);
@@ -191,53 +211,52 @@ function AIAssistantPageContent() {
 
     const userMessageContent = currentUserInput.trim();
     const newUserMessage: ChatMessage = { role: 'user', content: userMessageContent, timestamp: Date.now() };
-    
-    // Prepare messages for AI: all current messages + new user message
+
     const messagesForAICall = [...chatMessages, newUserMessage];
-    setChatMessages(messagesForAICall); // Optimistically update UI
+    setChatMessages(messagesForAICall);
 
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
-      const historyForAI = messagesForAICall.slice(0, -1); // All messages before the current user input
-      
+      const historyForAI = messagesForAICall.slice(0, -1);
+
       const flowInput: StudentAssistantInput = {
         currentInquiry: newUserMessage.content,
         conversationHistory: historyForAI,
         originalTaskContext: currentOriginalTaskContext || GENERAL_INQUIRY_PLACEHOLDER,
       };
 
-      const result = await getStudentAssistance(flowInput);
+      const result = await getStudentAssistancePlaceholder(flowInput); // Using placeholder
       latestIdentifiedType.current = result.identifiedTaskType;
       setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now(), identifiedTaskType: result.identifiedTaskType }]);
     } catch (error) {
       console.error("AI follow-up assistance error:", error);
       toast({
         title: "AI Follow-up Failed",
-        description: "Could not get a follow-up response at this moment.",
+        description: AI_UNAVAILABLE_MESSAGE,
         variant: "destructive",
       });
-      setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error trying to respond.", timestamp: Date.now(), identifiedTaskType: 'unknown' }]);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. " + AI_UNAVAILABLE_MESSAGE, timestamp: Date.now(), identifiedTaskType: 'unknown' }]);
     } finally {
       setIsSendingFollowUp(false);
     }
-  }, [mounted, currentUserInput, currentOriginalTaskContext, toast, setChatMessages, chatMessages]); // Added chatMessages
+  }, [mounted, currentUserInput, currentOriginalTaskContext, toast, setChatMessages, chatMessages]);
 
   const isProcessing = isLoadingInitial || isSendingFollowUp;
   const canSendMessage = mounted && currentUserInput.trim() && !isProcessing;
 
   const placeholderText =
     !mounted
-      ? SERVER_RENDER_PLACEHOLDER 
+      ? SERVER_RENDER_PLACEHOLDER
       : (!currentOriginalTaskContext || currentOriginalTaskContext === GENERAL_INQUIRY_PLACEHOLDER)
         ? "Enter your general inquiry here..."
         : "Ask a follow-up question or type your inquiry...";
-  
+
   const rawDisplayContext = currentOriginalTaskContext && currentOriginalTaskContext !== GENERAL_INQUIRY_PLACEHOLDER
                        ? currentOriginalTaskContext
                        : null;
-  
+
   const displayContext = rawDisplayContext ? rawDisplayContext.replace(/\s+/g, ' ').trim() : null;
 
 
@@ -257,7 +276,7 @@ function AIAssistantPageContent() {
           <div className="text-sm flex items-center justify-between max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="min-w-0 flex-1 pr-2 overflow-hidden">
               <span className="font-medium text-foreground/80">Context:</span>
-              <span className="italic ml-1.5 text-foreground/90 truncate">"{displayContext}"</span>
+              <span className="italic ml-1.5 text-foreground/90 truncate">{displayContext}</span>
             </div>
             {latestIdentifiedType.current && (
                 <Badge variant="outline" className="capitalize text-xs py-0.5 whitespace-nowrap shrink-0">
@@ -272,7 +291,7 @@ function AIAssistantPageContent() {
       <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
         <div className="flex-1 min-h-0 relative flex flex-col">
           <ScrollArea className="absolute inset-0" ref={scrollAreaRef} tabIndex={0} style={{outline: 'none'}}>
-            <div className="px-4 pt-4 pb-12 space-y-4"> {/* Increased pb for scroll-to-bottom button clearance */}
+            <div className="px-4 pt-4 pb-12 space-y-4">
               {!mounted ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
@@ -353,11 +372,11 @@ function AIAssistantPageContent() {
               }}
               rows={1}
               className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
-              disabled={!mounted || isProcessing}
+              disabled={!mounted || isProcessing || true} // AI feature removed, so input is always disabled
             />
             <Button
               onClick={()=>handleSendFollowUp()}
-              disabled={!canSendMessage}
+              disabled={!canSendMessage || true} // AI feature removed, so button is always disabled
               size="icon"
               className="h-10 w-10 flex-shrink-0"
               aria-label="Send follow-up question"
@@ -365,6 +384,9 @@ function AIAssistantPageContent() {
               {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
+            <p className="text-xs text-center text-muted-foreground pt-2">
+                Note: AI features are currently unavailable. Integrate your AI service to enable chat.
+            </p>
         </div>
       </div>
 
