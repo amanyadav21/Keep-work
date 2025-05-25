@@ -11,15 +11,18 @@ import type { Task, TaskFilter, PrioritizedTaskSuggestion, FirebaseUser } from '
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal';
-import { DashboardSection } from '@/components/DashboardSection';
-import { formatISO, parseISO } from 'date-fns';
+// import { DashboardSection } from '@/components/DashboardSection'; // Removed
+import { AppSidebar } from '@/components/AppSidebar'; // Import AppSidebar
+import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
 import { Button } from '@/components/ui/button';
-import { Brain, Loader2, ListFilter, MessageCircle } from 'lucide-react';
+import { Brain, Loader2, MessageSquareText, Search, ListFilter } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { Input } from '@/components/ui/input';
+
 
 interface HomePageProps {
   params: Record<string, never>;
@@ -40,39 +43,75 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   const [prioritySuggestions, setPrioritySuggestions] = useState<PrioritizedTaskSuggestion[]>([]);
   const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Fetch tasks from Firestore
   useEffect(() => {
-    if (user) {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (user && isMounted) {
       setIsLoadingTasks(true);
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
-      const q = query(tasksCollectionRef, orderBy("createdAt", "desc"));
+      const q = query(tasksCollectionRef, where("isTrashed", "==", false), orderBy("createdAt", "desc"));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const tasksData = querySnapshot.docs.map(doc => {
           const data = doc.data();
+          let dueDate = data.dueDate;
+          if (data.dueDate instanceof Timestamp) {
+            dueDate = data.dueDate.toDate().toISOString();
+          } else if (typeof data.dueDate === 'string' && !isValid(parseISO(data.dueDate))) {
+            console.warn(`Invalid dueDate found for task ${doc.id}: ${data.dueDate}. Defaulting to now.`);
+            dueDate = new Date().toISOString();
+          } else if (!data.dueDate) {
+            console.warn(`Missing dueDate for task ${doc.id}. Defaulting to now.`);
+            dueDate = new Date().toISOString();
+          }
+
+          let createdAt = data.createdAt;
+          if (data.createdAt instanceof Timestamp) {
+            createdAt = data.createdAt.toDate().toISOString();
+          } else if (typeof data.createdAt === 'string' && !isValid(parseISO(data.createdAt))) {
+             console.warn(`Invalid createdAt found for task ${doc.id}: ${data.createdAt}. Defaulting to now.`);
+            createdAt = new Date().toISOString();
+          } else if (!data.createdAt) {
+            console.warn(`Missing createdAt for task ${doc.id}. Defaulting to now.`);
+            createdAt = new Date().toISOString();
+          }
+          
           return {
             id: doc.id,
             ...data,
-            // Ensure dates are stored as ISO strings if they come from Firestore Timestamps
-            dueDate: data.dueDate instanceof Timestamp ? data.dueDate.toDate().toISOString() : data.dueDate,
-            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+            dueDate,
+            createdAt,
+            isTrashed: data.isTrashed || false,
+            trashedAt: data.trashedAt instanceof Timestamp ? data.trashedAt.toDate().toISOString() : data.trashedAt || null,
           } as Task;
         });
         setTasks(tasksData);
         setIsLoadingTasks(false);
       }, (error) => {
         console.error("Error fetching tasks:", error);
-        toast({ title: "Error", description: "Could not fetch tasks.", variant: "destructive" });
+        if (error.message.includes("indexes?create_composite")) {
+           toast({
+            title: "Firestore Index Required",
+            description: "A Firestore index is needed for optimal task loading. Please check the console for a link to create it: isTrashed (ASC), createdAt (DESC).",
+            variant: "destructive",
+            duration: 10000,
+          });
+        } else {
+          toast({ title: "Error", description: "Could not fetch tasks.", variant: "destructive" });
+        }
         setIsLoadingTasks(false);
       });
 
-      return () => unsubscribe(); // Cleanup listener on unmount
-    } else {
-      setTasks([]); // Clear tasks if no user
+      return () => unsubscribe();
+    } else if (!user && isMounted) {
+      setTasks([]); 
       setIsLoadingTasks(false);
     }
-  }, [user, toast]);
+  }, [user, toast, isMounted]);
 
 
   const handleAddTask = useCallback(async (data: TaskFormValues) => {
@@ -87,13 +126,15 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
         dueDate: formatISO(data.dueDate),
         category: data.category,
         isCompleted: false,
-        createdAt: formatISO(new Date()),
+        createdAt: serverTimestamp(), // Use server timestamp
         subtasks: data.subtasks?.map(st => ({
           id: st.id || crypto.randomUUID(),
           text: st.text,
           isCompleted: st.isCompleted || false,
         })) || [],
-        userId: user.uid, // Store userId for potential wider queries (optional but good practice)
+        userId: user.uid, 
+        isTrashed: false,
+        trashedAt: null,
       };
       await addDoc(tasksCollectionRef, newTaskData);
       toast({ title: "Task Added", description: `"${data.description.substring(0,25)}..." added.`});
@@ -145,8 +186,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, id);
       await updateDoc(taskDocRef, { isCompleted: !task.isCompleted });
-      // Toast is handled by onSnapshot or can be added here if preferred
-      // toast({ title: `Task ${!task.isCompleted ? "Completed" : "Marked Pending"}` });
     } catch (error) {
       console.error("Error toggling task complete:", error);
       toast({ title: "Error", description: "Could not update task status.", variant: "destructive" });
@@ -170,6 +209,25 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     }
   }, [user, tasks, toast]);
 
+  const handleMoveToTrash = useCallback(async (id: string) => {
+    if (!user) return;
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    try {
+      const taskDocRef = doc(db, `users/${user.uid}/tasks`, id);
+      await updateDoc(taskDocRef, { 
+        isTrashed: true,
+        trashedAt: serverTimestamp() // Use server timestamp
+      });
+      toast({ title: "Task Moved to Trash", description: `"${task.description.substring(0,25)}..." moved to trash.` });
+      setTaskToDelete(null); // Close confirmation dialog
+    } catch (error) {
+      console.error("Error moving task to trash:", error);
+      toast({ title: "Error", description: "Could not move task to trash.", variant: "destructive" });
+      setTaskToDelete(null);
+    }
+  }, [user, tasks, toast]);
+
 
   const handleOpenEditForm = useCallback((task: Task) => {
     setEditingTask(task);
@@ -179,60 +237,43 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   const handleOpenAddForm = useCallback(() => {
     if (!user) {
       toast({ title: "Please Log In", description: "You need to be logged in to add tasks.", variant: "default" });
-      // Optionally, redirect to login: router.push('/login');
       return;
     }
     setEditingTask(null);
     setIsFormOpen(true);
   }, [user, toast]);
 
-  const handleDeleteTask = useCallback(async (id: string) => {
-    if (!user) return;
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
-    try {
-      const taskDocRef = doc(db, `users/${user.uid}/tasks`, id);
-      await deleteDoc(taskDocRef);
-      toast({ title: "Task Deleted", description: `"${task.description.substring(0,25)}..." deleted.`, variant: "destructive" });
-      setTaskToDelete(null);
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      toast({ title: "Error", description: "Could not delete task.", variant: "destructive" });
-      setTaskToDelete(null);
-    }
-  }, [user, tasks, toast]);
-
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
       if (a.isCompleted !== b.isCompleted) {
         return a.isCompleted ? 1 : -1;
       }
-      const dueDateA = new Date(a.dueDate).getTime();
-      const dueDateB = new Date(b.dueDate).getTime();
+      const dueDateA = a.dueDate ? parseISO(a.dueDate).getTime() : 0;
+      const dueDateB = b.dueDate ? parseISO(b.dueDate).getTime() : 0;
       if (dueDateA !== dueDateB) {
         return dueDateA - dueDateB;
       }
-      // Ensure createdAt is valid date before parsing for sort
-      const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const createdAtA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
+      const createdAtB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
       return createdAtA - createdAtB;
     });
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
+    const nonTrashedTasks = sortedTasks.filter(task => !task.isTrashed);
     switch (filter) {
       case 'pending':
-        return sortedTasks.filter(task => !task.isCompleted);
+        return nonTrashedTasks.filter(task => !task.isCompleted);
       case 'completed':
-        return sortedTasks.filter(task => task.isCompleted);
+        return nonTrashedTasks.filter(task => task.isCompleted);
       default:
-        return sortedTasks;
+        return nonTrashedTasks;
     }
   }, [sortedTasks, filter]);
 
   const pendingTasksForAI = useMemo(() => {
     return tasks
-      .filter(task => !task.isCompleted)
+      .filter(task => !task.isCompleted && !task.isTrashed)
       .map(task => ({
         id: task.id,
         description: task.description,
@@ -262,11 +303,11 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
         };
       });
       setPrioritySuggestions(enrichedSuggestions);
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI priority suggestion error:", error);
       toast({
         title: "AI Suggestion Failed",
-        description: "Could not get priority suggestions at this time.",
+        description: error.message || "Could not get priority suggestions at this time.",
         variant: "destructive",
       });
     } finally {
@@ -274,7 +315,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     }
   }, [pendingTasksForAI, tasks, toast]);
 
-  if (authLoading) {
+  if (authLoading || !isMounted) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <Header onAddTask={() => {}} />
@@ -286,58 +327,70 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <Header onAddTask={handleOpenAddForm} />
+    <div className="flex h-screen bg-muted/40 dark:bg-background overflow-hidden">
+       {user && <AppSidebar currentFilter={filter} onFilterChange={setFilter} />}
       
-      {!user ? (
-        <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
-            <MessageCircle className="h-20 w-20 text-muted-foreground mb-6" strokeWidth={1}/>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">Welcome to Upnext!</h2>
-            <p className="text-muted-foreground mb-6 max-w-md">
-                Your smart task manager for staying organized and productive. Please log in or sign up to manage your tasks.
-            </p>
-            <div className="flex gap-4">
-                <Button asChild size="lg">
-                    <Link href="/login">Log In</Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                    <Link href="/signup">Sign Up</Link>
-                </Button>
-            </div>
-        </main>
-      ) : (
-        <>
-          <main className="flex-1 overflow-y-auto px-4 md:px-6 pt-4 pb-6">
-            <div className="container mx-auto w-full max-w-6xl">
-              <div className="mb-6">
-                <FilterControls currentFilter={filter} onFilterChange={setFilter} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header onAddTask={handleOpenAddForm} />
+        
+        {!user ? (
+          <main className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-background">
+              <MessageSquareText className="h-20 w-20 text-muted-foreground mb-6" strokeWidth={1}/>
+              <h2 className="text-2xl font-semibold text-foreground mb-3">Welcome to Task Manager!</h2>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                  Your smart task manager for staying organized and productive. Please log in or sign up to manage your tasks.
+              </p>
+              <div className="flex gap-4">
+                  <Button asChild size="lg">
+                      <Link href="/login">Log In</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg">
+                      <Link href="/signup">Sign Up</Link>
+                  </Button>
               </div>
-              {isLoadingTasks ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-[180px] bg-muted rounded-lg animate-pulse"></div>
-                  ))}
-                </div>
-              ) : (
-                <TaskList
-                  tasks={filteredTasks}
-                  onToggleComplete={handleToggleComplete}
-                  onEdit={handleOpenEditForm}
-                  onDelete={(id) => setTaskToDelete(id)}
-                  onToggleSubtask={handleToggleSubtaskComplete}
-                />
-              )}
-            </div>
           </main>
+        ) : (
+          <>
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
+              <div className="max-w-6xl mx-auto w-full">
+                {/* Search Bar */}
+                <div className="mb-6 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search tasks..."
+                    className="w-full pl-10 py-2 text-sm rounded-lg border-border focus:ring-primary focus:border-primary"
+                    disabled // Placeholder
+                  />
+                </div>
+                
+                <div className="mb-6">
+                  <FilterControls currentFilter={filter} onFilterChange={setFilter} />
+                </div>
 
-          {tasks.length > 0 && (
-            <DashboardSection
-              tasks={tasks}
-              onSuggestPriorities={handleSuggestPriorities}
-              isPrioritizing={isSuggestingPriorities}
-            />
-          )}
+                {isLoadingTasks ? (
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {[...Array(8)].map((_, i) => (
+                      <div key={i} className="h-[220px] bg-card rounded-lg shadow-sm border animate-pulse"></div>
+                    ))}
+                  </div>
+                ) : (
+                  <TaskList
+                    tasks={filteredTasks}
+                    onToggleComplete={handleToggleComplete}
+                    onEdit={handleOpenEditForm}
+                    onDelete={(id) => setTaskToDelete(id)} // This will now trigger move to trash confirmation
+                    onToggleSubtask={handleToggleSubtaskComplete}
+                  />
+                )}
+              </div>
+            </main>
+          </>
+        )}
+      </div>
 
+      {user && (
+        <>
           <Dialog open={isFormOpen} onOpenChange={(open) => {
             setIsFormOpen(open);
             if (!open) setEditingTask(null);
@@ -360,15 +413,15 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
           <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
             <AlertDialogContent className="rounded-lg">
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Task?</AlertDialogTitle>
+                <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete the task "{tasks.find(t => t.id === taskToDelete)?.description}". This action cannot be undone.
+                  This will move the task "{tasks.find(t => t.id === taskToDelete)?.description.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => taskToDelete && handleDeleteTask(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-                  Delete
+                <AlertDialogAction onClick={() => taskToDelete && handleMoveToTrash(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                  Move to Trash
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
