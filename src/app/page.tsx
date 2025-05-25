@@ -7,22 +7,20 @@ import { Header } from '@/components/Header';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import { FilterControls } from '@/components/FilterControls';
-import type { Task, TaskFilter, PrioritizedTaskSuggestion, FirebaseUser } from '@/types';
+import type { Task, TaskFilter, FirebaseUser } from '@/types'; // PrioritizedTaskSuggestion removed as TaskStats is removed
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal';
-// import { DashboardSection } from '@/components/DashboardSection'; // Removed
-import { AppSidebar } from '@/components/AppSidebar'; // Import AppSidebar
+// import { PrioritySuggestionsModal } from '@/components/PrioritySuggestionsModal'; // Removed as TaskStats is removed
+import { AppSidebar } from '@/components/AppSidebar';
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow';
+// import { suggestTaskPriorities, type FlowTaskInput } from '@/ai/flows/prioritize-tasks-flow'; // Removed as TaskStats is removed
 import { Button } from '@/components/ui/button';
-import { Brain, Loader2, MessageSquareText, Search, ListFilter } from 'lucide-react';
+import { MessageSquareText, Search, Loader2 } from 'lucide-react'; // Brain icon removed as FAB changed
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp } from 'firebase/firestore';
-import { Input } from '@/components/ui/input';
-
 
 interface HomePageProps {
   params: Record<string, never>;
@@ -39,9 +37,11 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   
-  const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
-  const [prioritySuggestions, setPrioritySuggestions] = useState<PrioritizedTaskSuggestion[]>([]);
-  const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
+  // Priority suggestions state removed as TaskStats is removed
+  // const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
+  // const [prioritySuggestions, setPrioritySuggestions] = useState<PrioritizedTaskSuggestion[]>([]);
+  // const [isSuggestingPriorities, setIsSuggestingPriorities] = useState(false);
+
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -58,6 +58,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const tasksData = querySnapshot.docs.map(doc => {
           const data = doc.data();
+          
           let dueDate = data.dueDate;
           if (data.dueDate instanceof Timestamp) {
             dueDate = data.dueDate.toDate().toISOString();
@@ -86,32 +87,39 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
             dueDate,
             createdAt,
             isTrashed: data.isTrashed || false,
-            trashedAt: data.trashedAt instanceof Timestamp ? data.trashedAt.toDate().toISOString() : data.trashedAt || null,
+            trashedAt: data.trashedAt instanceof Timestamp ? data.trashedAt.toDate().toISOString() : (data.trashedAt || null),
           } as Task;
         });
         setTasks(tasksData);
         setIsLoadingTasks(false);
       }, (error) => {
         console.error("Error fetching tasks:", error);
-        if (error.message.includes("indexes?create_composite")) {
-           toast({
-            title: "Firestore Index Required",
-            description: "A Firestore index is needed for optimal task loading. Please check the console for a link to create it: isTrashed (ASC), createdAt (DESC).",
+        if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
+          toast({
+            title: "Permissions Error",
+            description: "You don't have permission to access these tasks. Check Firestore rules.",
             variant: "destructive",
             duration: 10000,
           });
+        } else if (error.message && error.message.toLowerCase().includes("query requires an index")) {
+           toast({
+            title: "Firestore Index Required",
+            description: "A Firestore index is needed. Please create an index on 'tasks' (collection group) with: isTrashed (ASC), createdAt (DESC). Check console for a link to create it.",
+            variant: "destructive",
+            duration: 15000,
+          });
         } else {
-          toast({ title: "Error", description: "Could not fetch tasks.", variant: "destructive" });
+          toast({ title: "Error Fetching Tasks", description: "Could not fetch tasks. " + error.message, variant: "destructive" });
         }
         setIsLoadingTasks(false);
       });
 
       return () => unsubscribe();
-    } else if (!user && isMounted) {
+    } else if (!user && isMounted && !authLoading) { // Ensure tasks are cleared if user logs out or was never logged in
       setTasks([]); 
       setIsLoadingTasks(false);
     }
-  }, [user, toast, isMounted]);
+  }, [user, toast, isMounted, authLoading]);
 
 
   const handleAddTask = useCallback(async (data: TaskFormValues) => {
@@ -126,7 +134,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
         dueDate: formatISO(data.dueDate),
         category: data.category,
         isCompleted: false,
-        createdAt: serverTimestamp(), // Use server timestamp
+        createdAt: serverTimestamp(), 
         subtasks: data.subtasks?.map(st => ({
           id: st.id || crypto.randomUUID(),
           text: st.text,
@@ -138,9 +146,9 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       };
       await addDoc(tasksCollectionRef, newTaskData);
       toast({ title: "Task Added", description: `"${data.description.substring(0,25)}..." added.`});
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding task:", error);
-      toast({ title: "Error", description: "Could not add task.", variant: "destructive" });
+      toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
     }
   }, [user, toast]);
 
@@ -151,7 +159,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     }
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
-      const updatedTaskData = {
+      const updatedTaskData: Partial<Task> = { // Use Partial<Task> for updates
         description: data.description,
         dueDate: formatISO(data.dueDate),
         category: data.category,
@@ -164,9 +172,9 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       await updateDoc(taskDocRef, updatedTaskData);
       toast({ title: "Task Updated", description: `"${data.description.substring(0,25)}..." updated.`});
       setEditingTask(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating task:", error);
-      toast({ title: "Error", description: "Could not update task.", variant: "destructive" });
+      toast({ title: "Error", description: `Could not update task: ${error.message}`, variant: "destructive" });
     }
   }, [user, toast]);
 
@@ -186,9 +194,9 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, id);
       await updateDoc(taskDocRef, { isCompleted: !task.isCompleted });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error toggling task complete:", error);
-      toast({ title: "Error", description: "Could not update task status.", variant: "destructive" });
+      toast({ title: "Error", description: `Could not update task status: ${error.message}`, variant: "destructive" });
     }
   }, [user, tasks, toast]);
 
@@ -203,9 +211,9 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
       await updateDoc(taskDocRef, { subtasks: updatedSubtasks });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error toggling subtask complete:", error);
-      toast({ title: "Error", description: "Could not update subtask status.", variant: "destructive" });
+      toast({ title: "Error", description: `Could not update subtask status: ${error.message}`, variant: "destructive" });
     }
   }, [user, tasks, toast]);
 
@@ -217,13 +225,13 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, id);
       await updateDoc(taskDocRef, { 
         isTrashed: true,
-        trashedAt: serverTimestamp() // Use server timestamp
+        trashedAt: serverTimestamp()
       });
       toast({ title: "Task Moved to Trash", description: `"${task.description.substring(0,25)}..." moved to trash.` });
-      setTaskToDelete(null); // Close confirmation dialog
-    } catch (error) {
+      setTaskToDelete(null);
+    } catch (error: any) {
       console.error("Error moving task to trash:", error);
-      toast({ title: "Error", description: "Could not move task to trash.", variant: "destructive" });
+      toast({ title: "Error", description: `Could not move task to trash: ${error.message}`, variant: "destructive" });
       setTaskToDelete(null);
     }
   }, [user, tasks, toast]);
@@ -239,7 +247,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       toast({ title: "Please Log In", description: "You need to be logged in to add tasks.", variant: "default" });
       return;
     }
-    setEditingTask(null);
+    setEditingTask(null); // Ensure editingTask is cleared for new tasks
     setIsFormOpen(true);
   }, [user, toast]);
 
@@ -255,7 +263,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
       }
       const createdAtA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
       const createdAtB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
-      return createdAtA - createdAtB;
+      return createdAtA - createdAtB; // Earlier created tasks first if due dates are same
     });
   }, [tasks]);
 
@@ -271,70 +279,43 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
     }
   }, [sortedTasks, filter]);
 
-  const pendingTasksForAI = useMemo(() => {
-    return tasks
-      .filter(task => !task.isCompleted && !task.isTrashed)
-      .map(task => ({
-        id: task.id,
-        description: task.description,
-        dueDate: task.dueDate,
-        category: task.category,
-      } as FlowTaskInput));
-  }, [tasks]);
-
-  const handleSuggestPriorities = useCallback(async () => {
-    if (pendingTasksForAI.length === 0) {
-      toast({
-        title: "No Pending Tasks",
-        description: "Add some tasks or mark existing ones as pending to get priority suggestions.",
-      });
-      return;
-    }
-    setIsSuggestingPriorities(true);
-    setIsPriorityModalOpen(true);
-    setPrioritySuggestions([]);
-    try {
-      const result = await suggestTaskPriorities({ tasks: pendingTasksForAI });
-      const enrichedSuggestions = result.prioritizedSuggestions.map(suggestion => {
-        const task = tasks.find(t => t.id === suggestion.taskId);
-        return {
-          ...suggestion,
-          description: task ? task.description : "Unknown Task",
-        };
-      });
-      setPrioritySuggestions(enrichedSuggestions);
-    } catch (error: any) {
-      console.error("AI priority suggestion error:", error);
-      toast({
-        title: "AI Suggestion Failed",
-        description: error.message || "Could not get priority suggestions at this time.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSuggestingPriorities(false);
-    }
-  }, [pendingTasksForAI, tasks, toast]);
+  // Removed pendingTasksForAI and handleSuggestPriorities as TaskStats/DashboardSection are removed
 
   if (authLoading || !isMounted) {
     return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <Header onAddTask={() => {}} />
-        <main className="flex-1 flex items-center justify-center p-4">
-          <Loader2 className="h-16 w-16 text-primary animate-spin" />
-        </main>
+       <div className="flex h-screen bg-muted/40 dark:bg-background overflow-hidden">
+        {/* Sidebar placeholder can be simpler as AppSidebar handles its own !mounted state */}
+        <div className="hidden md:block relative w-[var(--sidebar-width)] h-svh bg-sidebar animate-pulse" />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header onAddTask={() => {}} />
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
+            <div className="max-w-6xl mx-auto w-full">
+              {/* Search Bar Skeleton */}
+              <div className="mb-6 h-10 bg-muted rounded-lg animate-pulse" />
+              {/* Filter Controls Skeleton */}
+              <div className="mb-6 h-9 bg-muted rounded-full w-1/2 animate-pulse" />
+              {/* Task List Skeleton */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="h-[220px] bg-card rounded-lg shadow-sm border animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     );
   }
-
+  
   return (
     <div className="flex h-screen bg-muted/40 dark:bg-background overflow-hidden">
-       {user && <AppSidebar currentFilter={filter} onFilterChange={setFilter} />}
+      {user && <AppSidebar currentFilter={filter} onFilterChange={setFilter} />}
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header onAddTask={handleOpenAddForm} />
         
         {!user ? (
-          <main className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-background">
+           <main className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-background">
               <MessageSquareText className="h-20 w-20 text-muted-foreground mb-6" strokeWidth={1}/>
               <h2 className="text-2xl font-semibold text-foreground mb-3">Welcome to Task Manager!</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
@@ -353,7 +334,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
           <>
             <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
               <div className="max-w-6xl mx-auto w-full">
-                {/* Search Bar */}
                 <div className="mb-6 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
@@ -371,7 +351,14 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                 {isLoadingTasks ? (
                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {[...Array(8)].map((_, i) => (
-                      <div key={i} className="h-[220px] bg-card rounded-lg shadow-sm border animate-pulse"></div>
+                       <div key={i} className="bg-card rounded-lg shadow-sm border p-4 space-y-3 animate-pulse">
+                        <div className="h-40 bg-muted rounded-md"></div> {/* Image Placeholder */}
+                        <div className="space-y-2">
+                          <div className="h-4 bg-muted rounded w-3/4"></div> {/* Title Placeholder */}
+                          <div className="h-3 bg-muted rounded w-1/2"></div> {/* Subtitle Placeholder */}
+                        </div>
+                        <div className="h-3 bg-muted rounded w-1/4 mt-auto"></div> {/* Footer Placeholder */}
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -379,7 +366,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                     tasks={filteredTasks}
                     onToggleComplete={handleToggleComplete}
                     onEdit={handleOpenEditForm}
-                    onDelete={(id) => setTaskToDelete(id)} // This will now trigger move to trash confirmation
+                    onDelete={(id) => setTaskToDelete(id)}
                     onToggleSubtask={handleToggleSubtaskComplete}
                   />
                 )}
@@ -427,16 +414,11 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
             </AlertDialogContent>
           </AlertDialog>
 
-          <PrioritySuggestionsModal
-            isOpen={isPriorityModalOpen}
-            onClose={() => setIsPriorityModalOpen(false)}
-            suggestions={prioritySuggestions}
-            isLoading={isSuggestingPriorities}
-          />
+          {/* PrioritySuggestionsModal removed as TaskStats/DashboardSection are removed */}
 
           <Button asChild size="lg" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-30 p-0">
             <Link href="/ai-assistant" aria-label="Open AI Assistant">
-              <Brain className="h-6 w-6" />
+              <MessageSquareText className="h-6 w-6" />
             </Link>
           </Button>
         </>
