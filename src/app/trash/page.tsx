@@ -10,7 +10,7 @@ import { db } from '@/firebase/config';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, orderBy, Timestamp } from 'firebase/firestore';
 import { ArrowLeft, Undo, Trash2, Inbox, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, parseISO, isValid } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function TrashPage() {
@@ -44,15 +44,43 @@ export default function TrashPage() {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const tasksData = querySnapshot.docs.map(doc => {
         const data = doc.data();
+        
+        let dueDate;
+        if (data.dueDate instanceof Timestamp) {
+          dueDate = data.dueDate.toDate().toISOString();
+        } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
+          dueDate = data.dueDate;
+        } else {
+          dueDate = new Date().toISOString(); // Fallback
+        }
+
+        let createdAt;
+        if (data.createdAt instanceof Timestamp) {
+          createdAt = data.createdAt.toDate().toISOString();
+        } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
+          createdAt = data.createdAt;
+        } else {
+          createdAt = new Date().toISOString(); // Fallback
+        }
+        
+        let trashedAt;
+        if (data.trashedAt instanceof Timestamp) {
+          trashedAt = data.trashedAt.toDate().toISOString();
+        } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
+          trashedAt = data.trashedAt;
+        } else {
+          trashedAt = new Date().toISOString(); // Fallback
+        }
+
         return {
           id: doc.id,
           description: data.description,
-          dueDate: data.dueDate instanceof Timestamp ? data.dueDate.toDate().toISOString() : data.dueDate,
+          dueDate,
           category: data.category,
           isCompleted: data.isCompleted,
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+          createdAt,
           isTrashed: data.isTrashed,
-          trashedAt: data.trashedAt instanceof Timestamp ? data.trashedAt.toDate().toISOString() : data.trashedAt,
+          trashedAt,
           subtasks: data.subtasks || [],
         } as Task;
       });
@@ -70,7 +98,7 @@ export default function TrashPage() {
       } else if (error.message && error.message.toLowerCase().includes("query requires an index")) {
            toast({
             title: "Firestore Index Required",
-            description: "A Firestore index is needed for the trash page. Please create an index on 'tasks' (collection group) with: isTrashed (ASC), trashedAt (DESC). Check console for a link to create it.",
+            description: "A Firestore index is needed for the trash page. Please create an index for collection group 'tasks' with: isTrashed (ASC), trashedAt (DESC). Check console for a link to create it.",
             variant: "destructive",
             duration: 15000,
           });
@@ -89,7 +117,7 @@ export default function TrashPage() {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
       await updateDoc(taskDocRef, {
         isTrashed: false,
-        trashedAt: null // Or FieldValue.delete() if you want to remove the field
+        trashedAt: null
       });
       toast({ title: "Task Restored", description: "The task has been moved back to your active list." });
     } catch (error: any) {
@@ -112,8 +140,6 @@ export default function TrashPage() {
 
   const handleEmptyTrash = useCallback(async () => {
     if (!user || trashedTasks.length === 0) return;
-    // This is a batch delete operation, ensure you understand implications for larger datasets.
-    // For very large trash bins, consider server-side batching or smaller client-side batches.
     try {
       for (const task of trashedTasks) {
         const taskDocRef = doc(db, `users/${user.uid}/tasks`, task.id);
@@ -126,10 +152,20 @@ export default function TrashPage() {
     }
   }, [user, trashedTasks, toast]);
 
-  if (authLoading || (!isMounted && typeof window !== 'undefined')) {
+  if (authLoading || !isMounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user && !authLoading && isMounted) {
+     router.push('/login');
+     return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-2">Redirecting to login...</p>
       </div>
     );
   }

@@ -31,12 +31,21 @@ export default function SettingsPage() {
     );
   }
 
-  if (!user) {
+  if (!user && !authLoading && mounted) {
     router.push('/login');
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <p className="ml-2">Redirecting to login...</p>
+      </div>
+    );
+  }
+  
+  if (!user) { // Should be caught by above, but as a fallback
+     return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p>Please log in to view settings.</p>
+        <Button onClick={() => router.push('/login')} className="ml-2">Login</Button>
       </div>
     );
   }
@@ -74,6 +83,7 @@ export default function SettingsPage() {
                   checked={theme === 'dark'}
                   onCheckedChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                   aria-label="Toggle dark mode"
+                  disabled={!mounted} // Ensure theme is only changed when mounted
                 />
               </div>
               {/* Add more appearance settings here if needed */}

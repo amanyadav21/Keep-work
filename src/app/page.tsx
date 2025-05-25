@@ -11,17 +11,16 @@ import { FilterControls } from '@/components/FilterControls';
 import type { Task, TaskFilter, FirebaseUser } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DashboardSection } from '@/components/DashboardSection';
+import { AppSidebar } from '@/components/AppSidebar';
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { MessageSquareText, Search, Loader2, Brain } from 'lucide-react'; // Bird, LayoutGrid, AlignLeft removed
+import { Brain, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { AppSidebar } from '@/components/AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp } from 'firebase/firestore';
-
+import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { DashboardSection } from '@/components/DashboardSection';
 
 interface HomePageProps {
   params: Record<string, never>;
@@ -37,7 +36,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
-
 
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -56,27 +54,33 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
         const tasksData = querySnapshot.docs.map(doc => {
           const data = doc.data();
 
-          let dueDate = data.dueDate;
+          let dueDate;
           if (data.dueDate instanceof Timestamp) {
             dueDate = data.dueDate.toDate().toISOString();
-          } else if (typeof data.dueDate === 'string' && !isValid(parseISO(data.dueDate))) {
-            console.warn(`Invalid dueDate found for task ${doc.id}: ${data.dueDate}. Defaulting to now.`);
-            dueDate = new Date().toISOString();
-          } else if (!data.dueDate) {
-            console.warn(`Missing dueDate for task ${doc.id}. Defaulting to now.`);
+          } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
+            dueDate = data.dueDate;
+          } else {
+            console.warn(`Invalid or missing dueDate for task ${doc.id}: ${data.dueDate}. Defaulting to now.`);
             dueDate = new Date().toISOString();
           }
 
-          let createdAt = data.createdAt;
+          let createdAt;
           if (data.createdAt instanceof Timestamp) {
             createdAt = data.createdAt.toDate().toISOString();
-          } else if (typeof data.createdAt === 'string' && !isValid(parseISO(data.createdAt))) {
-             console.warn(`Invalid createdAt found for task ${doc.id}: ${data.createdAt}. Defaulting to now.`);
-            createdAt = new Date().toISOString();
-          } else if (!data.createdAt) {
-            console.warn(`Missing createdAt for task ${doc.id}. Defaulting to now.`);
+          } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
+            createdAt = data.createdAt;
+          } else {
+            console.warn(`Invalid or missing createdAt for task ${doc.id}: ${data.createdAt}. Defaulting to now.`);
             createdAt = new Date().toISOString();
           }
+          
+          let trashedAt = null;
+          if (data.trashedAt instanceof Timestamp) {
+            trashedAt = data.trashedAt.toDate().toISOString();
+          } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
+            trashedAt = data.trashedAt;
+          }
+
 
           return {
             id: doc.id,
@@ -84,7 +88,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
             dueDate,
             createdAt,
             isTrashed: data.isTrashed || false,
-            trashedAt: data.trashedAt instanceof Timestamp ? data.trashedAt.toDate().toISOString() : (data.trashedAt || null),
+            trashedAt,
           } as Task;
         });
         setTasks(tasksData);
@@ -101,7 +105,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
         } else if (error.message && (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("index needed"))) {
            toast({
             title: "Firestore Index Required",
-            description: "A Firestore index is needed for fetching tasks. Please create an index on 'tasks' (collection group) with: isTrashed (ASC), createdAt (DESC). Check console for a link to create it if provided by Firebase.",
+            description: "A Firestore index is needed for fetching tasks. Please create an index for collection group 'tasks' with: isTrashed (ASC), createdAt (DESC). Check console for a link to create it if provided by Firebase.",
             variant: "destructive",
             duration: 15000,
           });
@@ -279,15 +283,14 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
 
   if (authLoading || !isMounted) {
     return (
-       <div className="flex h-screen bg-muted/40 dark:bg-background overflow-hidden">
-        {/* Sidebar Skeleton - kept for structure if re-added, hidden if no user */}
-        <div className="hidden md:block relative w-60 bg-sidebar border-r border-sidebar-border animate-pulse" />
+      <div className="flex h-screen bg-background dark:bg-background overflow-hidden">
+        <AppSidebar currentFilter={filter} onFilterChange={setFilter} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header onAddTask={() => {}} />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
             <div className="max-w-6xl mx-auto w-full">
-              <div className="mb-6 h-12 bg-card rounded-lg shadow-sm border animate-pulse" /> {/* Search Bar Skeleton */}
-              <div className="mb-6 h-10 bg-muted rounded-md animate-pulse" /> {/* Filter Controls Skeleton */}
+              <div className="mb-6 h-12 bg-muted rounded-lg shadow-sm animate-pulse" />
+              <div className="mb-6 h-10 bg-muted rounded-md animate-pulse" />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="h-[250px] bg-card rounded-lg shadow-sm border animate-pulse">
@@ -299,6 +302,10 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                       </div>
                   </div>
                 ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 mb-6 max-w-6xl mx-auto">
+                <div className="h-48 bg-card rounded-lg shadow-sm border animate-pulse"></div>
+                <div className="h-48 bg-card rounded-lg shadow-sm border animate-pulse"></div>
               </div>
             </div>
           </main>
@@ -316,7 +323,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
 
         {!user ? (
            <main className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-background">
-              <MessageSquareText className="h-20 w-20 text-primary/70 mb-6" strokeWidth={1}/>
+             <Image src="https://placehold.co/300x200.png" alt="Welcome Illustration" width={300} height={200} className="mb-8 rounded-lg shadow-md" data-ai-hint="welcome illustration" />
               <h2 className="text-2xl font-semibold text-foreground mb-3">Welcome to Task Manager!</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
                   Your smart task manager for staying organized and productive. Please log in or sign up to manage your tasks.
@@ -370,7 +377,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                     onToggleSubtask={handleToggleSubtaskComplete}
                   />
                 )}
-                 {/* DashboardSection moved below TaskList */}
                 <DashboardSection tasks={tasks} />
               </div>
             </main>
@@ -415,7 +421,6 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-
 
           <Button asChild size="lg" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-30 p-0">
             <Link href="/ai-assistant" aria-label="Open AI Assistant">

@@ -8,12 +8,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Edit3, User, CalendarDays, Activity, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (authLoading || !mounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -21,7 +27,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
+  if (!user && !authLoading && mounted) {
     router.push('/login');
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -30,8 +36,18 @@ export default function ProfilePage() {
       </div>
     );
   }
+  
+  if (!user) { // Should be caught by above, but as a fallback
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p>Please log in to view your profile.</p>
+        <Button onClick={() => router.push('/login')} className="ml-2">Login</Button>
+      </div>
+    );
+  }
 
-  const joinDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date();
+  const joinDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : null;
+  const formattedJoinDate = joinDate ? format(joinDate, "MMMM d, yyyy") : "Date not available";
 
   return (
     <div className="flex flex-col min-h-screen bg-muted/30">
@@ -60,7 +76,7 @@ export default function ProfilePage() {
                 <CardDescription>{user.email}</CardDescription>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
                   <CalendarDays className="h-4 w-4 mr-1.5" />
-                  Joined: {format(joinDate, "MMMM d, yyyy")}
+                  Joined: {formattedJoinDate}
                 </div>
               </div>
               <Button variant="outline" size="sm" disabled>

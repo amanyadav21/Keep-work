@@ -129,14 +129,14 @@ function AIAssistantPageContent() {
     if (!viewport) return;
 
     const handleScroll = () => {
-      if (!viewport) return;
+      if (!viewport) return; // Guard for viewport becoming null
       const { scrollTop, scrollHeight, clientHeight } = viewport;
-      const atBottom = scrollHeight - scrollTop - clientHeight < 50; // User is considered at bottom if less than 50px from it
-      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50); // Show button if not at bottom and there's enough content to scroll
+      const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+      setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50);
     };
 
     viewport.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial check
+    handleScroll(); 
 
     return () => viewport.removeEventListener('scroll', handleScroll);
   }, [mounted, chatMessages]);
@@ -147,34 +147,41 @@ function AIAssistantPageContent() {
 
     const initialTaskDescFromUrl = searchParams.get('taskDescription');
     const intendedContext = initialTaskDescFromUrl || GENERAL_INQUIRY_PLACEHOLDER;
-
+    
     let needsChatReset = false;
-    let shouldSetLoadingInitial = false;
-
+    
     if (intendedContext !== currentOriginalTaskContext) {
       needsChatReset = true;
     } else if (chatMessages.length === 0 && intendedContext) {
       needsChatReset = true; 
     } else if (chatMessages.length > 0 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content !== intendedContext) {
+      // This condition handles cases where localStorage might have chat messages from a *different* context
+      // than what the current URL or general inquiry implies.
       needsChatReset = true;
     }
 
 
     if (needsChatReset) {
+      console.log("AI Assistant: Context change detected or empty chat for intended context. Resetting chat.");
       setCurrentOriginalTaskContext(intendedContext);
       const firstUserMessage: ChatMessage = { role: 'user', content: intendedContext, timestamp: Date.now() };
       setChatMessages([firstUserMessage]);
-      shouldSetLoadingInitial = true;
+      setIsLoadingInitial(true); // Trigger initial AI call
     } else if (chatMessages.length === 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext) {
-      shouldSetLoadingInitial = true;
-    } else if (chatMessages.length > 1 && chatMessages[0]?.role === 'user' && chatMessages[0]?.content === intendedContext && chatMessages[1]?.role === 'assistant') {
-      shouldSetLoadingInitial = false;
+      // This means the chat was just initialized (possibly by the above block or previous logic)
+      // and we need to make the initial AI call if it hasn't happened yet.
+      // Check if an AI response already exists for this single user message (e.g., loaded from a quick refresh)
+      const aiResponseExists = chatMessages.length > 1 && chatMessages[1]?.role === 'assistant' && chatMessages[0]?.content === intendedContext;
+      if (!aiResponseExists) {
+        setIsLoadingInitial(true);
+      } else {
+        setIsLoadingInitial(false); // AI response already there
+      }
+    } else {
+       setIsLoadingInitial(false); // Context matches, and chat has more than one message (or is empty and not a new context)
     }
 
-
-    setIsLoadingInitial(shouldSetLoadingInitial);
-
-  }, [mounted, searchParams, currentOriginalTaskContext, setCurrentOriginalTaskContext, setChatMessages, chatMessages]);
+  }, [mounted, searchParams, currentOriginalTaskContext, setCurrentOriginalTaskContext, chatMessages, setChatMessages]);
 
 
   useEffect(() => {
@@ -184,7 +191,7 @@ function AIAssistantPageContent() {
     }
     
     if (chatMessages[0].content !== currentOriginalTaskContext) {
-        console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed.");
+        console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed. Aborting AI call.");
         setIsLoadingInitial(false); 
         return;
     }
@@ -192,6 +199,7 @@ function AIAssistantPageContent() {
     const userFirstMessage = chatMessages[0].content;
     setCurrentUserInput(""); 
 
+    console.log("AI Assistant: Making initial AI call for:", userFirstMessage);
     getOpenRouterAssistance(userFirstMessage)
       .then(result => {
         setChatMessages(prev => {
@@ -243,19 +251,19 @@ function AIAssistantPageContent() {
 
     const userMessageContent = currentUserInput.trim();
     const newUserMessage: ChatMessage = { role: 'user', content: userMessageContent, timestamp: Date.now() };
-
-    const updatedChatMessages = [...chatMessages, newUserMessage];
-    setChatMessages(updatedChatMessages);
-
+    
+    const currentChatForAPI = [...chatMessages, newUserMessage];
+    setChatMessages(currentChatForAPI);
     setCurrentUserInput("");
     setIsSendingFollowUp(true);
 
     try {
-      const historyForAI = updatedChatMessages
-        .slice(0, -1) 
-        .map(msg => ({ role: msg.role, content: msg.content }));
+      // For OpenRouter, send the whole history including the latest user message for context
+      const historyForAI = currentChatForAPI 
+        .map(msg => ({ role: msg.role, content: msg.content })); 
       
-      const result = await getOpenRouterAssistance(newUserMessage.content, historyForAI);
+      // The last message in historyForAI is the one we want the AI to respond to
+      const result = await getOpenRouterAssistance(newUserMessage.content, historyForAI.slice(0, -1));
       setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
     } catch (error: any) {
       console.error("AI follow-up assistance error:", error);
@@ -268,7 +276,7 @@ function AIAssistantPageContent() {
     } finally {
       setIsSendingFollowUp(false);
     }
-  }, [mounted, currentUserInput, toast, setChatMessages, chatMessages]); // Removed currentOriginalTaskContext as it's implicitly handled by history
+  }, [mounted, currentUserInput, toast, setChatMessages, chatMessages]); 
 
   const isProcessing = isLoadingInitial || isSendingFollowUp;
   
