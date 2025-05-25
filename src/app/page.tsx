@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Brain, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle as WelcomeCardTitle } from '@/components/ui/card'; // Aliased CardTitle to avoid conflict
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
@@ -23,10 +24,10 @@ import { DashboardSection } from '@/components/DashboardSection';
 
 interface HomePageProps {
   params: Record<string, never>; // For root page, params is always empty
-  searchParams?: { [key: string]: string | string[] | undefined }; // Made optional
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function HomePage({ params, searchParams = {} }: HomePageProps) { // Default to empty object
+export default function HomePage({ params, searchParams = {} }: HomePageProps) {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -295,10 +296,7 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 mb-6 max-w-6xl mx-auto">
-                <div className="h-48 bg-card rounded-lg shadow-sm border animate-pulse"></div>
-                <div className="h-48 bg-card rounded-lg shadow-sm border animate-pulse"></div>
-              </div>
+              <DashboardSection tasks={[]} /> {/* Pass empty array during loading */}
             </div>
           </main>
         </div>
@@ -312,20 +310,36 @@ export default function HomePage({ params, searchParams = {} }: HomePageProps) {
         <Header onAddTask={handleOpenAddForm} />
 
         {!user ? (
-           <main className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-background">
-             <Image src="https://placehold.co/300x200.png" alt="Welcome Illustration" width={300} height={200} className="mb-8 rounded-lg shadow-md" data-ai-hint="welcome illustration" />
-              <h2 className="text-2xl font-semibold text-foreground mb-3">Welcome to Task Manager!</h2>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                  Your smart task manager for staying organized and productive. Please log in or sign up to manage your tasks.
-              </p>
-              <div className="flex gap-4">
-                  <Button asChild size="lg">
-                      <Link href="/login">Log In</Link>
+           <main className="flex-1 flex flex-col items-center justify-center p-4 bg-background">
+            <Card className="w-full max-w-lg shadow-xl overflow-hidden">
+              <CardHeader className="p-0">
+                <Image 
+                  src="https://placehold.co/600x300.png" // Larger placeholder
+                  alt="Welcome Illustration" 
+                  width={600} 
+                  height={300} 
+                  className="w-full h-auto object-cover"
+                  data-ai-hint="productivity tasks" 
+                  priority // Prioritize loading for LCP
+                />
+              </CardHeader>
+              <CardContent className="p-6 sm:p-8 text-center">
+                <WelcomeCardTitle className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                  Welcome to Task Manager!
+                </WelcomeCardTitle>
+                <CardDescription className="text-md sm:text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+                  Your smart companion for staying organized and productive. Log in or sign up to start managing your tasks efficiently.
+                </CardDescription>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button asChild size="lg" className="w-full sm:w-auto text-base py-3">
+                    <Link href="/login">Log In</Link>
                   </Button>
-                  <Button asChild variant="outline" size="lg">
-                      <Link href="/signup">Sign Up</Link>
+                  <Button asChild variant="outline" size="lg" className="w-full sm:w-auto text-base py-3">
+                    <Link href="/signup">Sign Up</Link>
                   </Button>
-              </div>
+                </div>
+              </CardContent>
+            </Card>
           </main>
         ) : (
           <>
