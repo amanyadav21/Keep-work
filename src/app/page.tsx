@@ -11,7 +11,6 @@ import { FilterControls } from '@/components/FilterControls';
 import type { Task, TaskFilter, FirebaseUser } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-// AppSidebar is no longer used directly here, it's part of RootLayout
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -24,10 +23,10 @@ import { DashboardSection } from '@/components/DashboardSection';
 
 interface HomePageProps {
   params: Record<string, never>; // For root page, params is always empty
-  searchParams: { [key: string]: string | string[] | undefined }; // Made non-optional
+  searchParams?: { [key: string]: string | string[] | undefined }; // Made optional
 }
 
-export default function HomePage({ params, searchParams }: HomePageProps) {
+export default function HomePage({ params, searchParams = {} }: HomePageProps) { // Default to empty object
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -60,8 +59,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
             dueDate = data.dueDate;
           } else {
-            // Fallback if dueDate is missing or invalid, can also log a warning
-            // console.warn(`Invalid or missing dueDate for task ${doc.id}: ${data.dueDate}. Defaulting to now.`);
             dueDate = new Date().toISOString();
           }
 
@@ -71,7 +68,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
             createdAt = data.createdAt;
           } else {
-             // console.warn(`Invalid or missing createdAt for task ${doc.id}: ${data.createdAt}. Defaulting to now.`);
             createdAt = new Date().toISOString();
           }
           
@@ -97,23 +93,18 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         setIsLoadingTasks(false);
       }, (error) => {
         console.error("Error fetching tasks:", error);
+        let description = "Could not fetch tasks. " + error.message;
         if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
-          toast({
-            title: "Permissions Error",
-            description: "You don't have permission to access these tasks. Check Firestore rules.",
-            variant: "destructive",
-            duration: 10000,
-          });
+          description = "You don't have permission to access these tasks. Check Firestore rules.";
         } else if (error.message && (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("index needed"))) {
-           toast({
-            title: "Firestore Index Required",
-            description: "A Firestore index is needed for fetching tasks. Please create an index for collection group 'tasks' with: isTrashed (ASC), createdAt (DESC). Check console for a link to create it if provided by Firebase.",
+           description = "A Firestore index is needed for fetching tasks. Please create an index for collection group 'tasks' with: isTrashed (ASC), createdAt (DESC). Check console for a link to create it if provided by Firebase.";
+        }
+        toast({
+            title: "Error Fetching Tasks",
+            description: description,
             variant: "destructive",
             duration: 15000,
-          });
-        } else {
-          toast({ title: "Error Fetching Tasks", description: "Could not fetch tasks. " + error.message, variant: "destructive" });
-        }
+        });
         setIsLoadingTasks(false);
       });
 
@@ -266,7 +257,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       }
       const createdAtA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
       const createdAtB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
-      return createdAtA - createdAtB; // Fallback to createdAt if due dates are same
+      return createdAtA - createdAtB; 
     });
   }, [tasks]);
 
@@ -284,11 +275,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
 
   if (authLoading || !isMounted) {
-    // Enhanced Skeleton Loader
     return (
       <div className="flex h-screen bg-background dark:bg-background overflow-hidden">
-        {/* Sidebar placeholder (if sidebar were always visible, or to maintain space) */}
-        {/* <div className="hidden md:block w-64 bg-muted animate-pulse" /> */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header onAddTask={() => {}} />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
@@ -320,8 +308,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
   return (
     <div className="flex h-screen bg-background dark:bg-background overflow-hidden">
-      {/* AppSidebar is rendered by RootLayout now */}
-      <div className="flex-1 flex flex-col overflow-hidden"> {/* Main content area wrapper */}
+      <div className="flex-1 flex flex-col overflow-hidden"> 
         <Header onAddTask={handleOpenAddForm} />
 
         {!user ? (
@@ -350,7 +337,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
                     type="search"
                     placeholder="Search tasks..."
                     className="w-full pl-12 py-2.5 h-12 text-base rounded-lg border-border focus:ring-primary focus:border-primary"
-                    disabled // Placeholder for now
+                    disabled 
                   />
                 </div>
 
@@ -437,3 +424,4 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     </div>
   );
 }
+
