@@ -4,16 +4,17 @@ import { Manrope } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { AuthProvider } from '@/contexts/AuthContext'; // Import AuthProvider
+import { AuthProvider } from '@/contexts/AuthContext';
+import { SidebarProvider } from '@/components/ui/sidebar'; // Ensure this import is present
 
-const manrope = Manrope({ 
+const manrope = Manrope({
   variable: '--font-sans',
   subsets: ['latin'],
-  weight: ['400', '500', '700'], 
+  weight: ['400', '500', '700'],
 });
 
 export const metadata: Metadata = {
-  title: 'Upnext | Smart Task Manager',
+  title: 'Upnext',
   description: 'Smart Task Manager for Students',
 };
 
@@ -28,13 +29,15 @@ export default function RootLayout({
         className={`${manrope.variable} font-sans antialiased`}
         suppressHydrationWarning={true}
       >
-        <AuthProvider> {/* Wrap with AuthProvider */}
+        <AuthProvider>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
           >
-            {children}
+            <SidebarProvider collapsible="icon" defaultOpen={true}>
+              {children}
+            </SidebarProvider>
             <Toaster />
           </ThemeProvider>
         </AuthProvider>
