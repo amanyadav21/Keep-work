@@ -2,14 +2,14 @@
 "use client";
 
 import { useState, useEffect, memo } from 'react';
-import type { Task, TaskCategory, Subtask } from '@/types';
+import type { Task, TaskCategory } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { format, parseISO, isValid, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Pencil, Trash2, BookOpen, Users, User, AlertTriangle, CalendarDays, Brain, ListChecks } from 'lucide-react';
+import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, Brain, ListChecks, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
-
 
 interface TaskItemProps {
   task: Task;
@@ -62,14 +61,12 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
         return;
       }
 
-      const now = new Date();
       if (isPast(dueDateObj)) {
         setTimeLeft("Past due");
         return;
       }
       
       const timeLeftString = formatDistanceToNowStrict(dueDateObj, { addSuffix: true });
-      // Customize the string slightly, e.g., remove "in "
       setTimeLeft(timeLeftString.replace(/^in\s+/, '') + " left");
     };
 
@@ -80,7 +77,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
   }, [task.dueDate, task.isCompleted, isMounted]);
 
   const dueDateObj = parseISO(task.dueDate);
-  const formattedDueDate = isValid(dueDateObj) ? format(dueDateObj, "MMM d, yyyy") : null;
+  const formattedDueDate = isValid(dueDateObj) ? format(dueDateObj, "MMM d, yyyy") : "No due date";
 
   const isOverdue = !task.isCompleted && isValid(dueDateObj) && isPast(dueDateObj);
 
@@ -94,7 +91,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     <TooltipProvider delayDuration={150}>
       <Card
         className={cn(
-          "group flex flex-col justify-between rounded-lg border bg-card text-foreground shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px]",
+          "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px]",
           task.isCompleted ? "bg-muted" : "bg-card"
         )}
       >
@@ -120,15 +117,15 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             "text-xs flex flex-wrap items-center gap-x-2 gap-y-1",
             task.isCompleted ? "text-muted-foreground" : "text-muted-foreground/90"
           )}>
-            <Badge variant="secondary" className="text-xs py-0.5 px-1.5 font-medium">
+            <Badge variant="secondary" className="text-xs py-0.5 px-1.5 font-medium mr-1.5">
               <CategoryIcon className={cn("h-3.5 w-3.5 mr-1", task.isCompleted ? "text-muted-foreground" : "text-primary")} />
               {task.category}
             </Badge>
-            {formattedDueDate && (
-                <div className="flex items-center">
-                    <CalendarDays className="h-3.5 w-3.5 mr-1" />
-                    <span>{formattedDueDate}</span>
-                </div>
+             {task.dueDate && (
+              <div className="flex items-center">
+                  <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                  <span>{formattedDueDate}</span>
+              </div>
             )}
           </div>
 
@@ -144,7 +141,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                   <Progress value={subtaskProgress} className="h-1.5" />
                 </div>
               )}
-              <ScrollArea className="flex-1 max-h-32 pr-1 -mr-1"> {/* Offset padding for scrollbar */}
+              <ScrollArea className="flex-1 max-h-32 pr-1 -mr-1">
                 <div className="space-y-1.5 py-0.5">
                 {task.subtasks.map((subtask) => (
                   <div key={subtask.id} className="flex items-center space-x-2">
@@ -173,14 +170,13 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           )}
         </CardContent>
 
-        <CardFooter className="p-3 pt-2 mt-auto flex flex-col items-start space-y-2 border-t">
-          <div className="flex items-center justify-between w-full text-xs">
-             <div className="flex-1 min-w-0"> {/* Placeholder for future left-aligned content if any */} </div>
+        <CardFooter className="p-3 mt-auto flex flex-col items-start space-y-2 border-t">
+          <div className="flex items-center justify-end w-full text-xs">
             {(isMounted && timeLeft) && (
               <p className={cn(
-                "font-medium text-xs",
+                "font-medium text-xs flex items-center",
                 isOverdue ? "text-destructive" : 
-                task.isCompleted ? "text-green-600 dark:text-green-500" : 
+                task.isCompleted ? "text-status-green" : 
                 "text-primary"
               )}>
                 {isOverdue && <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />}
@@ -221,7 +217,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Delete Task</p>
+                  <p>Move to Trash</p>
                 </TooltipContent>
               </Tooltip>
           </div>
@@ -232,3 +228,4 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
+
