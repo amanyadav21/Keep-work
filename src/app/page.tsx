@@ -5,25 +5,27 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from '@/components/Header';
-import { AppSidebar } from '@/components/AppSidebar'; // Import AppSidebar
+import { AppSidebar } from '@/components/AppSidebar';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
-import type { Task, TaskFilter } from '@/types'; // Removed FirebaseUser as it's used via useAuth
+import type { Task, TaskFilter } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Brain, Plus, Search as SearchIcon } from 'lucide-react'; // Renamed Search to SearchIcon
+import { Brain, Plus, Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle as WelcomeCardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { FilterControls } from '@/components/FilterControls';
+
 
 interface HomePageProps {
-  params: Record<string, never>; 
+  params: Record<string, never>;
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
@@ -51,7 +53,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       const q = query(tasksCollectionRef, where("isTrashed", "==", false), orderBy("createdAt", "desc"));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const tasksData = querySnapshot.docs.map(docSnap => { // Renamed doc to docSnap to avoid conflict
+        const tasksData = querySnapshot.docs.map(docSnap => {
           const data = docSnap.data();
 
           let dueDate;
@@ -60,7 +62,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
             dueDate = data.dueDate;
           } else {
-            dueDate = new Date().toISOString(); // Fallback
+            // Fallback if dueDate is missing or invalid, can be null or a default
+            dueDate = new Date().toISOString(); // Or set to null if tasks can have no due date
           }
 
           let createdAt;
@@ -97,7 +100,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
           description = "You don't have permission to access these tasks. Check Firestore rules.";
         } else if (error.message && (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("index needed"))) {
-           description = "A Firestore index is needed for fetching tasks. Please create an index for collection group 'tasks' with: isTrashed (ASC), createdAt (DESC). Check console for a link to create it if provided by Firebase.";
+           description = "A Firestore index is needed for fetching tasks. Please create an index for collection group 'tasks' with: isTrashed (ASC), createdAt (DESC). Check server console for a link if provided by Firebase.";
         }
         toast({
             title: "Error Fetching Tasks",
@@ -139,7 +142,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         trashedAt: null,
       };
       await addDoc(tasksCollectionRef, newTaskData);
-      toast({ title: "Task Added", description: `"${data.description.substring(0,25)}..." added.`});
+      // Toast is now handled in TaskForm onSubmit
     } catch (error: any) {
       console.error("Error adding task:", error);
       toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
@@ -164,7 +167,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         })) || [],
       };
       await updateDoc(taskDocRef, updatedTaskData);
-      toast({ title: "Task Updated", description: `"${data.description.substring(0,25)}..." updated.`});
+      // Toast is now handled in TaskForm onSubmit
       setEditingTask(null);
     } catch (error: any) {
       console.error("Error updating task:", error);
@@ -250,7 +253,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       if (a.isCompleted !== b.isCompleted) {
         return a.isCompleted ? 1 : -1;
       }
-      const dueDateA = a.dueDate ? parseISO(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER; // Unset due dates last
+      const dueDateA = a.dueDate ? parseISO(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       const dueDateB = b.dueDate ? parseISO(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       if (dueDateA !== dueDateB) {
         return dueDateA - dueDateB;
@@ -277,32 +280,38 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
 
   if (authLoading || !isMounted) {
-    // Simplified skeleton for initial page load, matching the structure of the new UI
     return (
-      <div className="flex h-full flex-1">
-        {/* Sidebar Placeholder (conditionally rendered if user becomes available) */}
-        <div className="hidden md:block w-[var(--sidebar-width-icon)] lg:w-[var(--sidebar-width)] bg-sidebar border-r border-sidebar-border shadow-sm animate-pulse">
-          {/* You can add simplified sidebar skeleton items here if needed */}
+      <div className="flex h-screen">
+        {/* Simplified initial loader to prevent layout shifts as much as possible */}
+        <div className="hidden md:block w-[var(--sidebar-width-icon)] lg:w-[var(--sidebar-width)] bg-sidebar-background border-r border-sidebar-border shadow-sm animate-pulse">
+          {/* Sidebar Skeleton */}
+          <div className="p-3 h-[60px] border-b border-sidebar-border"></div>
+          <div className="p-2 space-y-2 mt-4">
+            <div className="h-10 bg-muted rounded animate-pulse"></div>
+            {[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-muted rounded animate-pulse"></div>)}
+          </div>
         </div>
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header Placeholder */}
           <div className="py-3 px-4 md:px-6 h-[60px] border-b bg-background flex items-center justify-between animate-pulse">
-            <div className="flex items-center gap-3">
-              <div className="h-7 w-7 bg-muted rounded-full"></div>
-              <div className="h-6 w-24 bg-muted rounded-md"></div>
-            </div>
+            <div className="h-7 w-24 bg-muted rounded-md"></div>
             <div className="flex items-center gap-3">
               <div className="h-8 w-24 bg-muted rounded-full"></div>
+              <div className="h-8 w-8 bg-muted rounded-full"></div>
               <div className="h-8 w-8 bg-muted rounded-full"></div>
             </div>
           </div>
           {/* Main Content Placeholder */}
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
             <div className="w-full max-w-6xl mx-auto">
-              {/* Search bar placeholder */}
-              <div className="mb-6 h-12 bg-muted rounded-lg shadow-sm animate-pulse" />
+              {/* New Task Input Placeholder */}
+              <div className="mb-6 h-12 bg-card rounded-lg shadow-sm border animate-pulse"></div>
               {/* Filter controls placeholder */}
-              <div className="mb-6 h-10 bg-muted rounded-md animate-pulse" />
+              <div className="mb-6 flex space-x-2 h-9">
+                  <div className="w-20 bg-muted rounded-full animate-pulse"></div>
+                  <div className="w-24 bg-muted rounded-full animate-pulse"></div>
+                  <div className="w-28 bg-muted rounded-full animate-pulse"></div>
+              </div>
               {/* Task list placeholder */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
@@ -321,14 +330,14 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   }
 
   return (
-    <div className="flex h-full flex-1"> {/* Matched from layout.tsx's flex container */}
-      {user && <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0"> {/* min-w-0 is important for flex children */}
+    <div className="flex h-screen bg-background">
+      {user && <AppSidebar onAddTask={handleOpenAddForm} />}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Header onAddTask={handleOpenAddForm} />
 
         {!user ? (
-           <main className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-background">
-            <Card className="w-full max-w-lg shadow-xl overflow-hidden">
+           <main className="flex-1 flex flex-col items-center justify-center text-center p-4 sm:p-8 bg-background">
+            <Card className="w-full max-w-lg shadow-xl overflow-hidden bg-card">
               <CardHeader className="p-0">
                 <Image 
                   src="https://placehold.co/600x300.png"
@@ -336,7 +345,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
                   width={600} 
                   height={300} 
                   className="w-full h-auto object-cover"
-                  data-ai-hint="productivity tasks" 
+                  data-ai-hint="productivity tasks"
                   priority
                 />
               </CardHeader>
@@ -361,35 +370,23 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         ) : (
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
             <div className="w-full max-w-6xl mx-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-foreground">
-                  My Tasks ({pendingTasksCount})
-                </h2>
-                {/* Placeholder for Filter/Sort/View buttons from design */}
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled>Filter</Button>
-                  <Button variant="outline" size="sm" disabled>Sort By</Button>
-                  <Button variant="outline" size="icon" disabled><div className="h-4 w-4 bg-muted rounded-sm"></div></Button> {/* Grid view icon placeholder */}
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <div className="relative">
-                  <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search tasks..."
-                    className="w-full pl-12 py-2.5 h-12 text-base rounded-lg border-input focus:ring-primary focus:border-primary"
-                    // Search functionality not implemented yet
-                    disabled 
-                  />
-                </div>
+              <div className="mb-6 max-w-2xl mx-auto">
+                <Button
+                  variant="outline"
+                  className="w-full h-14 text-md text-muted-foreground hover:text-foreground hover:border-primary/50 border-dashed border-input justify-start px-4 shadow-sm hover:shadow-md transition-all duration-150 ease-in-out focus-visible:ring-primary"
+                  onClick={handleOpenAddForm}
+                >
+                  <Plus className="mr-3 h-5 w-5" />
+                  Take a note...
+                </Button>
               </div>
               
-              {/* FilterControls removed from here, handled by sidebar */}
+              <div className="mb-6">
+                <FilterControls currentFilter={filter} onFilterChange={setFilter} />
+              </div>
 
               {isLoadingTasks ? (
-                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {[...Array(8)].map((_, i) => (
                     <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
                        <div className="h-5 bg-muted rounded w-3/4"></div>
@@ -407,7 +404,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
                   onToggleSubtask={handleToggleSubtaskComplete}
                 />
               )}
-              {/* DashboardSection removed, its content was TaskStats, which is not in the new design's main page */}
             </div>
           </main>
         )}
