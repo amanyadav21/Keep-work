@@ -44,20 +44,23 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
   }, []);
 
   useEffect(() => {
-    if (!isMounted || !task.dueDate) {
-      if (task.isCompleted) setTimeLeft('Completed');
-      else if (!task.dueDate) setTimeLeft('No due date');
-      return;
-    }
+    if (!isMounted) return; // Ensure component is mounted client-side
+
     if (task.isCompleted) {
       setTimeLeft('Completed');
       return;
     }
 
+    if (!task.dueDate) { // Explicitly check for missing or falsy due date
+      setTimeLeft('No due date');
+      return;
+    }
+
+    // Proceed with date calculations only if dueDate is present
     const calculateTimeLeft = () => {
       const dueDateObj = parseISO(task.dueDate);
       if (!isValid(dueDateObj)) {
-        setTimeLeft("Invalid date");
+        setTimeLeft("Invalid date format"); // More specific message for invalid dates
         return;
       }
 
@@ -70,16 +73,17 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
       setTimeLeft(timeLeftString.replace(/^in\s+/, '') + " left");
     };
 
-    calculateTimeLeft();
+    calculateTimeLeft(); // Initial calculation
     const intervalId = setInterval(calculateTimeLeft, 60000); // Update every minute
 
-    return () => clearInterval(intervalId);
+    return () => clearInterval(intervalId); // Cleanup interval on unmount
   }, [task.dueDate, task.isCompleted, isMounted]);
 
-  const dueDateObj = parseISO(task.dueDate);
-  const formattedDueDate = isValid(dueDateObj) ? format(dueDateObj, "MMM d, yyyy") : "No due date";
 
-  const isOverdue = !task.isCompleted && isValid(dueDateObj) && isPast(dueDateObj);
+  const dueDateObj = task.dueDate ? parseISO(task.dueDate) : null;
+  const formattedDueDate = dueDateObj && isValid(dueDateObj) ? format(dueDateObj, "MMM d, yyyy") : "No due date";
+  const isOverdue = !task.isCompleted && dueDateObj && isValid(dueDateObj) && isPast(dueDateObj);
+
 
   const completedSubtasks = task.subtasks?.filter(st => st.isCompleted).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
