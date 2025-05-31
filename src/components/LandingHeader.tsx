@@ -5,7 +5,15 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetClose,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -21,7 +29,6 @@ export function LandingHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center group">
-          {/* Icon removed for cleaner look as per design - <UpNextIcon className="h-6 w-6 text-primary group-hover:text-primary/90 transition-colors" /> */}
           <span className="font-bold text-2xl text-foreground group-hover:text-foreground/90 transition-colors">Upnext</span>
         </Link>
 
@@ -47,8 +54,6 @@ export function LandingHeader() {
             </Button>
           </div>
           
-          {/* ThemeToggle removed to match new design's simplicity */}
-
           <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -56,41 +61,53 @@ export function LandingHeader() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] p-6">
-                <div className="mb-6 flex items-center justify-between">
-                   <Link href="/" className="flex items-center space-x-2 group" onClick={() => setIsMobileMenuOpen(false)}>
-                    <span className="font-bold text-xl text-foreground">Upnext</span>
-                  </Link>
+              <SheetContent side="right" className="w-[280px] p-0 flex flex-col">
+                <SheetHeader className="flex flex-row items-center justify-between p-6 border-b">
+                  <SheetTitle asChild>
+                    <Link href="/" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
+                      <span className="font-bold text-xl text-foreground">Upnext</span>
+                    </Link>
+                  </SheetTitle>
+                  {/* SheetClose is automatically added by SheetContent, but if needed explicitly:
                   <SheetClose asChild>
-                     <Button variant="ghost" size="icon" aria-label="Close menu">
-                        <X className="h-5 w-5" />
+                    <Button variant="ghost" size="icon" aria-label="Close menu">
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </SheetClose>
+                  */}
+                </SheetHeader>
+
+                <ScrollArea className="flex-grow">
+                  <div className="p-6">
+                    <nav className="flex flex-col space-y-4">
+                      {navItems.map((item) => (
+                        <SheetClose asChild key={item.label}>
+                          <Link
+                            href={item.href}
+                            className="text-md text-muted-foreground hover:text-primary py-1"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            {item.label}
+                          </Link>
+                        </SheetClose>
+                      ))}
+                    </nav>
+                  </div>
+                </ScrollArea>
+                
+                <div className="p-6 mt-auto border-t border-border/40">
+                  <div className="flex flex-col space-y-3">
+                    <SheetClose asChild>
+                      <Button asChild variant="outline" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Link href="/login">Log In</Link>
                       </Button>
-                  </SheetClose>
-                </div>
-                <nav className="flex flex-col space-y-4">
-                  {navItems.map((item) => (
-                    <SheetClose asChild key={item.label}>
-                      <Link
-                        href={item.href}
-                        className="text-md text-muted-foreground hover:text-primary py-1"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {item.label}
-                      </Link>
                     </SheetClose>
-                  ))}
-                </nav>
-                <div className="mt-8 pt-6 border-t border-border/40 flex flex-col space-y-3">
-                  <SheetClose asChild>
-                    <Button asChild variant="outline" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
-                      <Link href="/login">Log In</Link>
-                    </Button>
-                  </SheetClose>
-                  <SheetClose asChild>
-                    <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
-                      <Link href="/signup">Sign Up</Link>
-                    </Button>
-                  </SheetClose>
+                    <SheetClose asChild>
+                      <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Link href="/signup">Sign Up</Link>
+                      </Button>
+                    </SheetClose>
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>
@@ -100,3 +117,5 @@ export function LandingHeader() {
     </header>
   );
 }
+
+    
