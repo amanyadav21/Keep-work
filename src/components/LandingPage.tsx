@@ -35,31 +35,6 @@ const FeatureItem = ({
   </div>
 );
 
-const TestimonialCard = ({
-  avatarSrc,
-  avatarHint,
-  name,
-  role,
-  quote
-}: {
-  avatarSrc: string;
-  avatarHint: string;
-  name: string;
-  role: string;
-  quote: string;
-}) => (
-  <div className="bg-card p-6 rounded-xl shadow-lg flex flex-col text-left h-full">
-    <div className="flex items-center mb-4">
-      <Image src={avatarSrc} alt={name} width={48} height={48} className="rounded-full mr-4" data-ai-hint={avatarHint} />
-      <div>
-        <h4 className="font-semibold text-foreground">{name}</h4>
-        <p className="text-xs text-muted-foreground">{role}</p>
-      </div>
-    </div>
-    <p className="text-sm text-muted-foreground leading-relaxed flex-grow">&ldquo;{quote}&rdquo;</p>
-  </div>
-);
-
 const PricingCard = ({
   planName,
   price,
@@ -207,43 +182,6 @@ export function LandingPage() {
           </div>
         </section>
         
-        {/* What Our Users Say - Testimonials Section */}
-        <section id="testimonials" className="py-16 md:py-24 bg-slate-100">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-                What Our Users Say
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                Hear from students who have transformed their productivity with Upnext.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <TestimonialCard
-                avatarSrc="https://placehold.co/48x48.png"
-                avatarHint="profile person"
-                name="Sarah L."
-                role="Computer Science Student"
-                quote="Upnext has been a game-changer for managing my coursework. The deadline tracking and focus mode are lifesavers!"
-              />
-              <TestimonialCard
-                avatarSrc="https://placehold.co/48x48.png"
-                avatarHint="profile person"
-                name="John B."
-                role="Engineering Major"
-                quote="The collaboration tools are fantastic for group projects. It's so much easier to stay organized and on the same page."
-              />
-              <TestimonialCard
-                avatarSrc="https://placehold.co/48x48.png"
-                avatarHint="profile person"
-                name="Maria S."
-                role="Liberal Arts Student"
-                quote="I love how intuitive Upnext is. I was able to start organizing my tasks and planning my semester within minutes."
-              />
-            </div>
-          </div>
-        </section>
-
         {/* Simple, Transparent Pricing Section */}
         <section id="pricing" className="py-16 md:py-24 bg-background">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -322,7 +260,6 @@ export function LandingPage() {
                 <ul className="space-y-2 text-sm">
                   <li><Link href="/#features" className="hover:text-primary transition-colors">Features</Link></li>
                   <li><Link href="/#pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-                  <li><Link href="/#testimonials" className="hover:text-primary transition-colors">Testimonials</Link></li>
                   <li><Link href="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
                 </ul>
               </div>

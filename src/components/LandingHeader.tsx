@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/#features', label: 'Features' },
-  { href: '/#testimonials', label: 'Testimonials' },
   { href: '/#pricing', label: 'Pricing' },
 ];
 
@@ -68,13 +67,7 @@ export function LandingHeader() {
                       <span className="font-bold text-xl text-foreground">Upnext</span>
                     </Link>
                   </SheetTitle>
-                  {/* SheetClose is automatically added by SheetContent, but if needed explicitly:
-                  <SheetClose asChild>
-                    <Button variant="ghost" size="icon" aria-label="Close menu">
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </SheetClose>
-                  */}
+                  {/* SheetClose is automatically added by SheetContent */}
                 </SheetHeader>
 
                 <ScrollArea className="flex-grow">
@@ -117,5 +110,3 @@ export function LandingHeader() {
     </header>
   );
 }
-
-    
