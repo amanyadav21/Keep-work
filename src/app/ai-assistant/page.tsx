@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ArrowLeft, Loader2, Type, Code, ListChecks, HelpCircle, AlertCircle, Send, UserCircle, Bot, ChevronDown, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, UserCircle, Bot, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useLocalStorage from '@/hooks/useLocalStorage';
@@ -33,8 +33,8 @@ async function getOpenRouterAssistance(
   const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "TaskWise Student";
 
   if (!apiKey) {
-    console.error("OpenRouter API Key is not set in environment variables.");
-    return { assistantResponse: "AI Service is not configured. Missing API Key." };
+    console.error("OpenRouter API Key is not set in environment variables (NEXT_PUBLIC_OPENROUTER_API_KEY).");
+    return { assistantResponse: "AI Service is not configured. The API Key is missing from environment variables. Please set NEXT_PUBLIC_OPENROUTER_API_KEY." };
   }
 
   const messagesForAPI = [
@@ -60,7 +60,7 @@ async function getOpenRouterAssistance(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: response.statusText }));
-      console.error("OpenRouter API Error:", response.status, errorData);
+      console.error("OpenRouter API Error:", response.status, errorData); // This log is helpful for debugging
       throw new Error(`API request failed with status ${response.status}: ${errorData.error?.message || errorData.message || response.statusText}`);
     }
 
@@ -74,16 +74,23 @@ async function getOpenRouterAssistance(
     return { assistantResponse: assistantMessage.trim() };
 
   } catch (error: any) {
-    console.error("Error calling OpenRouter AI:", error);
-    let errorMessage = "Sorry, I couldn't connect to the AI assistant. Please try again later.";
+    console.error("Error calling OpenRouter AI:", error); // This logs the error thrown from the response.ok check or other fetch errors
+    let errorMessage = "Sorry, I couldn't connect to the AI assistant. Please try again later."; // Default message
+
     if (error.message) {
+      const lowerCaseErrorMessage = error.message.toLowerCase();
+      if (lowerCaseErrorMessage.includes("status 401")) {
+        errorMessage = "AI authentication failed (401 Unauthorized). Please ensure your OpenRouter API key (NEXT_PUBLIC_OPENROUTER_API_KEY) is correctly set in your environment variables and is valid with sufficient credits.";
+      } else if (lowerCaseErrorMessage.includes("api key") || lowerCaseErrorMessage.includes("invalid_api_key")) {
+        errorMessage = "AI Service API key may be invalid, missing, or misconfigured. Please check your OpenRouter API key in your environment variables (NEXT_PUBLIC_OPENROUTER_API_KEY).";
+      } else if (lowerCaseErrorMessage.includes("blocked")) {
+        errorMessage = "AI request was blocked. This might be due to your OpenRouter account status or API key settings. Please check them.";
+      } else if (lowerCaseErrorMessage.includes("insufficient_quota") || lowerCaseErrorMessage.includes("rate_limit_exceeded")) {
+        errorMessage = "AI request failed due to rate limits or insufficient quota on your OpenRouter account. Please check your account or try again later.";
+      } else {
+        // For other errors from the API, use the error message but prefix it.
         errorMessage = `AI Error: ${error.message}`;
-    }
-    if (error.message && error.message.toLowerCase().includes("api key")) {
-        errorMessage = "AI Service API key is invalid or missing. Please check configuration.";
-    }
-     if (error.message && error.message.toLowerCase().includes("blocked")) {
-        errorMessage = "AI request was blocked. Please check your OpenRouter account or API key settings.";
+      }
     }
     return { assistantResponse: errorMessage };
   }
@@ -205,8 +212,10 @@ function AIAssistantPageContent() {
           return prev;
         });
       })
-      .catch(error => {
-        console.error("Initial AI assistance error:", error);
+      .catch(error => { // This catch is for errors thrown by getOpenRouterAssistance IF IT WERE TO THROW THEM DIRECTLY.
+                       // However, getOpenRouterAssistance is designed to return an error object.
+                       // This specific .catch() here might be redundant if getOpenRouterAssistance always resolves.
+        console.error("Initial AI assistance error (unexpected path):", error);
         toast({
           title: "AI Assistance Failed",
           description: error.message || AI_UNAVAILABLE_MESSAGE,
@@ -256,10 +265,12 @@ function AIAssistantPageContent() {
       const historyForAI = currentChatForAPI 
         .map(msg => ({ role: msg.role, content: msg.content })); 
       
+      // getOpenRouterAssistance returns a promise that resolves to AIOutputType,
+      // which includes assistantResponse that might contain an error message.
       const result = await getOpenRouterAssistance(newUserMessage.content, historyForAI.slice(0, -1));
       setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
-    } catch (error: any) {
-      console.error("AI follow-up assistance error:", error);
+    } catch (error: any) { // This catch is unlikely to be hit if getOpenRouterAssistance always resolves
+      console.error("AI follow-up assistance error (unexpected path):", error);
       toast({
         title: "AI Follow-up Failed",
         description: error.message || AI_UNAVAILABLE_MESSAGE,
@@ -425,5 +436,7 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
+
+    
 
     
