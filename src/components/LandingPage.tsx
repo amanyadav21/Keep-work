@@ -3,11 +3,10 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge'; // Added import
+import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Zap, Users, Edit3, TrendingUp, LayoutGrid, ListChecks, Brain, LayoutPanelLeft, Filter, ShieldCheck, Sparkles } from 'lucide-react';
 import Image from 'next/image';
-import { cn } from '@/lib/utils'; // Ensured cn is imported
+import { cn } from '@/lib/utils';
 
 // Individual Bento Card Item
 const BentoGridItem = ({
@@ -46,11 +45,11 @@ export function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
       {/* Hero Section */}
-      <section className="flex-grow flex items-center justify-center py-20 md:py-28 lg:py-36 px-4 text-center relative overflow-hidden">
+      <section className="flex-grow flex items-center justify-center py-20 md:py-28 lg:py-32 px-4 text-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-5" style={{backgroundImage: 'radial-gradient(circle, hsl(var(--primary)/0.05) 1px, transparent 1px)', backgroundSize: '25px 25px'}}></div>
         <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/10 to-transparent -z-10"></div>
         
-        <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="inline-block mb-6 px-5 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-full border border-primary/30 shadow-md">
             ✨ Plan. Track. Achieve. ✨
           </div>
@@ -73,7 +72,7 @@ export function LandingPage() {
 
       {/* Bento Features Section */}
       <section className="py-16 md:py-24 border-t border-border/20">
-        <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
               Why <span className="text-primary">Upnext</span> is Your Ultimate Task Companion
@@ -151,7 +150,7 @@ export function LandingPage() {
       
       {/* CTA Section */}
       <section className="py-16 md:py-24 bg-muted/30">
-        <div className="container mx-auto px-4 text-center">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Ready to Transform Your Productivity?</h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">Join thousands of students who are already organizing their success with Upnext.</p>
           <Button asChild size="lg" className="text-base py-3.5 px-10 shadow-lg hover:shadow-primary/30 transition-all duration-300 transform hover:-translate-y-0.5">
@@ -160,12 +159,13 @@ export function LandingPage() {
         </div>
       </section>
 
-
       {/* Footer (Simple) */}
       <footer className="py-10 text-center border-t border-border/20 bg-background">
-        <p className="text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Upnext. All rights reserved. Built with focus for students.
-        </p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p className="text-sm text-muted-foreground">
+              &copy; {new Date().getFullYear()} Upnext. All rights reserved. Built with focus for students.
+            </p>
+        </div>
       </footer>
     </div>
   );
