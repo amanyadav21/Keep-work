@@ -170,8 +170,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           )}
         </CardContent>
 
-        <CardFooter className="p-3 mt-auto flex flex-col items-start space-y-2 border-t">
-          <div className="flex items-center justify-end w-full text-xs">
+        <CardFooter className="p-3 mt-auto border-t flex items-center justify-between">
+          <div className="flex-shrink-0">
             {(isMounted && timeLeft) && (
               <p className={cn(
                 "font-medium text-xs flex items-center",
@@ -185,12 +185,12 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             )}
           </div>
            <div className={cn(
-              "flex items-center space-x-1 w-full justify-end",
+              "flex items-center space-x-1",
               task.isCompleted ? "opacity-60" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
             )}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="ghost" size="icon" aria-label="Get AI Assistance" className="h-7 w-7 text-primary hover:text-primary/80">
+                  <Button asChild variant="ghost" size="icon" aria-label="Get AI Assistance" className="h-7 w-7 text-primary hover:text-primary">
                     <Link href={`/ai-assistant?taskDescription=${encodeURIComponent(task.description)}`}>
                       <Brain className="h-4 w-4" />
                     </Link>
@@ -228,4 +228,3 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
-
