@@ -113,61 +113,67 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             {task.description}
           </CardTitle>
 
+          {/* Middle section for subtasks or spacer */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            {task.subtasks && task.subtasks.length > 0 ? (
+              <div className="mt-3 space-y-2 flex-1 flex flex-col min-h-0">
+                <Separator className="mb-2" />
+                {totalSubtasks > 0 && (
+                   <div className="mb-1.5">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-0.5">
+                      <span className="font-medium">Subtasks</span>
+                      <span>{completedSubtasks}/{totalSubtasks}</span>
+                    </div>
+                    <Progress value={subtaskProgress} className="h-1.5" />
+                  </div>
+                )}
+                <ScrollArea className="flex-1 pr-1 -mr-1"> {/* flex-1 makes ScrollArea use available space */}
+                  <div className="space-y-1.5 py-0.5">
+                  {task.subtasks.map((subtask) => (
+                    <div key={subtask.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`subtask-${task.id}-${subtask.id}`}
+                        checked={subtask.isCompleted}
+                        onCheckedChange={() => onToggleSubtask(task.id, subtask.id)}
+                        className="h-4 w-4 shrink-0"
+                        aria-labelledby={`subtask-text-${task.id}-${subtask.id}`}
+                      />
+                      <label
+                        htmlFor={`subtask-${task.id}-${subtask.id}`}
+                        id={`subtask-text-${task.id}-${subtask.id}`}
+                        className={cn(
+                          "text-sm break-words cursor-pointer flex-1",
+                          subtask.isCompleted ? "line-through text-muted-foreground/70" : "text-foreground/90"
+                        )}
+                      >
+                        {subtask.text}
+                      </label>
+                    </div>
+                  ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            ) : (
+              <div className="flex-1"></div> /* Empty spacer if no subtasks */
+            )}
+          </div>
+          
+          {/* Date/Category Info Bar - at the bottom of CardContent */}
           <div className={cn(
-            "text-xs flex flex-wrap items-center gap-x-2 gap-y-1",
+            "pt-3 text-xs flex items-center justify-between gap-x-2", 
             task.isCompleted ? "text-muted-foreground" : "text-muted-foreground/90"
           )}>
-            <Badge variant="secondary" className="text-xs py-0.5 px-1.5 font-medium mr-1.5">
+            <Badge variant="secondary" className="text-xs py-0.5 px-1.5 font-medium shrink-0">
               <CategoryIcon className={cn("h-3.5 w-3.5 mr-1", task.isCompleted ? "text-muted-foreground" : "text-primary")} />
               {task.category}
             </Badge>
              {task.dueDate && (
-              <div className="flex items-center">
+              <div className="flex items-center shrink-0">
                   <CalendarDays className="h-3.5 w-3.5 mr-1" />
-                  <span>{formattedDueDate}</span>
+                  <span className="truncate">{formattedDueDate}</span>
               </div>
             )}
           </div>
-
-          {task.subtasks && task.subtasks.length > 0 && (
-            <div className="mt-3 space-y-2 flex-grow flex flex-col min-h-0">
-              <Separator className="mb-2" />
-              {totalSubtasks > 0 && (
-                 <div className="mb-1.5">
-                  <div className="flex justify-between items-center text-xs text-muted-foreground mb-0.5">
-                    <span className="font-medium">Subtasks</span>
-                    <span>{completedSubtasks}/{totalSubtasks}</span>
-                  </div>
-                  <Progress value={subtaskProgress} className="h-1.5" />
-                </div>
-              )}
-              <ScrollArea className="flex-1 max-h-32 pr-1 -mr-1">
-                <div className="space-y-1.5 py-0.5">
-                {task.subtasks.map((subtask) => (
-                  <div key={subtask.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`subtask-${task.id}-${subtask.id}`}
-                      checked={subtask.isCompleted}
-                      onCheckedChange={() => onToggleSubtask(task.id, subtask.id)}
-                      className="h-4 w-4 shrink-0"
-                      aria-labelledby={`subtask-text-${task.id}-${subtask.id}`}
-                    />
-                    <label
-                      htmlFor={`subtask-${task.id}-${subtask.id}`}
-                      id={`subtask-text-${task.id}-${subtask.id}`}
-                      className={cn(
-                        "text-sm break-words cursor-pointer flex-1",
-                        subtask.isCompleted ? "line-through text-muted-foreground/70" : "text-foreground/90"
-                      )}
-                    >
-                      {subtask.text}
-                    </label>
-                  </div>
-                ))}
-                </div>
-              </ScrollArea>
-            </div>
-          )}
         </CardContent>
 
         <CardFooter className="p-3 mt-auto border-t flex items-center justify-between">
@@ -228,3 +234,4 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
+
