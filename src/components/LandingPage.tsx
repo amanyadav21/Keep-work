@@ -4,10 +4,12 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge'; // Added import
 import { CheckCircle, Zap, Users, Edit3, TrendingUp, LayoutGrid, ListChecks, Brain, LayoutPanelLeft, Filter, ShieldCheck, Sparkles } from 'lucide-react';
 import Image from 'next/image';
+import { cn } from '@/lib/utils'; // Ensured cn is imported
 
-// Individual Bento Card Item (replaces the old FeatureCard)
+// Individual Bento Card Item
 const BentoGridItem = ({
   icon: Icon,
   title,
@@ -81,9 +83,9 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 auto-rows-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 auto-rows-[minmax(200px,auto)]">
             <BentoGridItem
-              className="lg:col-span-4 md:col-span-2 lg:row-span-2 min-h-[300px] "
+              className="lg:col-span-4 md:col-span-2 lg:row-span-2 "
               icon={ListChecks}
               title="Effortless Task Mastery"
               description="Seamlessly create, categorize, and prioritize tasks with due dates, sub-checklists, and clear objectives. Transform overwhelming to-do lists into actionable plans."
@@ -94,14 +96,14 @@ export function LandingPage() {
                   alt="Task Management Illustration"
                   width={600}
                   height={350}
-                  className="rounded-lg object-cover w-full h-auto max-h-[200px] opacity-70 group-hover:opacity-90 transition-opacity"
+                  className="rounded-lg object-cover w-full h-auto max-h-[250px] opacity-70 group-hover:opacity-90 transition-opacity"
                   data-ai-hint="task list interface"
                 />
               </div>
             </BentoGridItem>
 
             <BentoGridItem
-              className="lg:col-span-2 md:col-span-1 min-h-[200px]"
+              className="lg:col-span-2 md:col-span-1"
               icon={Brain}
               iconClassName="text-purple-500"
               title="AI-Powered Assistance"
@@ -109,7 +111,7 @@ export function LandingPage() {
             />
 
             <BentoGridItem
-              className="lg:col-span-2 md:col-span-1 min-h-[200px]"
+              className="lg:col-span-2 md:col-span-1"
               icon={TrendingUp}
               iconClassName="text-green-500"
               title="Visual Progress Tracking"
@@ -117,7 +119,7 @@ export function LandingPage() {
             />
             
             <BentoGridItem
-              className="lg:col-span-2 md:col-span-1 min-h-[200px]"
+              className="lg:col-span-2 md:col-span-1"
               icon={LayoutPanelLeft}
               iconClassName="text-blue-500"
               title="Sleek & Intuitive Interface"
@@ -125,7 +127,7 @@ export function LandingPage() {
             />
 
             <BentoGridItem
-              className="lg:col-span-2 md:col-span-1 min-h-[200px]"
+              className="lg:col-span-2 md:col-span-1"
               icon={Filter}
               iconClassName="text-yellow-500"
               title="Stay Perfectly Organized"
@@ -133,7 +135,7 @@ export function LandingPage() {
             />
 
             <BentoGridItem
-              className="lg:col-span-2 md:col-span-2 min-h-[200px] bg-gradient-to-br from-primary/10 to-accent/10 border-primary/30 group"
+              className="lg:col-span-2 md:col-span-2 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/30 group"
               icon={Sparkles}
               iconClassName="text-accent"
               title="Collaboration Hub (Coming Soon!)"
@@ -147,7 +149,7 @@ export function LandingPage() {
         </div>
       </section>
       
-      {/* CTA Section (Optional but good for UX) */}
+      {/* CTA Section */}
       <section className="py-16 md:py-24 bg-muted/30">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Ready to Transform Your Productivity?</h2>
