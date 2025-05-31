@@ -27,24 +27,33 @@ async function getOpenRouterAssistance(
   currentInquiry: string,
   conversationHistory: Omit<ChatMessage, 'timestamp'>[] = []
 ): Promise<AIOutputType> {
-  console.log("Attempting to call OpenRouter with inquiry:", currentInquiry);
+  console.log("AI Assistant: Attempting to call OpenRouter with inquiry:", currentInquiry);
   
   const apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
-  const siteUrl = process.env.NEXT_PUBLIC_YOUR_SITE_URL || "http://localhost:3000"; // Ensure this is your actual site URL for production
-  const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Upnext Student Assistant"; // Or your app's name
+  const siteUrl = process.env.NEXT_PUBLIC_YOUR_SITE_URL || "http://localhost:3000"; 
+  const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Upnext Student Assistant"; 
 
-  // Diagnostic log for the API key
-  console.log("Retrieved OpenRouter API Key from process.env:", 
-              apiKey ? `Exists (length: ${apiKey.length}, first 5 chars: ${apiKey.substring(0,5)}...)` : "NOT FOUND or EMPTY");
-  if (apiKey && apiKey.length < 20) { // Typical API keys are longer
-      console.warn("The retrieved OpenRouter API key seems unusually short. Please double-check it in your .env.local file:", apiKey);
+  // --- Enhanced Diagnostic Logging ---
+  console.log("--- AI Assistant Environment Variable Check ---");
+  if (typeof apiKey === 'undefined') {
+    console.error("CRITICAL: NEXT_PUBLIC_OPENROUTER_API_KEY is UNDEFINED in process.env.");
+    console.log("Ensure it's set in your .env.local file and you've RESTARTED your Next.js server.");
+    return { assistantResponse: "AI Service Configuration Error: The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is completely missing from the application's environment. Please set it in your .env.local file and restart your Next.js server." };
+  } else if (apiKey === "") {
+    console.warn("WARNING: NEXT_PUBLIC_OPENROUTER_API_KEY is an EMPTY STRING in process.env.");
+    console.log("Please ensure your .env.local file has a valid key for NEXT_PUBLIC_OPENROUTER_API_KEY and RESTART your server.");
+     return { assistantResponse: "AI Service Configuration Error: The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is an empty string. Please provide a valid key in your .env.local file and restart your Next.js server." };
+  } else {
+    console.log(`NEXT_PUBLIC_OPENROUTER_API_KEY: Found (length: ${apiKey.length}, first 5 chars: ${apiKey.substring(0,5)}...)`);
+    if (apiKey.length < 20) { // Typical API keys are longer
+        console.warn("The retrieved OpenRouter API key seems unusually short. Please double-check it in your .env.local file:", apiKey);
+    }
   }
+  console.log(`NEXT_PUBLIC_YOUR_SITE_URL: ${process.env.NEXT_PUBLIC_YOUR_SITE_URL || "Not Set (using default)"}`);
+  console.log(`NEXT_PUBLIC_YOUR_SITE_NAME: ${process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Not Set (using default)"}`);
+  console.log("--- End AI Assistant Environment Variable Check ---");
+  // --- End Enhanced Diagnostic Logging ---
 
-
-  if (!apiKey) {
-    console.error("OpenRouter API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is not set or is empty in environment variables.");
-    return { assistantResponse: "AI Service is not configured. The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is missing from your .env.local file. Please set it and restart your Next.js server." };
-  }
 
   const messagesForAPI = [
     { role: "system", content: "You are a helpful student assistant. Provide concise and relevant answers." },
@@ -56,7 +65,7 @@ async function getOpenRouterAssistance(
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${apiKey}`, // The API key is used here
         "Content-Type": "application/json",
         "HTTP-Referer": siteUrl, 
         "X-Title": siteName,     
@@ -68,9 +77,11 @@ async function getOpenRouterAssistance(
     });
 
     if (!response.ok) {
+      // Try to get more detailed error info from OpenRouter
       const errorData = await response.json().catch(() => ({ message: response.statusText, error: { message: response.statusText } }));
       console.error("OpenRouter API Error (raw response):", response.status, response.statusText, errorData); 
       const apiErrorMessage = errorData.error?.message || errorData.message || response.statusText;
+      // Throw an error that includes the API's message
       throw new Error(`API request failed with status ${response.status}: ${apiErrorMessage}`);
     }
 
@@ -87,14 +98,23 @@ async function getOpenRouterAssistance(
     console.error("Error calling OpenRouter AI (catch block):", error);
     let errorMessage = "Sorry, I couldn't connect to the AI assistant. Please try again later."; 
 
+    // --- More Specific Error Handling ---
     if (error.message) {
       const lowerCaseErrorMessage = error.message.toLowerCase();
       if (lowerCaseErrorMessage.includes("no auth credentials found")) {
-         errorMessage = `AI Authentication Error: OpenRouter reported "No auth credentials found". This means the API key was not sent or was invalid. Please ensure your NEXT_PUBLIC_OPENROUTER_API_KEY in the .env.local file is set correctly and your Next.js development server has been restarted.`;
+         errorMessage = `AI Authentication Error: OpenRouter reported "No auth credentials found". This means the API key was not sent or was malformed in the request to OpenRouter. 
+         1. **Verify .env.local**: Ensure NEXT_PUBLIC_OPENROUTER_API_KEY is correctly set.
+         2. **Restart Server**: You MUST restart your Next.js development server after changes to .env.local.
+         3. **Check Console Logs**: Review the 'AI Assistant Environment Variable Check' logs in your browser console for clues.`;
       } else if (lowerCaseErrorMessage.includes("status 401") || lowerCaseErrorMessage.includes("unauthorized")) {
-        errorMessage = "AI authentication failed (401 Unauthorized). Please ensure your OpenRouter API key (NEXT_PUBLIC_OPENROUTER_API_KEY in your .env.local file) is correctly set, valid, and has sufficient credits. Restart your Next.js server after making changes to .env.local.";
+        errorMessage = `AI authentication failed (401 Unauthorized). This indicates the API key sent to OpenRouter was considered invalid.
+        1. **Verify API Key Value**: Double-check the NEXT_PUBLIC_OPENROUTER_API_KEY in .env.local for typos or if it's the correct, active key.
+        2. **Check OpenRouter Account**: Ensure your OpenRouter account is active and the key has sufficient credits/permissions.
+        3. **Restart Server**: Restart Next.js server after any .env.local changes.`;
       } else if (lowerCaseErrorMessage.includes("api key") || lowerCaseErrorMessage.includes("invalid_api_key")) {
-        errorMessage = "AI Service API key may be invalid, missing, or misconfigured. Please check your OpenRouter API key (NEXT_PUBLIC_OPENROUTER_API_KEY in your .env.local file) and restart your Next.js server.";
+        errorMessage = `AI Service API key may be invalid, missing, or misconfigured. 
+        1. **Check .env.local**: Ensure NEXT_PUBLIC_OPENROUTER_API_KEY is present and correct.
+        2. **Restart Server**: After .env.local changes, restart your Next.js server.`;
       } else if (lowerCaseErrorMessage.includes("blocked")) {
         errorMessage = "AI request was blocked. This might be due to your OpenRouter account status or API key settings. Please check them.";
       } else if (lowerCaseErrorMessage.includes("insufficient_quota") || lowerCaseErrorMessage.includes("rate_limit_exceeded")) {
@@ -104,6 +124,7 @@ async function getOpenRouterAssistance(
         errorMessage = `AI Error: ${error.message}`;
       }
     }
+    // --- End More Specific Error Handling ---
     return { assistantResponse: errorMessage };
   }
 }
