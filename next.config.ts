@@ -2,6 +2,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  reactStrictMode: true, // Added from next.config.js
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
