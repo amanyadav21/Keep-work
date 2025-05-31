@@ -21,7 +21,7 @@ import {
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH_MOBILE = "18rem" 
+const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContextValue = {
@@ -30,7 +30,7 @@ type SidebarContextValue = {
   setOpen: (open: boolean) => void
   isMobileSheetOpen: boolean
   setIsMobileSheetOpen: (open: boolean) => void
-  isMobile: boolean | undefined
+  isMobile: boolean // No longer undefined, defaults to false until client determines
   toggleSidebar: () => void
   collapsible?: "offcanvas" | "icon" | "none"
   effectiveSidebarWidth: string
@@ -74,21 +74,17 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
-    const isMobile = useIsMobile(); // Handles its own mounting and window checks. Undefined on server.
+    const [clientMounted, setClientMounted] = React.useState(false);
+    const detectedIsMobile = useIsMobile(); // This hook returns undefined initially, then boolean
+
+    React.useEffect(() => {
+      setClientMounted(true);
+    }, []);
+
+    const isMobile = clientMounted ? detectedIsMobile : false; // Assume desktop for SSR and initial client render
 
     const [isMobileSheetOpen, setIsMobileSheetOpen] = React.useState(false);
-    const [isSidebarOpenState, setIsSidebarOpenState] = React.useState(() => {
-      if (typeof document !== 'undefined' && collapsible === 'icon') {
-        const cookieValue = document.cookie
-          .split('; ')
-          .find(row => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
-          ?.split('=')[1];
-        if (cookieValue) {
-          return cookieValue === 'true';
-        }
-      }
-      return defaultOpen;
-    });
+    const [isSidebarOpenState, setIsSidebarOpenState] = React.useState(defaultOpen);
 
     const open = openProp ?? isSidebarOpenState;
 
@@ -100,12 +96,29 @@ const SidebarProvider = React.forwardRef<
         } else {
           setIsSidebarOpenState(newOpenState);
         }
-        if (typeof document !== 'undefined' && collapsible === 'icon') {
+        if (clientMounted && typeof document !== 'undefined' && collapsible === 'icon' && !isMobile) {
           document.cookie = `${SIDEBAR_COOKIE_NAME}=${newOpenState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
         }
       },
-      [setOpenProp, open, collapsible, setIsSidebarOpenState]
+      [setOpenProp, open, collapsible, clientMounted, isMobile, setIsSidebarOpenState]
     );
+
+    React.useEffect(() => {
+      if (clientMounted && typeof document !== 'undefined' && collapsible === 'icon' && !isMobile) {
+        const cookieValue = document.cookie
+          .split('; ')
+          .find(row => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+          ?.split('=')[1];
+
+        if (cookieValue !== undefined) {
+          const cookieIsOpen = cookieValue === 'true';
+          if (cookieIsOpen !== open) {
+            setOpen(cookieIsOpen);
+          }
+        }
+      }
+    }, [clientMounted, collapsible, isMobile, defaultOpen, setOpen, open]);
+
 
     const toggleSidebar = React.useCallback(() => {
       if (isMobile) {
@@ -125,35 +138,41 @@ const SidebarProvider = React.forwardRef<
           toggleSidebar();
         }
       };
-      if (typeof window !== 'undefined') {
+      if (clientMounted && typeof window !== 'undefined') {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
       }
-    }, [toggleSidebar]);
+    }, [clientMounted, toggleSidebar]);
 
     const state = open ? "expanded" : "collapsed";
 
     const effectiveSidebarWidth = React.useMemo(() => {
-      if (isMobile === undefined) { // SSR or before useIsMobile client effect
-        if (collapsible === 'offcanvas' || collapsible === 'none') return '0px';
-        return defaultOpen ? sidebarWidthExpanded : (collapsible === 'icon' ? sidebarIconWidth : '0px');
-      }
-      if (isMobile) {
-        return '0px'; // Mobile uses Sheet, so main content has no margin
-      }
-      // Desktop logic
-      if (collapsible === 'offcanvas' || collapsible === 'none') {
+      const currentOpen = clientMounted ? open : defaultOpen;
+      const currentIsMobile = clientMounted ? isMobile : false; // Consistent with isMobile state var
+
+      if (currentIsMobile) {
         return '0px';
       }
-      return open ? sidebarWidthExpanded : sidebarIconWidth;
-    }, [isMobile, collapsible, open, defaultOpen, sidebarWidthExpanded, sidebarIconWidth]);
+      if (collapsible === 'offcanvas' || collapsible === 'none') {
+         // For 'offcanvas' or 'none', width is 0 if not explicitly open
+         // (assuming 'none' means it's either always open or always closed by external state)
+         // If 'collapsible' is 'none', it implies 'open' prop controls visibility,
+         // and if it's not 'open', it shouldn't take space.
+         // If it's 'offcanvas', it only takes space if 'open' (for desktop sheet-like behavior, if any).
+         // Simplified: if it's meant to be hidden, width is 0.
+         return currentOpen ? (collapsible === 'icon' ? sidebarWidthExpanded : sidebarWidthExpanded) : '0px';
+      }
+      // Desktop 'icon' collapsible logic
+      return currentOpen ? sidebarWidthExpanded : sidebarIconWidth;
+    }, [clientMounted, open, defaultOpen, isMobile, collapsible, sidebarWidthExpanded, sidebarIconWidth]);
+
 
     const contextValue = React.useMemo<SidebarContextValue>(
       () => ({
         state,
         open,
         setOpen,
-        isMobile, // Directly use isMobile from useIsMobile hook
+        isMobile,
         isMobileSheetOpen,
         setIsMobileSheetOpen,
         toggleSidebar,
@@ -193,22 +212,22 @@ const Sidebar = React.forwardRef<
       side = "left",
       className,
       children,
-      style, 
+      style,
       ...props
     },
     ref
   ) => {
-    const context = useSidebar(); // context will be available due to the fix in SidebarProvider
+    const context = useSidebar();
+    const { isMobile, isMobileSheetOpen, setIsMobileSheetOpen, collapsible, effectiveSidebarWidth, state: sidebarDesktopState, open: sidebarDesktopOpen, defaultOpen } = context;
 
-    const { isMobile, isMobileSheetOpen, setIsMobileSheetOpen, collapsible, effectiveSidebarWidth, state: sidebarDesktopState, open: sidebarDesktopOpen } = context;
 
-    if (isMobile === undefined) {
-      // SSR or initial client render before isMobile is determined.
-      // Render a placeholder or nothing, consistent with desktop default.
-      // This avoids trying to render mobile sheet logic on server.
-      // The fixed sidebar for desktop might render with default width.
-      if (collapsible === 'offcanvas' || collapsible === 'none') return null;
-       const ssrWidth = sidebarDesktopOpen ? context.sidebarWidthExpanded : context.sidebarIconWidth;
+    if (context.isMobile === undefined && !clientMounted) { // SSR or initial client render before clientMounted
+      const ssrOpen = defaultOpen; // Use defaultOpen for SSR decisions
+      const ssrEffectiveWidth = ssrOpen ? context.sidebarWidthExpanded : context.sidebarIconWidth;
+
+      if (collapsible === 'offcanvas' && !ssrOpen) return null;
+      if (collapsible === 'none' && !ssrOpen) return null;
+
        return (
          <div
             ref={ref}
@@ -217,17 +236,16 @@ const Sidebar = React.forwardRef<
             className={cn(
               "fixed inset-y-0 z-40 flex h-screen flex-col",
               side === "left" ? "left-0" : "right-0",
-              className 
+              className
             )}
-            style={{ width: ssrWidth, ...style }}
+            style={{ width: (collapsible === 'icon' ? ssrEffectiveWidth : (ssrOpen ? context.sidebarWidthExpanded: '0px')), ...style }}
             {...props}
           >
-            {/* Optionally render children if sidebar is visible by default on desktop SSR */}
-            {/* Or keep it minimal to avoid hydration mismatches with client-rendered children */}
+            {children}
          </div>
        );
     }
-    
+
     if (isMobile) {
       return (
         <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
@@ -235,13 +253,13 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             data-mobile="true"
             className={cn(
-              "w-[var(--sidebar-width-mobile)] p-0 [&>button]:hidden", 
-              className 
+              "w-[var(--sidebar-width-mobile)] p-0 [&>button]:hidden",
+              className
             )}
             style={
               {
                 "--sidebar-width-mobile": SIDEBAR_WIDTH_MOBILE,
-                ...style 
+                ...style
               } as React.CSSProperties
             }
             side={side}
@@ -252,12 +270,12 @@ const Sidebar = React.forwardRef<
         </Sheet>
       )
     }
-    
+
+    // Desktop client logic
     if (collapsible === 'offcanvas' && !sidebarDesktopOpen) {
-      return null; 
+      return null;
     }
-    
-    if (collapsible === 'none' && !sidebarDesktopOpen) { // 'none' implies always open or always closed based on `open`
+     if (collapsible === 'none' && !sidebarDesktopOpen) {
         return null;
     }
 
@@ -269,13 +287,13 @@ const Sidebar = React.forwardRef<
         data-collapsible={collapsible}
         data-state={sidebarDesktopState}
         className={cn(
-          "fixed inset-y-0 z-40 flex h-screen flex-col", 
+          "fixed inset-y-0 z-40 flex h-screen flex-col",
           side === "left" ? "left-0" : "right-0",
           className
         )}
         style={{
           width: effectiveSidebarWidth,
-          transition: 'width 0.2s ease-in-out', 
+          transition: 'width 0.2s ease-in-out',
           ...style
         }}
         {...props}
@@ -292,20 +310,26 @@ const SidebarTrigger = React.forwardRef<
   React.ComponentProps<typeof Button> & { tooltip?: string | React.ComponentProps<typeof TooltipContent> }
 >(({ className, onClick, tooltip = "Toggle Sidebar", ...props }, ref) => {
   const context = useSidebar();
-  if (!context) return null; // Should not happen with provider fix
+  const { toggleSidebar, isMobile, collapsible, open: sidebarOpen, effectiveSidebarWidth, defaultOpen } = context;
+  const [clientMounted, setClientMounted] = React.useState(false);
 
-  const { toggleSidebar, isMobile, collapsible, open: sidebarOpen, effectiveSidebarWidth } = context;
+  React.useEffect(() => {
+    setClientMounted(true);
+  }, []);
 
-  if (isMobile === undefined && !isMobile) { // SSR and targeting desktop: render based on desktop rules
-     if (collapsible === "none" || (collapsible === 'offcanvas' && effectiveSidebarWidth !== '0px')) {
+
+  if (!clientMounted && !isMobile) { // SSR and targeting desktop
+     const ssrOpen = defaultOpen;
+     if (collapsible === "none" || (collapsible === 'offcanvas' && !ssrOpen)) { // if offcanvas and closed, no trigger
         return null;
      }
-  } else if (!isMobile) { // Client, desktop
-     if (collapsible === "none" || (collapsible === 'offcanvas' && effectiveSidebarWidth !== '0px')) {
+  } else if (clientMounted && !isMobile) { // Client, desktop
+     if (collapsible === "none" || (collapsible === 'offcanvas' && !sidebarOpen)) { // if offcanvas and closed, no trigger
         return null;
      }
   }
-  // For mobile (isMobile === true), trigger is always shown.
+  // For mobile (isMobile === true), trigger is always shown (handled by SheetTrigger if inside Sheet).
+  // For collapsible icon sidebar, trigger is always shown on desktop.
 
   const buttonElement = (
      <Button
@@ -325,7 +349,8 @@ const SidebarTrigger = React.forwardRef<
     </Button>
   );
 
-  if (tooltip && !isMobile && collapsible === 'icon' && !sidebarOpen) { 
+  // Show tooltip only on desktop, when sidebar is icon-only (collapsed) and client is mounted
+  if (clientMounted && tooltip && !isMobile && collapsible === 'icon' && !sidebarOpen) {
     let tooltipProps: React.ComponentProps<typeof TooltipContent> = {
       side: "right",
       align: "center",
@@ -401,8 +426,14 @@ const SidebarSeparator = React.forwardRef<
   React.ComponentProps<typeof Separator>
 >(({ className, ...props }, ref) => {
   const context = useSidebar();
-  if (!context) return null;
-  if (!context.open && context.collapsible === "icon" && !context.isMobile) { // Also check not mobile
+  const { open, collapsible, isMobile } = context;
+  const [clientMounted, setClientMounted] = React.useState(false);
+  React.useEffect(() => { setClientMounted(true); }, []);
+
+  const showSeparator = clientMounted ? (open || collapsible !== 'icon' || isMobile) : (context.defaultOpen || collapsible !== 'icon');
+
+
+  if (!showSeparator) {
     return null
   }
   return (
@@ -410,7 +441,7 @@ const SidebarSeparator = React.forwardRef<
       ref={ref}
       data-sidebar="separator"
       className={cn(
-        "mx-2 my-1 w-auto bg-sidebar-border", 
+        "mx-2 my-1 w-auto bg-sidebar-border",
         className
       )}
       {...props}
@@ -424,15 +455,19 @@ const SidebarContent = React.forwardRef<
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
   const context = useSidebar();
-  if (!context) return null;
   const { open, collapsible, isMobile } = context;
+  const [clientMounted, setClientMounted] = React.useState(false);
+  React.useEffect(() => { setClientMounted(true); }, []);
+
+  const isIconOnlyMode = clientMounted ? (!open && collapsible === 'icon' && !isMobile) : (!context.defaultOpen && collapsible === 'icon');
+
   return (
     <div
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col", 
-        !open && collapsible === 'icon' && !isMobile && "items-center overflow-hidden",
+        "flex min-h-0 flex-1 flex-col",
+        isIconOnlyMode && "items-center overflow-hidden",
         className
       )}
       {...props}
@@ -449,7 +484,7 @@ const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
-    className={cn("flex w-full min-w-0 flex-col gap-0.5", className)} 
+    className={cn("flex w-full min-w-0 flex-col gap-0.5", className)}
     {...props}
   />
 ))
@@ -478,10 +513,10 @@ const sidebarMenuButtonVariants = cva(
         outline:
           "bg-transparent shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
-      size: { 
+      size: {
         default: "h-9 text-sm",
         sm: "h-8 text-xs",
-        lg: "h-10 text-sm", 
+        lg: "h-10 text-sm",
         icon: "h-9 w-9 !p-0 flex items-center justify-center rounded-md"
       },
     },
@@ -515,23 +550,29 @@ const SidebarMenuButton = React.forwardRef<
   ) => {
     const Comp = asChild ? Slot : "button";
     const context = useSidebar();
+    const [clientMounted, setClientMounted] = React.useState(false);
+    React.useEffect(() => { setClientMounted(true); }, []);
+
+
+    const { isMobile, open: sidebarOpen, collapsible, defaultOpen } = context;
     
-    if(!context) { // Should ideally not happen with provider fixes
-        return <Comp ref={ref} className={cn(sidebarMenuButtonVariants({ variant, size, className }))} {...props} disabled>{children}</Comp>;
+    let isIconOnlyEffective: boolean;
+    if (!clientMounted) { // SSR or initial client render
+        isIconOnlyEffective = !defaultOpen && collapsible === 'icon' && !isMobile; // !isMobile will be true as isMobile state is false then
+    } else { // Client mounted
+        isIconOnlyEffective = !sidebarOpen && collapsible === 'icon' && !isMobile;
     }
 
-    const { isMobile, open: sidebarOpen, collapsible } = context;
-    const isIconOnly = !isMobile && !sidebarOpen && collapsible === 'icon';
-    const effectiveSize = isIconOnly ? 'icon' : size;
+    const effectiveSize = isIconOnlyEffective ? 'icon' : size;
 
     const buttonContent = (
       <Comp
         ref={ref}
         data-sidebar="menu-button"
-        data-size={effectiveSize} 
+        data-size={effectiveSize}
         data-active={isActive}
         className={cn(
-          sidebarMenuButtonVariants({ variant, size: effectiveSize, className }) 
+          sidebarMenuButtonVariants({ variant, size: effectiveSize, className })
         )}
         {...props}
       >
@@ -539,7 +580,7 @@ const SidebarMenuButton = React.forwardRef<
       </Comp>
     );
 
-    const showTooltip = tooltip && isIconOnly;
+    const showTooltip = clientMounted && tooltip && isIconOnlyEffective;
 
     if (showTooltip) {
       let tooltipProps: React.ComponentProps<typeof TooltipContent> = {
