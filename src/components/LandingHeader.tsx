@@ -3,14 +3,14 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Rocket, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/#features', label: 'Features' },
+  { href: '/#testimonials', label: 'Testimonials' },
   { href: '/#pricing', label: 'Pricing' },
 ];
 
@@ -19,10 +19,10 @@ export function LandingHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-6">
-        <Link href="/" className="flex items-center space-x-2 group">
-          <Rocket className="h-6 w-6 text-primary group-hover:text-primary/90 transition-colors" />
-          <span className="font-bold text-lg text-foreground group-hover:text-foreground/90 transition-colors">Upnext</span>
+      <div className="container flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
+        <Link href="/" className="flex items-center group">
+          {/* Icon removed for cleaner look as per design - <UpNextIcon className="h-6 w-6 text-primary group-hover:text-primary/90 transition-colors" /> */}
+          <span className="font-bold text-2xl text-foreground group-hover:text-foreground/90 transition-colors">Upnext</span>
         </Link>
 
         <div className="flex items-center gap-3 md:gap-4">
@@ -39,15 +39,15 @@ export function LandingHeader() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="text-foreground hover:bg-accent/10">
               <Link href="/login">Log In</Link>
             </Button>
-            <Button asChild size="sm" className="rounded-full">
+            <Button asChild size="sm" className="rounded-md">
               <Link href="/signup">Sign Up</Link>
             </Button>
           </div>
           
-          <ThemeToggle />
+          {/* ThemeToggle removed to match new design's simplicity */}
 
           <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -59,8 +59,7 @@ export function LandingHeader() {
               <SheetContent side="right" className="w-[280px] p-6">
                 <div className="mb-6 flex items-center justify-between">
                    <Link href="/" className="flex items-center space-x-2 group" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Rocket className="h-6 w-6 text-primary" />
-                    <span className="font-bold text-lg text-foreground">Upnext</span>
+                    <span className="font-bold text-xl text-foreground">Upnext</span>
                   </Link>
                   <SheetClose asChild>
                      <Button variant="ghost" size="icon" aria-label="Close menu">
