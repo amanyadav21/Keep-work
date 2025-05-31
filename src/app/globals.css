@@ -30,6 +30,11 @@
     --chart-5: 260 60% 75%;
     --radius: 0.5rem;
 
+    /* Sidebar Widths */
+    --sidebar-width-expanded: 250px;
+    --sidebar-width-collapsed: 80px; /* Adjusted for a more standard icon-only width */
+
+
     /* Light Theme Sidebar Colors */
     --sidebar-background: 210 30% 96%; /* Slightly different light gray */
     --sidebar-foreground: 210 10% 23%;
@@ -39,7 +44,7 @@
     --sidebar-accent-foreground: 210 10% 15%; /* Text on Hover/Active */
     --sidebar-border: 210 20% 85%;
     --sidebar-ring: 205 75% 55%;
-    --status-green: 30 70% 45%; /* For "Completed" status text */
+    --status-green: 145 63% 30%; /* For "Completed" status text - made it darker for light theme */
   }
 
   .dark {

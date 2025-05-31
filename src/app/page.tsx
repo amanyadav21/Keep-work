@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
@@ -14,9 +13,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Brain, Plus, Search as SearchIcon } from 'lucide-react';
+import { Brain, Plus, Search as SearchIcon, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle as WelcomeCardTitle } from '@/components/ui/card';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
@@ -62,8 +62,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
             dueDate = data.dueDate;
           } else {
-            // Fallback if dueDate is missing or invalid, can be null or a default
-            dueDate = new Date().toISOString(); // Or set to null if tasks can have no due date
+            dueDate = new Date().toISOString(); 
           }
 
           let createdAt;
@@ -72,7 +71,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
             createdAt = data.createdAt;
           } else {
-            createdAt = new Date().toISOString(); // Fallback
+            createdAt = new Date().toISOString(); 
           }
           
           let trashedAt = null;
@@ -142,7 +141,10 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         trashedAt: null,
       };
       await addDoc(tasksCollectionRef, newTaskData);
-      // Toast is now handled in TaskForm onSubmit
+      toast({
+        title: "Task Added",
+        description: `"${data.description.substring(0, 30)}${data.description.length > 30 ? "..." : ""}" added.`,
+      });
     } catch (error: any) {
       console.error("Error adding task:", error);
       toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
@@ -167,7 +169,10 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         })) || [],
       };
       await updateDoc(taskDocRef, updatedTaskData);
-      // Toast is now handled in TaskForm onSubmit
+      toast({
+        title: "Task Updated",
+        description: `"${data.description.substring(0, 30)}${data.description.length > 30 ? "..." : ""}" updated.`,
+      });
       setEditingTask(null);
     } catch (error: any) {
       console.error("Error updating task:", error);
@@ -280,32 +285,43 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
 
   if (authLoading || !isMounted) {
+    // This is the main page skeleton when auth state is loading or component not yet mounted.
+    // It now reflects the new structure with a fixed sidebar and a main content area.
     return (
-      <div className="flex h-screen">
-        {/* Simplified initial loader to prevent layout shifts as much as possible */}
-        <div className="hidden md:block w-[var(--sidebar-width-icon)] lg:w-[var(--sidebar-width)] bg-sidebar-background border-r border-sidebar-border shadow-sm animate-pulse">
-          {/* Sidebar Skeleton */}
+      <div className="flex h-screen w-full">
+        {/* Sidebar Skeleton - assumes default open width or icon width based on CSS vars */}
+        <div 
+          className="hidden md:block h-screen bg-sidebar-background border-r border-sidebar-border shadow-sm animate-pulse"
+          style={{ width: 'var(--sidebar-width-expanded)' }} // Or use --sidebar-width-collapsed if that's the default
+        >
           <div className="p-3 h-[60px] border-b border-sidebar-border"></div>
           <div className="p-2 space-y-2 mt-4">
             <div className="h-10 bg-muted rounded animate-pulse"></div>
             {[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-muted rounded animate-pulse"></div>)}
           </div>
         </div>
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Content Area Skeleton */}
+        <div 
+          className="flex-1 flex flex-col overflow-hidden"
+          style={{ marginLeft: 'var(--sidebar-width-expanded)' }} // Adjust if sidebar default is collapsed
+        >
           {/* Header Placeholder */}
-          <div className="py-3 px-4 md:px-6 h-[60px] border-b bg-background flex items-center justify-between animate-pulse">
-            <div className="h-7 w-24 bg-muted rounded-md"></div>
+          <div className="py-3 px-4 md:px-6 h-[60px] border-b bg-background flex items-center justify-between animate-pulse shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 bg-muted rounded-full md:hidden"></div> {/* Hamburger placeholder */}
+              <div className="h-7 w-24 bg-muted rounded-md"></div> {/* Logo placeholder */}
+            </div>
             <div className="flex items-center gap-3">
-              <div className="h-8 w-24 bg-muted rounded-full"></div>
-              <div className="h-8 w-8 bg-muted rounded-full"></div>
-              <div className="h-8 w-8 bg-muted rounded-full"></div>
+              <div className="h-8 w-8 bg-muted rounded-full"></div> {/* AI assist placeholder */}
+              <div className="h-8 w-8 bg-muted rounded-full"></div> {/* User menu placeholder */}
+              <div className="h-8 w-8 bg-muted rounded-full"></div> {/* Theme toggle placeholder */}
             </div>
           </div>
           {/* Main Content Placeholder */}
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
             <div className="w-full max-w-6xl mx-auto">
               {/* New Task Input Placeholder */}
-              <div className="mb-6 h-12 bg-card rounded-lg shadow-sm border animate-pulse"></div>
+              <div className="mb-6 h-14 bg-card rounded-lg shadow-sm border animate-pulse"></div>
               {/* Filter controls placeholder */}
               <div className="mb-6 flex space-x-2 h-9">
                   <div className="w-20 bg-muted rounded-full animate-pulse"></div>
@@ -328,15 +344,17 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       </div>
     );
   }
+  // AppSidebar is rendered inside MainContentWrapper in RootLayout, so it's part of children
+  // For HomePage, we only define the content that goes *inside* MainContentWrapper's children slot.
 
   return (
-    <div className="flex h-screen bg-background">
-      {user && <AppSidebar onAddTask={handleOpenAddForm} />}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Header onAddTask={handleOpenAddForm} />
-
-        {!user ? (
-           <main className="flex-1 flex flex-col items-center justify-center text-center p-4 sm:p-8 bg-background">
+    <>
+      {user && <AppSidebar onAddTask={handleOpenAddForm} />} {/* AppSidebar rendered here, will be fixed position */}
+      {/* Header and Main content are wrapped by MainContentWrapper in RootLayout */}
+      <Header onAddTask={handleOpenAddForm} />
+      
+      {!user ? (
+          <main className="flex-1 flex flex-col items-center justify-center text-center p-4 sm:p-8 bg-background">
             <Card className="w-full max-w-lg shadow-xl overflow-hidden bg-card">
               <CardHeader className="p-0">
                 <Image 
@@ -354,10 +372,10 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
                   Welcome to Upnext!
                 </WelcomeCardTitle>
                 <CardDescription className="text-md sm:text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-                  Your smart companion for staying organized and productive. Log in or sign up to start managing your tasks efficiently.
+                  Your smart task manager for staying organized and productive. Log in or sign up to start managing your tasks efficiently.
                 </CardDescription>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button asChild size="lg" className="w-full sm:w-auto text-base py-3">
+                  <Button asChild size="lg" className="w-full sm:w-auto text-base py-3 bg-primary text-primary-foreground hover:bg-primary/90">
                     <Link href="/login">Log In</Link>
                   </Button>
                   <Button asChild variant="outline" size="lg" className="w-full sm:w-auto text-base py-3">
@@ -367,47 +385,46 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
               </CardContent>
             </Card>
           </main>
-        ) : (
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-            <div className="w-full max-w-6xl mx-auto">
-              <div className="mb-6 max-w-2xl mx-auto">
-                <Button
-                  variant="outline"
-                  className="w-full h-14 text-md text-muted-foreground hover:text-foreground hover:border-primary/50 border-dashed border-input justify-start px-4 shadow-sm hover:shadow-md transition-all duration-150 ease-in-out focus-visible:ring-primary"
-                  onClick={handleOpenAddForm}
-                >
-                  <Plus className="mr-3 h-5 w-5" />
-                  Take a note...
-                </Button>
-              </div>
-              
-              <div className="mb-6">
-                <FilterControls currentFilter={filter} onFilterChange={setFilter} />
-              </div>
-
-              {isLoadingTasks ? (
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                       <div className="h-5 bg-muted rounded w-3/4"></div>
-                       <div className="h-4 bg-muted rounded w-1/2"></div>
-                       <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <TaskList
-                  tasks={filteredTasks}
-                  onToggleComplete={handleToggleComplete}
-                  onEdit={handleOpenEditForm}
-                  onDelete={(id) => setTaskToDelete(id)}
-                  onToggleSubtask={handleToggleSubtaskComplete}
-                />
-              )}
+      ) : (
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+          <div className="w-full max-w-6xl mx-auto">
+            <div className="mb-6 max-w-2xl mx-auto">
+              <Button
+                variant="outline"
+                className="w-full h-14 text-md text-muted-foreground hover:text-foreground hover:border-primary/50 border-dashed border-input justify-start px-4 shadow-sm hover:shadow-md transition-all duration-150 ease-in-out focus-visible:ring-primary"
+                onClick={handleOpenAddForm}
+              >
+                <Plus className="mr-3 h-5 w-5" />
+                Take a note...
+              </Button>
             </div>
-          </main>
-        )}
-      </div>
+            
+            <div className="mb-6">
+              <FilterControls currentFilter={filter} onFilterChange={setFilter} />
+            </div>
+
+            {isLoadingTasks ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
+                      <div className="h-5 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                      <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <TaskList
+                tasks={filteredTasks}
+                onToggleComplete={handleToggleComplete}
+                onEdit={handleOpenEditForm}
+                onDelete={(id) => setTaskToDelete(id)}
+                onToggleSubtask={handleToggleSubtaskComplete}
+              />
+            )}
+          </div>
+        </main>
+      )}
 
       {user && (
         <>
@@ -463,6 +480,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           </TooltipProvider>
         </>
       )}
-    </div>
+    </>
   );
 }

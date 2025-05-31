@@ -1,8 +1,8 @@
 
 "use client";
 
-import { GraduationCap, PlusCircle, LogOut, UserCircle, Loader2 } from 'lucide-react';
-import { ThemeToggle } from './ThemeToggle';
+import { GraduationCap, PlusCircle, LogOut, UserCircle, User, Settings, Trash2, Rocket } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle'; // Will be moved to AppSidebar
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,36 +14,51 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'; // Import SidebarTrigger
 
 interface HeaderProps {
-  onAddTask: () => void;
+  onAddTask: () => void; // This prop might become unused if AddTask moves to AppSidebar
 }
 
 export function Header({ onAddTask }: HeaderProps) {
   const { user, logOut, loading: authLoading } = useAuth();
+  const { isMobile, isMobileSheetOpen, effectiveSidebarWidth } = useSidebar(); // Get sidebar context
+
+  const userInitial = user?.displayName
+    ? user.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    : user?.email ? user.email[0].toUpperCase() : '?';
 
   return (
-    <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-      <div className="max-w-6xl mx-auto w-full flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-2 group">
-          <GraduationCap className="h-7 w-7 text-primary group-hover:text-primary/90 transition-colors" />
-          <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight group-hover:text-foreground/90 transition-colors">
-            Upnext
-          </h1>
-        </Link>
+    // Header is sticky *within* the MainContentWrapper which has dynamic margin-left
+    <header className="sticky top-0 z-30 py-3 px-4 md:px-6 border-b bg-background shadow-sm">
+      <div className="w-full max-w-6xl mx-auto flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          {/* SidebarTrigger is now in AppSidebar's header by default, but can be placed here if design requires */}
+          {/* If you want it here, ensure AppSidebar doesn't also render one to avoid duplicates */}
+           {isMobile && user && <SidebarTrigger />} 
+          <Link href="/" className="flex items-center gap-2 group">
+            {/* Logo/Title could be simplified if also present in sidebar header */}
+            <GraduationCap className="h-7 w-7 text-primary group-hover:text-primary/90 transition-colors" />
+            <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight group-hover:text-foreground/90 transition-colors">
+              Upnext
+            </h1>
+          </Link>
+        </div>
+        
         <div className="flex items-center gap-2 md:gap-3">
           {authLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
           ) : user ? (
             <>
-              <Button onClick={onAddTask} size="sm" className="rounded-full">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Task
-              </Button>
-              {/* AI Assistant button removed from here */}
+              {/* Add Task button moved to AppSidebar */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <UserCircle className="h-6 w-6" />
+                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
+                      <AvatarFallback>{userInitial}</AvatarFallback>
+                    </Avatar>
                     <span className="sr-only">Open user menu</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -51,7 +66,7 @@ export function Header({ onAddTask }: HeaderProps) {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {user.email?.split('@')[0]}
+                        {user.displayName || user.email?.split('@')[0]}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
@@ -60,30 +75,40 @@ export function Header({ onAddTask }: HeaderProps) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profile" className="w-full cursor-pointer">Profile</Link>
+                    <Link href="/profile" className="w-full cursor-pointer flex items-center">
+                      <User className="mr-2 h-4 w-4" /> <span>Profile</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                     <Link href="/settings" className="w-full cursor-pointer">Settings</Link>
+                     <Link href="/settings" className="w-full cursor-pointer flex items-center">
+                       <Settings className="mr-2 h-4 w-4" /> <span>Settings</span>
+                     </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/trash" className="w-full cursor-pointer flex items-center">
+                      <Trash2 className="mr-2 h-4 w-4" /> <span>Trash</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logOut} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
+                  <DropdownMenuItem onClick={logOut} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 flex items-center">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Log out
+                    <span>Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              {/* ThemeToggle moved to AppSidebar */}
             </>
           ) : (
             <>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/login">Log In</Link>
               </Button>
-              <Button asChild size="sm" className="rounded-full">
+              <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link href="/signup">Sign Up</Link>
               </Button>
+               <ThemeToggle /> {/* Show theme toggle even if not logged in */}
             </>
           )}
-          <ThemeToggle />
         </div>
       </div>
     </header>

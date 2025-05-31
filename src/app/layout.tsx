@@ -5,7 +5,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { SidebarProvider } from '@/components/ui/sidebar'; // Ensure this import is present
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { MainContentWrapper } from '@/components/MainContentWrapper'; // Import the new client component
 
 const manrope = Manrope({
   variable: '--font-sans',
@@ -18,6 +19,8 @@ export const metadata: Metadata = {
   description: 'Smart Task Manager for Students',
 };
 
+// MainContentWrapper definition is now in src/components/MainContentWrapper.tsx
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${manrope.variable} font-sans antialiased`}
+        className={`${manrope.variable} font-sans antialiased bg-background`}
         suppressHydrationWarning={true}
       >
         <AuthProvider>
@@ -35,10 +38,20 @@ export default function RootLayout({
             defaultTheme="system"
             enableSystem
           >
-            <SidebarProvider collapsible="icon" defaultOpen={true}>
-              {children}
+            <SidebarProvider 
+              collapsible="icon" 
+              defaultOpen={true}
+              sidebarWidthExpanded="var(--sidebar-width-expanded)"
+              sidebarIconWidth="var(--sidebar-width-collapsed)"
+            >
+              <div className="flex min-h-screen w-full"> {/* Ensures full height and acts as flex container */}
+                {/* AppSidebar is rendered by page.tsx conditionally based on auth state */}
+                <MainContentWrapper>
+                  {children}
+                </MainContentWrapper>
+              </div>
+              <Toaster />
             </SidebarProvider>
-            <Toaster />
           </ThemeProvider>
         </AuthProvider>
       </body>
