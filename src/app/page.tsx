@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { LandingPage } from '@/components/LandingPage'; // Import the new LandingPage component
+import { LandingPage } from '@/components/LandingPage'; // Import the LandingPage component
 
 
 interface HomePageProps {
@@ -287,12 +287,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   }
 
   if (!user) { // Render LandingPage if user is not authenticated
-    return (
-      <>
-        <Header onAddTask={() => { /* No-op for landing page */ }} />
-        <LandingPage />
-      </>
-    );
+    return <LandingPage />; // LandingPage now includes its own header
   }
 
   // Authenticated user view
