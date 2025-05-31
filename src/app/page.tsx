@@ -15,12 +15,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Brain, Plus, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle as WelcomeCardTitle } from '@/components/ui/card';
-import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { LandingPage } from '@/components/LandingPage'; // Import the new LandingPage component
 
 
 interface HomePageProps {
@@ -111,7 +110,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
       return () => unsubscribe();
     } else if (!user && isMounted && !authLoading) {
-      setTasks([]);
+      setTasks([]); // Clear tasks if user logs out or is not authenticated
       setIsLoadingTasks(false);
     }
   }, [user, toast, isMounted, authLoading]);
@@ -239,6 +238,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
   const handleOpenAddForm = useCallback(() => {
     if (!user) {
+      // This case should ideally not be reached if the button isn't shown to unauth users,
+      // but as a safeguard:
       toast({ title: "Please Log In", description: "You need to be logged in to add tasks.", variant: "default" });
       return;
     }
@@ -279,170 +280,113 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
   if (authLoading || !isMounted) {
     return (
-      <div className="flex h-screen w-full">
-        <div 
-          className="flex-1 flex flex-col overflow-hidden"
-        >
-          <div className="py-3 px-4 md:px-6 h-[60px] border-b bg-background flex items-center justify-between animate-pulse shadow-sm">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 bg-muted rounded-full md:hidden"></div>
-              <div className="h-7 w-24 bg-muted rounded-md"></div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 bg-muted rounded-full"></div>
-              <div className="h-8 w-8 bg-muted rounded-full"></div>
-              <div className="h-8 w-8 bg-muted rounded-full"></div>
-            </div>
-          </div>
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-            <div className="w-full max-w-6xl mx-auto">
-              <div className="mb-6 h-12 bg-card rounded-lg shadow-sm border animate-pulse max-w-2xl mx-auto"></div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="h-[180px] bg-card rounded-lg shadow-sm border animate-pulse p-4 space-y-3">
-                    <div className="h-5 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-1/2"></div>
-                    <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </main>
-        </div>
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
+  if (!user) { // Render LandingPage if user is not authenticated
+    return (
+      <>
+        <Header onAddTask={() => { /* No-op for landing page */ }} />
+        <LandingPage />
+      </>
+    );
+  }
+
+  // Authenticated user view
   return (
     <>
-      {user && <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />}
-      <Header onAddTask={handleOpenAddForm} />
+      <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />
+      <Header onAddTask={handleOpenAddForm} /> {/* Header for authenticated users */}
       
-      {!user ? (
-          <main className="flex-1 flex flex-col items-center justify-center text-center p-4 sm:p-8 bg-background">
-            <Card className="w-full max-w-lg shadow-xl overflow-hidden bg-card">
-              <CardHeader className="p-0">
-                <Image 
-                  src="https://placehold.co/600x300.png"
-                  alt="Welcome Illustration" 
-                  width={600} 
-                  height={300} 
-                  className="w-full h-auto object-cover"
-                  data-ai-hint="productivity tasks"
-                  priority
-                />
-              </CardHeader>
-              <CardContent className="p-6 sm:p-8 text-center">
-                <WelcomeCardTitle className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                  Welcome to Upnext!
-                </WelcomeCardTitle>
-                <CardDescription className="text-md sm:text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-                  Your smart task manager for staying organized and productive. Log in or sign up to start managing your tasks efficiently.
-                </CardDescription>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button asChild size="lg" className="w-full sm:w-auto text-base py-3 bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Link href="/login">Log In</Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg" className="w-full sm:w-auto text-base py-3">
-                    <Link href="/signup">Sign Up</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </main>
-      ) : (
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-          <div className="w-full max-w-6xl mx-auto">
-            <div className="mb-6 max-w-2xl mx-auto">
-              <Button
-                variant="outline"
-                className="w-full h-12 px-4 py-3 text-base text-muted-foreground hover:text-foreground border-dashed hover:border-primary hover:bg-primary/5 justify-start shadow-sm hover:shadow-lg rounded-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                onClick={handleOpenAddForm}
-              >
-                <Plus className="mr-3 h-5 w-5" />
-                Take a note...
-              </Button>
-            </div>
-            
-            {isLoadingTasks ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                      <div className="h-5 bg-muted rounded w-3/4"></div>
-                      <div className="h-4 bg-muted rounded w-1/2"></div>
-                      <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <TaskList
-                tasks={filteredTasks}
-                onToggleComplete={handleToggleComplete}
-                onEdit={handleOpenEditForm}
-                onDelete={(id) => setTaskToDelete(id)}
-                onToggleSubtask={handleToggleSubtaskComplete}
-              />
-            )}
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+        <div className="w-full max-w-6xl mx-auto">
+          <div className="mb-6 max-w-2xl mx-auto">
+            <Button
+              variant="outline"
+              className="w-full h-12 px-4 py-3 text-base text-muted-foreground hover:text-foreground border-dashed hover:border-primary hover:bg-primary/5 justify-start shadow-sm hover:shadow-lg rounded-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              onClick={handleOpenAddForm}
+            >
+              <Plus className="mr-3 h-5 w-5" />
+              Take a note...
+            </Button>
           </div>
-        </main>
-      )}
+          
+          {isLoadingTasks ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
+                    <div className="h-5 bg-muted rounded w-3/4"></div>
+                    <div className="h-4 bg-muted rounded w-1/2"></div>
+                    <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <TaskList
+              tasks={filteredTasks}
+              onToggleComplete={handleToggleComplete}
+              onEdit={handleOpenEditForm}
+              onDelete={(id) => setTaskToDelete(id)}
+              onToggleSubtask={handleToggleSubtaskComplete}
+            />
+          )}
+        </div>
+      </main>
 
-      {user && (
-        <>
-          <Dialog open={isFormOpen} onOpenChange={(open) => {
-            setIsFormOpen(open);
-            if (!open) setEditingTask(null);
-          }}>
-            <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
-              <DialogHeader className="pb-2">
-                <DialogTitle className="text-xl">{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
-              </DialogHeader>
-              <TaskForm
-                onSubmit={handleSubmitTask}
-                editingTask={editingTask}
-                onClose={() => {
-                  setIsFormOpen(false);
-                  setEditingTask(null);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+      {/* Dialogs and Tooltips for authenticated users */}
+      <Dialog open={isFormOpen} onOpenChange={(open) => {
+        setIsFormOpen(open);
+        if (!open) setEditingTask(null);
+      }}>
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-xl">{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+          </DialogHeader>
+          <TaskForm
+            onSubmit={handleSubmitTask}
+            editingTask={editingTask}
+            onClose={() => {
+              setIsFormOpen(false);
+              setEditingTask(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
-          <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
-            <AlertDialogContent className="rounded-lg bg-card">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will move the task "{tasks.find(t => t.id === taskToDelete)?.description.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => taskToDelete && handleDeleteTask(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-                  Move to Trash
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+      <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
+        <AlertDialogContent className="rounded-lg bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the task "{tasks.find(t => t.id === taskToDelete)?.description.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => taskToDelete && handleDeleteTask(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+              Move to Trash
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button asChild size="lg" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-30 p-0 bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <Link href="/ai-assistant" aria-label="Open AI Assistant">
-                    <Brain className="h-6 w-6" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>AI Assistant</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </>
-      )}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild size="lg" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-30 p-0 bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Link href="/ai-assistant" aria-label="Open AI Assistant">
+                <Brain className="h-6 w-6" />
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>AI Assistant</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </>
   );
 }
-
-    
