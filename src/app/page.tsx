@@ -8,8 +8,8 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import type { Task, TaskFilter } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -300,8 +300,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         <div className="w-full max-w-6xl mx-auto">
           <div className="mb-6 max-w-2xl mx-auto">
             <Button
-              variant="outline"
-              className="w-full h-12 px-4 py-3 text-base text-muted-foreground hover:text-foreground border-dashed hover:border-primary hover:bg-primary/5 justify-start shadow-sm hover:shadow-lg rounded-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="w-full h-12 px-4 py-3 text-base bg-card text-foreground/80 border border-border rounded-lg shadow justify-start hover:text-foreground hover:border-primary hover:bg-primary/10 hover:shadow-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-background"
               onClick={handleOpenAddForm}
             >
               <Plus className="mr-3 h-5 w-5" />
@@ -339,6 +338,9 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
           <DialogHeader className="pb-2">
             <DialogTitle className="text-xl">{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+            <DialogDescription>
+              {editingTask ? 'Update the details of your existing task.' : 'Fill in the details below to add a new task to your list.'}
+            </DialogDescription>
           </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
@@ -355,9 +357,9 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         <AlertDialogContent className="rounded-lg bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDesc>
               This will move the task "{tasks.find(t => t.id === taskToDelete)?.description.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
-            </AlertDialogDescription>
+            </AlertDialogDesc>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
@@ -385,3 +387,5 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     </>
   );
 }
+
+    
