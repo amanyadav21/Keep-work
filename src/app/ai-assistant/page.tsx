@@ -129,7 +129,7 @@ function AIAssistantPageContent() {
     if (!viewport) return;
 
     const handleScroll = () => {
-      if (!viewport) return; // Guard for viewport becoming null
+      if (!viewport) return; 
       const { scrollTop, scrollHeight, clientHeight } = viewport;
       const atBottom = scrollHeight - scrollTop - clientHeight < 50;
       setShowScrollToBottom(!atBottom && scrollHeight > clientHeight + 50);
@@ -222,7 +222,7 @@ function AIAssistantPageContent() {
       .finally(() => {
         setIsLoadingInitial(false);
       });
-  }, [mounted, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setIsLoadingInitial]); // isLoadingInitial (boolean state) removed from deps, setIsLoadingInitial (setter) remains
+  }, [mounted, chatMessages, currentOriginalTaskContext, toast, setChatMessages, setIsLoadingInitial]); 
 
 
   useEffect(() => {
@@ -298,19 +298,19 @@ function AIAssistantPageContent() {
         </div>
       </header>
 
-      {mounted && displayContext && (
-        <div className="p-3 border-b bg-muted/30 sticky top-[calc(var(--header-height,69px))] z-10">
-          <div className="text-sm flex items-center justify-between max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="min-w-0 flex-1 pr-2 overflow-hidden">
-              <span className="font-medium text-foreground/80">Context:</span>
-              <span className="italic ml-1.5 text-foreground/90 truncate">{displayContext}</span>
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
+        {mounted && displayContext && (
+          <div className="px-4 py-2 border-b bg-muted/40 shadow-sm">
+            <div className="text-sm flex items-center justify-between">
+              <div className="min-w-0 flex-1 pr-2 overflow-hidden">
+                <span className="font-medium text-foreground/80">Context:</span>
+                <span className="italic ml-1.5 text-foreground/90 truncate">{displayContext}</span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-1 min-h-0 relative flex flex-col">
+        <div className="flex-1 min-h-0 relative flex flex-col"> {/* This parent will now contain the ScrollArea */}
           <ScrollArea className="absolute inset-0 min-h-0" ref={scrollAreaRef} tabIndex={0} style={{outline: 'none'}}>
             <div className="px-4 pt-4 pb-12 space-y-4"> {/* Increased pb for scroll to bottom button clearance */}
               {!mounted ? (
@@ -425,3 +425,5 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
+
+    
