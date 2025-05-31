@@ -21,7 +21,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-// import { FilterControls } from '@/components/FilterControls'; // Removed as filters are now in sidebar
 
 
 interface HomePageProps {
@@ -283,7 +282,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       <div className="flex h-screen w-full">
         <div 
           className="flex-1 flex flex-col overflow-hidden"
-          // The style for marginLeft is now handled by MainContentWrapper from RootLayout
         >
           <div className="py-3 px-4 md:px-6 h-[60px] border-b bg-background flex items-center justify-between animate-pulse shadow-sm">
             <div className="flex items-center gap-2">
@@ -298,8 +296,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           </div>
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
             <div className="w-full max-w-6xl mx-auto">
-              <div className="mb-6 h-14 bg-card rounded-lg shadow-sm border animate-pulse"></div>
-              {/* Filter controls placeholder removed as filters are in sidebar now */}
+              <div className="mb-6 h-12 bg-card rounded-lg shadow-sm border animate-pulse max-w-2xl mx-auto"></div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="h-[180px] bg-card rounded-lg shadow-sm border animate-pulse p-4 space-y-3">
@@ -359,7 +356,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
             <div className="mb-6 max-w-2xl mx-auto">
               <Button
                 variant="outline"
-                className="w-full h-14 text-md text-muted-foreground hover:text-foreground hover:border-primary/50 border-dashed border-input justify-start px-4 shadow-sm hover:shadow-md transition-all duration-150 ease-in-out focus-visible:ring-primary"
+                className="w-full h-12 px-4 py-3 text-base text-muted-foreground hover:text-foreground border-dashed hover:border-primary hover:bg-primary/5 justify-start shadow-sm hover:shadow-lg rounded-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 onClick={handleOpenAddForm}
               >
                 <Plus className="mr-3 h-5 w-5" />
@@ -367,11 +364,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
               </Button>
             </div>
             
-            {/* FilterControls removed from here */}
-            {/* <div className="mb-6">
-              <FilterControls currentFilter={filter} onFilterChange={setFilter} />
-            </div> */}
-
             {isLoadingTasks ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
