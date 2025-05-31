@@ -20,7 +20,6 @@ import {
   LogOut,
   GraduationCap,
   PanelLeft,
-  Rocket, // Assuming Rocket is still for brand
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -48,14 +47,11 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from '@/contexts/AuthContext';
-import type { TaskFilter } from '@/types'; // Assuming TaskFilter is still used for highlighting
+import type { TaskFilter } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface AppSidebarProps {
   onAddTask: () => void;
-  // Filter props are re-added as per request to put filters back in sidebar
-  currentFilter: TaskFilter;
-  onFilterChange: (filter: TaskFilter) => void;
 }
 
 interface NavItemConfig {
@@ -65,29 +61,20 @@ interface NavItemConfig {
   icon: React.ElementType;
   tooltip: string;
   disabled?: boolean;
-  filterValue?: TaskFilter; // For filter items
-  isFilter?: boolean;       // To identify filter items
   isPageLink?: boolean;     // To identify direct page links
   isExternal?: boolean;     // For external links
 }
 
-export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
+export function AppSidebar({ onAddTask }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
   const { state: sidebarState, collapsible, isMobile, open: sidebarOpen, isMobileSheetOpen } = useSidebar();
   const router = useRouter();
   
-  // Determine if the sidebar is in its icon-only collapsed state on desktop
   const isIconOnly = !isMobile && sidebarState === 'collapsed' && collapsible === 'icon';
 
   const mainNavItems: NavItemConfig[] = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard, tooltip: 'Dashboard', isPageLink: true },
-  ];
-
-  const filterNavItems: NavItemConfig[] = [
-    { action: () => onFilterChange('all'), label: 'All Tasks', icon: ListFilter, tooltip: 'All Tasks', filterValue: 'all', isFilter: true },
-    { action: () => onFilterChange('pending'), label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', filterValue: 'pending', isFilter: true },
-    { action: () => onFilterChange('completed'), label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', filterValue: 'completed', isFilter: true },
   ];
   
   const categoryNavItems: NavItemConfig[] = [
@@ -112,9 +99,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
         )}
         <SidebarMenu>
           {items.map((item, index) => {
-            const isActive = item.isFilter 
-              ? item.filterValue === currentFilter && pathname === '/' 
-              : item.isPageLink ? pathname === item.href : false;
+            const isActive = item.isPageLink ? pathname === item.href : false;
             
             const buttonContent = (
               <>
@@ -124,14 +109,14 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             );
 
             const commonButtonProps = {
-              variant: isActive ? 'secondary' : 'ghost' as const, // Ensure type correctness
+              variant: isActive ? 'secondary' : 'ghost' as const,
               className: cn(
                 "w-full justify-start h-9 text-sm", 
                 isIconOnly ? '!p-0 flex items-center justify-center !h-9 !w-9 rounded-md' : 'px-2.5 py-1.5'
               ),
               onClick: item.action,
               disabled: item.disabled,
-              isActive: isActive, // Pass isActive for direct styling if SidebarMenuButton supports it
+              isActive: isActive,
               "aria-label": item.tooltip,
             };
 
@@ -141,7 +126,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
               </SidebarMenuButton>
             );
             
-            const linkPath = item.href || '#'; // Fallback for items with actions but no href
+            const linkPath = item.href || '#';
 
             return (
               <SidebarMenuItem key={`${item.label}-${index}`} className={isIconOnly ? 'flex justify-center' : ''}>
@@ -149,15 +134,15 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                   <TooltipProvider delayDuration={150}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        {item.href || item.action ? ( // Check if it's a link or has an action
+                        {item.href || item.action ? (
                           item.href ? (
                             <Link href={linkPath} className="block w-full h-full" target={item.isExternal ? "_blank" : "_self"} passHref>
                               {menuButton}
                             </Link>
-                          ) : ( // Item with action but no href
+                          ) : (
                             menuButton
                           )
-                        ) : ( // Fallback for items that are purely labels or disabled without action/href
+                        ) : (
                            <div className={commonButtonProps.className} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
                             {buttonContent}
                            </div>
@@ -193,14 +178,13 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   };
   
   if (authLoading) {
-    // Sidebar Skeleton
     return (
       <Sidebar
         side="left"
         className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm animate-pulse"
       >
-        <SidebarHeader className="flex items-center gap-2">
-          <div className="h-7 w-7 bg-muted rounded-md shrink-0"></div> {/* Trigger placeholder */}
+        <SidebarHeader>
+          <div className="h-7 w-7 bg-muted rounded-md shrink-0"></div>
            {!isIconOnly && (
             <div className="h-6 w-24 bg-muted rounded animate-pulse ml-1"></div>
           )}
@@ -224,7 +208,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   }
   
   if (!user) {
-    return null; // Don't render sidebar if user is not logged in
+    return null;
   }
 
   const userInitial = user.displayName 
@@ -235,36 +219,14 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     <Sidebar
       side="left"
       className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm"
-      // style prop for widths is handled by SidebarProvider defaults or props
     >
-      <SidebarHeader className="flex items-center gap-2">
-         {/* SidebarTrigger is part of the Sidebar's structure if collapsible */}
+      <SidebarHeader>
         <SidebarTrigger className="shrink-0" tooltip="Toggle Sidebar" />
-        {!isIconOnly && (
-          <Link href="/" className="flex items-center group overflow-hidden ml-1">
-            <GraduationCap className="h-6 w-6 text-sidebar-primary mr-2 shrink-0" />
-            <h1 className="text-lg font-semibold text-sidebar-foreground tracking-tight group-hover:text-sidebar-foreground/90 transition-colors truncate">
-              Upnext
-            </h1>
-          </Link>
-        )}
-         {isIconOnly && (
-            <TooltipProvider delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link href="/" className="flex items-center justify-center w-9 h-9">
-                     <GraduationCap className="h-6 w-6 text-sidebar-primary" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" align="center"><p>Upnext Home</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
       </SidebarHeader>
 
       <SidebarContent className="p-0"> 
-        <ScrollArea className="h-full w-full">
-          <div className={cn("p-2", isIconOnly ? "space-y-2" : "space-y-1")}> 
+        <ScrollArea className="h-full w-full p-2">
+          <div className={cn(isIconOnly ? "space-y-2" : "space-y-1")}> 
             <SidebarMenu>
                <SidebarMenuItem className={isIconOnly ? 'flex justify-center' : ''}>
                   <SidebarMenuButton 
@@ -282,7 +244,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             
             <SidebarSeparator/>
             {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
-            {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
             <SidebarSeparator />
             {renderNavItems(categoryNavItems, isIconOnly ? undefined : 'Categories')}
             <SidebarSeparator />
@@ -362,3 +323,5 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     </Sidebar>
   );
 }
+
+    
