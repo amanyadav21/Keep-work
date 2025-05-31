@@ -17,7 +17,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
-// Define a placeholder type for AIOutputType as Genkit integration is removed
+// Define a placeholder type for AIOutputType
 type AIOutputType = {
   assistantResponse: string;
 };
@@ -28,14 +28,22 @@ async function getOpenRouterAssistance(
   conversationHistory: Omit<ChatMessage, 'timestamp'>[] = []
 ): Promise<AIOutputType> {
   console.log("Attempting to call OpenRouter with inquiry:", currentInquiry);
-  // IMPORTANT: Make sure NEXT_PUBLIC_OPENROUTER_API_KEY is set in your .env file
+  
   const apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
-  const siteUrl = process.env.NEXT_PUBLIC_YOUR_SITE_URL || "http://localhost:3000";
-  const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "TaskWise Student";
+  const siteUrl = process.env.NEXT_PUBLIC_YOUR_SITE_URL || "http://localhost:3000"; // Ensure this is your actual site URL for production
+  const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Upnext Student Assistant"; // Or your app's name
+
+  // Diagnostic log for the API key
+  console.log("Retrieved OpenRouter API Key from process.env:", 
+              apiKey ? `Exists (length: ${apiKey.length}, first 5 chars: ${apiKey.substring(0,5)}...)` : "NOT FOUND or EMPTY");
+  if (apiKey && apiKey.length < 20) { // Typical API keys are longer
+      console.warn("The retrieved OpenRouter API key seems unusually short. Please double-check it in your .env.local file:", apiKey);
+  }
+
 
   if (!apiKey) {
-    console.error("OpenRouter API Key is not set in environment variables (NEXT_PUBLIC_OPENROUTER_API_KEY).");
-    return { assistantResponse: "AI Service is not configured. The API Key is missing from environment variables. Please set NEXT_PUBLIC_OPENROUTER_API_KEY in your .env file with your new API key." };
+    console.error("OpenRouter API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is not set or is empty in environment variables.");
+    return { assistantResponse: "AI Service is not configured. The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is missing from your .env.local file. Please set it and restart your Next.js server." };
   }
 
   const messagesForAPI = [
@@ -50,19 +58,20 @@ async function getOpenRouterAssistance(
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": siteUrl, // Optional
-        "X-Title": siteName,     // Optional
+        "HTTP-Referer": siteUrl, 
+        "X-Title": siteName,     
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-r1-0528:free", // Using DeepSeek R1 model
+        model: "deepseek/deepseek-r1-0528:free",
         messages: messagesForAPI,
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: response.statusText }));
-      console.error("OpenRouter API Error:", response.status, errorData); 
-      throw new Error(`API request failed with status ${response.status}: ${errorData.error?.message || errorData.message || response.statusText}`);
+      const errorData = await response.json().catch(() => ({ message: response.statusText, error: { message: response.statusText } }));
+      console.error("OpenRouter API Error (raw response):", response.status, response.statusText, errorData); 
+      const apiErrorMessage = errorData.error?.message || errorData.message || response.statusText;
+      throw new Error(`API request failed with status ${response.status}: ${apiErrorMessage}`);
     }
 
     const data = await response.json();
@@ -70,25 +79,28 @@ async function getOpenRouterAssistance(
 
     if (!assistantMessage) {
       console.error("OpenRouter Error: No message content in response", data);
-      return { assistantResponse: "Sorry, I couldn't generate a response at this time (empty content)." };
+      return { assistantResponse: "Sorry, I couldn't generate a response at this time (empty content from AI)." };
     }
     return { assistantResponse: assistantMessage.trim() };
 
   } catch (error: any) {
-    console.error("Error calling OpenRouter AI:", error);
+    console.error("Error calling OpenRouter AI (catch block):", error);
     let errorMessage = "Sorry, I couldn't connect to the AI assistant. Please try again later."; 
 
     if (error.message) {
       const lowerCaseErrorMessage = error.message.toLowerCase();
-      if (lowerCaseErrorMessage.includes("status 401")) {
-        errorMessage = "AI authentication failed (401 Unauthorized). Please ensure your OpenRouter API key (NEXT_PUBLIC_OPENROUTER_API_KEY in your .env file) is correctly set, valid, and has sufficient credits.";
+      if (lowerCaseErrorMessage.includes("no auth credentials found")) {
+         errorMessage = `AI Authentication Error: OpenRouter reported "No auth credentials found". This means the API key was not sent or was invalid. Please ensure your NEXT_PUBLIC_OPENROUTER_API_KEY in the .env.local file is set correctly and your Next.js development server has been restarted.`;
+      } else if (lowerCaseErrorMessage.includes("status 401") || lowerCaseErrorMessage.includes("unauthorized")) {
+        errorMessage = "AI authentication failed (401 Unauthorized). Please ensure your OpenRouter API key (NEXT_PUBLIC_OPENROUTER_API_KEY in your .env.local file) is correctly set, valid, and has sufficient credits. Restart your Next.js server after making changes to .env.local.";
       } else if (lowerCaseErrorMessage.includes("api key") || lowerCaseErrorMessage.includes("invalid_api_key")) {
-        errorMessage = "AI Service API key may be invalid, missing, or misconfigured. Please check your OpenRouter API key in your environment variables (NEXT_PUBLIC_OPENROUTER_API_KEY in your .env file).";
+        errorMessage = "AI Service API key may be invalid, missing, or misconfigured. Please check your OpenRouter API key (NEXT_PUBLIC_OPENROUTER_API_KEY in your .env.local file) and restart your Next.js server.";
       } else if (lowerCaseErrorMessage.includes("blocked")) {
         errorMessage = "AI request was blocked. This might be due to your OpenRouter account status or API key settings. Please check them.";
       } else if (lowerCaseErrorMessage.includes("insufficient_quota") || lowerCaseErrorMessage.includes("rate_limit_exceeded")) {
         errorMessage = "AI request failed due to rate limits or insufficient quota on your OpenRouter account. Please check your account or try again later.";
       } else {
+        // Keep the detailed error message from the API if it's not one of the common ones
         errorMessage = `AI Error: ${error.message}`;
       }
     }
@@ -99,7 +111,7 @@ async function getOpenRouterAssistance(
 
 const GENERAL_INQUIRY_PLACEHOLDER = "How can I help you today?";
 const SERVER_RENDER_PLACEHOLDER = "Enter your general inquiry here...";
-const AI_UNAVAILABLE_MESSAGE = "AI Assistant is currently unavailable. Please check your AI service configuration and API key.";
+const AI_UNAVAILABLE_MESSAGE = "AI Assistant is currently unavailable. Please check your AI service configuration, API key in .env.local, and restart your server.";
 
 
 function AIAssistantPageContent() {
@@ -213,7 +225,7 @@ function AIAssistantPageContent() {
         });
       })
       .catch(error => { 
-        console.error("Initial AI assistance error (unexpected path):", error);
+        console.error("Initial AI assistance error (unexpected path, should be caught by getOpenRouterAssistance):", error);
         toast({
           title: "AI Assistance Failed",
           description: error.message || AI_UNAVAILABLE_MESSAGE,
@@ -266,7 +278,7 @@ function AIAssistantPageContent() {
       const result = await getOpenRouterAssistance(newUserMessage.content, historyForAI.slice(0, -1));
       setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
     } catch (error: any) { 
-      console.error("AI follow-up assistance error (unexpected path):", error);
+      console.error("AI follow-up assistance error (unexpected path, should be caught by getOpenRouterAssistance):", error);
       toast({
         title: "AI Follow-up Failed",
         description: error.message || AI_UNAVAILABLE_MESSAGE,
@@ -432,3 +444,4 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
+
