@@ -3,13 +3,13 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-// Removed import { Badge } from '@/components/ui/badge'; as it's no longer used directly here
 import { CheckCircle2, CalendarDays, Lightbulb, Globe, ArrowRight, Rocket } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { LandingHeader } from '@/components/LandingHeader'; // Import the new LandingHeader
+import { LandingHeader } from '@/components/LandingHeader';
+import { Badge } from '@/components/ui/badge'; // Ensure Badge is imported
 
-// Feature Card Sub-component
+// Feature Card Sub-component for the 3-card layout
 const FeatureCard = ({
   icon: Icon,
   title,
@@ -35,13 +35,13 @@ const FeatureCard = ({
 export function LandingPage() {
   return (
     <>
-      <LandingHeader /> {/* Use the new LandingHeader here */}
-      <div className="flex flex-col min-h-screen bg-slate-50"> {/* Updated background */}
+      <LandingHeader />
+      <div className="flex flex-col min-h-screen bg-slate-50"> {/* Main page background */}
         {/* Hero Section */}
         <section className="flex-grow flex items-center justify-center py-20 md:py-28 lg:py-32 px-4 text-center relative overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-primary/5 via-transparent to-transparent -z-10"></div>
           
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Centered content block */}
             <Link href="/#features" className="inline-flex items-center justify-center gap-2 mb-6 px-4 py-1.5 bg-background text-sm font-medium text-primary rounded-full border border-primary/30 shadow-md hover:bg-primary/5 transition-colors group">
               <Globe className="h-4 w-4 text-primary/80 group-hover:text-primary transition-colors" />
               Plan. Track. Achieve. Effortlessly.
@@ -72,7 +72,7 @@ export function LandingPage() {
 
         {/* Features Section "Why Choose Upnext?" */}
         <section id="features" className="py-16 md:py-24 bg-background border-y">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Centered content block */}
             <div className="text-center mb-14">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                 Why Choose <span className="text-primary">Upnext</span>?
@@ -107,7 +107,7 @@ export function LandingPage() {
         
         {/* Footer */}
         <footer className="py-12 md:py-16 bg-slate-900 text-slate-300">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Centered content block */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
               <div className="md:col-span-4 flex flex-col items-center md:items-start text-center md:text-left">
                 <Link href="/" className="flex items-center space-x-2 mb-3 group">
