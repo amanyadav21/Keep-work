@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { formatISO, parseISO, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Brain, Plus, Search as SearchIcon, Loader2 } from 'lucide-react';
+import { Brain, Plus, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle as WelcomeCardTitle } from '@/components/ui/card';
 import Image from 'next/image';
@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FilterControls } from '@/components/FilterControls';
+// import { FilterControls } from '@/components/FilterControls'; // Removed as filters are now in sidebar
 
 
 interface HomePageProps {
@@ -141,10 +141,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         trashedAt: null,
       };
       await addDoc(tasksCollectionRef, newTaskData);
-      toast({
-        title: "Task Added",
-        description: `"${data.description.substring(0, 30)}${data.description.length > 30 ? "..." : ""}" added.`,
-      });
+      // Toast moved to TaskForm
     } catch (error: any) {
       console.error("Error adding task:", error);
       toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
@@ -169,10 +166,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         })) || [],
       };
       await updateDoc(taskDocRef, updatedTaskData);
-      toast({
-        title: "Task Updated",
-        description: `"${data.description.substring(0, 30)}${data.description.length > 30 ? "..." : ""}" updated.`,
-      });
+      // Toast moved to TaskForm
       setEditingTask(null);
     } catch (error: any) {
       console.error("Error updating task:", error);
@@ -285,50 +279,27 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
 
   if (authLoading || !isMounted) {
-    // This is the main page skeleton when auth state is loading or component not yet mounted.
-    // It now reflects the new structure with a fixed sidebar and a main content area.
     return (
       <div className="flex h-screen w-full">
-        {/* Sidebar Skeleton - assumes default open width or icon width based on CSS vars */}
-        <div 
-          className="hidden md:block h-screen bg-sidebar-background border-r border-sidebar-border shadow-sm animate-pulse"
-          style={{ width: 'var(--sidebar-width-expanded)' }} // Or use --sidebar-width-collapsed if that's the default
-        >
-          <div className="p-3 h-[60px] border-b border-sidebar-border"></div>
-          <div className="p-2 space-y-2 mt-4">
-            <div className="h-10 bg-muted rounded animate-pulse"></div>
-            {[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-muted rounded animate-pulse"></div>)}
-          </div>
-        </div>
-        {/* Main Content Area Skeleton */}
         <div 
           className="flex-1 flex flex-col overflow-hidden"
-          style={{ marginLeft: 'var(--sidebar-width-expanded)' }} // Adjust if sidebar default is collapsed
+          // The style for marginLeft is now handled by MainContentWrapper from RootLayout
         >
-          {/* Header Placeholder */}
           <div className="py-3 px-4 md:px-6 h-[60px] border-b bg-background flex items-center justify-between animate-pulse shadow-sm">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 bg-muted rounded-full md:hidden"></div> {/* Hamburger placeholder */}
-              <div className="h-7 w-24 bg-muted rounded-md"></div> {/* Logo placeholder */}
+              <div className="h-7 w-7 bg-muted rounded-full md:hidden"></div>
+              <div className="h-7 w-24 bg-muted rounded-md"></div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 bg-muted rounded-full"></div> {/* AI assist placeholder */}
-              <div className="h-8 w-8 bg-muted rounded-full"></div> {/* User menu placeholder */}
-              <div className="h-8 w-8 bg-muted rounded-full"></div> {/* Theme toggle placeholder */}
+              <div className="h-8 w-8 bg-muted rounded-full"></div>
+              <div className="h-8 w-8 bg-muted rounded-full"></div>
+              <div className="h-8 w-8 bg-muted rounded-full"></div>
             </div>
           </div>
-          {/* Main Content Placeholder */}
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
             <div className="w-full max-w-6xl mx-auto">
-              {/* New Task Input Placeholder */}
               <div className="mb-6 h-14 bg-card rounded-lg shadow-sm border animate-pulse"></div>
-              {/* Filter controls placeholder */}
-              <div className="mb-6 flex space-x-2 h-9">
-                  <div className="w-20 bg-muted rounded-full animate-pulse"></div>
-                  <div className="w-24 bg-muted rounded-full animate-pulse"></div>
-                  <div className="w-28 bg-muted rounded-full animate-pulse"></div>
-              </div>
-              {/* Task list placeholder */}
+              {/* Filter controls placeholder removed as filters are in sidebar now */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="h-[180px] bg-card rounded-lg shadow-sm border animate-pulse p-4 space-y-3">
@@ -344,13 +315,10 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       </div>
     );
   }
-  // AppSidebar is rendered inside MainContentWrapper in RootLayout, so it's part of children
-  // For HomePage, we only define the content that goes *inside* MainContentWrapper's children slot.
 
   return (
     <>
-      {user && <AppSidebar onAddTask={handleOpenAddForm} />} {/* AppSidebar rendered here, will be fixed position */}
-      {/* Header and Main content are wrapped by MainContentWrapper in RootLayout */}
+      {user && <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />}
       <Header onAddTask={handleOpenAddForm} />
       
       {!user ? (
@@ -399,9 +367,10 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
               </Button>
             </div>
             
-            <div className="mb-6">
+            {/* FilterControls removed from here */}
+            {/* <div className="mb-6">
               <FilterControls currentFilter={filter} onFilterChange={setFilter} />
-            </div>
+            </div> */}
 
             {isLoadingTasks ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -483,3 +452,5 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     </>
   );
 }
+
+    

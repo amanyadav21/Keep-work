@@ -9,7 +9,7 @@ import {
   LayoutDashboard,
   ListTodo,
   ListChecks,
-  ListFilter,
+  ListFilter, // Added for All Tasks filter
   Users,
   Bell,
   Tag,
@@ -38,7 +38,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
+  SidebarMenuButton, // Ensure this component can handle 'isActive'
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
@@ -52,6 +52,8 @@ import { cn } from '@/lib/utils';
 
 interface AppSidebarProps {
   onAddTask: () => void;
+  currentFilter: TaskFilter;
+  onFilterChange: (filter: TaskFilter) => void;
 }
 
 interface NavItemConfig {
@@ -63,9 +65,11 @@ interface NavItemConfig {
   disabled?: boolean;
   isPageLink?: boolean;
   isExternal?: boolean;
+  isFilter?: boolean; // Added to identify filter items
+  filterName?: TaskFilter; // Added for filter items
 }
 
-export function AppSidebar({ onAddTask }: AppSidebarProps) {
+export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
   const { state: sidebarState, collapsible, isMobile, open: sidebarOpen } = useSidebar();
@@ -75,6 +79,12 @@ export function AppSidebar({ onAddTask }: AppSidebarProps) {
 
   const mainNavItems: NavItemConfig[] = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard, tooltip: 'Dashboard', isPageLink: true },
+  ];
+
+  const filterNavItems: NavItemConfig[] = [
+    { action: () => onFilterChange('all'), label: 'All Tasks', icon: ListFilter, tooltip: 'All Tasks', isFilter: true, filterName: 'all' },
+    { action: () => onFilterChange('pending'), label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
+    { action: () => onFilterChange('completed'), label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
   ];
 
   const categoryNavItems: NavItemConfig[] = [
@@ -99,7 +109,12 @@ export function AppSidebar({ onAddTask }: AppSidebarProps) {
         )}
         <SidebarMenu className={cn(isIconOnly && "w-auto")}>
           {items.map((item, index) => {
-            const isActive = item.isPageLink ? pathname === item.href : false;
+            let isActive = false;
+            if (item.isPageLink) {
+              isActive = pathname === item.href;
+            } else if (item.isFilter) {
+              isActive = currentFilter === item.filterName;
+            }
 
             const buttonContent = (
               <>
@@ -116,7 +131,7 @@ export function AppSidebar({ onAddTask }: AppSidebarProps) {
               ),
               onClick: item.action,
               disabled: item.disabled,
-              isActive: isActive,
+              isActive: isActive, // Pass isActive to SidebarMenuButton
               "aria-label": item.tooltip,
               tooltip: item.tooltip,
             };
@@ -140,7 +155,7 @@ export function AppSidebar({ onAddTask }: AppSidebarProps) {
                     menuButton
                   )
                 ) : (
-                   <div className={cn(sidebarMenuButtonVariants({variant: commonButtonProps.variant, size: commonButtonProps.size}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
+                   <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-sidebar-ring transition-colors focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant, size: commonButtonProps.size}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
                     {buttonContent}
                    </div>
                 )}
@@ -172,6 +187,8 @@ export function AppSidebar({ onAddTask }: AppSidebarProps) {
               <SidebarSeparator />
               {[...Array(1)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
               <SidebarSeparator />
+              {[...Array(3)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} {/* Filters placeholder */}
+              <SidebarSeparator />
               {[...Array(4)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
               <SidebarSeparator />
               {[...Array(2)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
@@ -200,26 +217,6 @@ export function AppSidebar({ onAddTask }: AppSidebarProps) {
     >
       <SidebarHeader className="flex items-center">
         <SidebarTrigger className="shrink-0" tooltip="Toggle Sidebar" />
-         {!isIconOnly && (
-            <Link href="/" className="flex items-center group ml-2" aria-label="Upnext Home">
-                <GraduationCap className="h-6 w-6 text-sidebar-primary group-hover:text-sidebar-primary/90 transition-colors" />
-                <h1 className="text-xl font-semibold text-sidebar-foreground tracking-tight group-hover:text-sidebar-foreground/90 transition-colors ml-2">
-                Upnext
-                </h1>
-            </Link>
-        )}
-         {isIconOnly && (
-             <TooltipProvider delayDuration={150}>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Link href="/" className="ml-1 p-1.5 flex items-center justify-center rounded-md hover:bg-sidebar-accent" aria-label="Upnext Home">
-                            <GraduationCap className="h-6 w-6 text-sidebar-primary" />
-                        </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" align="center"><p>Upnext Home</p></TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-        )}
       </SidebarHeader>
 
       <SidebarContent className="p-0">
@@ -242,6 +239,8 @@ export function AppSidebar({ onAddTask }: AppSidebarProps) {
 
             <SidebarSeparator/>
             {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
+            <SidebarSeparator />
+            {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
             <SidebarSeparator />
             {renderNavItems(categoryNavItems, isIconOnly ? undefined : 'Categories')}
             <SidebarSeparator />
