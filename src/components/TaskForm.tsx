@@ -51,7 +51,7 @@ const subtaskSchema = z.object({
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required.").max(150, "Title must be at most 150 characters"),
-  description: z.string().min(3, "Description must be at least 3 characters").max(500, "Description must be at most 500 characters"),
+  description: z.string().min(3, "Description must be at least 3 characters"), // Removed .max(500, ...)
   dueDate: z.date({ required_error: "Due date is required." }),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
   priority: z.enum(taskPriorities).optional().default("None"),
