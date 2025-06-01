@@ -369,21 +369,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button asChild size="lg" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-30 p-0 bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Link href="/ai-assistant" aria-label="Open AI Assistant">
-                <Brain className="h-6 w-6" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>AI Assistant</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      {/* AI Assistant FAB removed from here */}
     </>
   );
 }

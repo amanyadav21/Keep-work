@@ -1,7 +1,7 @@
 
 "use client";
 
-import { GraduationCap, PlusCircle, LogOut, UserCircle, User, Settings, Trash2, Rocket } from 'lucide-react';
+import { GraduationCap, PlusCircle, LogOut, UserCircle, User, Settings, Trash2, Rocket, Brain } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle'; // Will be moved to AppSidebar
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'; // Import SidebarTrigger
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface HeaderProps {
   onAddTask: () => void; // This prop might become unused if AddTask moves to AppSidebar
@@ -52,6 +53,21 @@ export function Header({ onAddTask }: HeaderProps) {
           ) : user ? (
             <>
               {/* Add Task button moved to AppSidebar */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                      <Link href="/ai-assistant" aria-label="Open AI Assistant">
+                        <Brain className="h-5 w-5" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>AI Assistant</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
@@ -114,3 +130,4 @@ export function Header({ onAddTask }: HeaderProps) {
     </header>
   );
 }
+
