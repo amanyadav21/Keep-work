@@ -124,6 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
+      // Log the current origin to help debug "unauthorized-domain" errors
+      if (typeof window !== "undefined") {
+        console.log("Attempting Google Sign-In from origin:", window.location.origin);
+      }
+
       const result = await signInWithPopup(auth, provider);
       const googleUser = result.user;
 
@@ -164,6 +169,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description = "Google Sign-In popup was closed. Please try again.";
       } else if (authError.code === 'auth/account-exists-with-different-credential') {
         description = "An account already exists with this email. Please sign in using the original method.";
+      } else if (authError.code === 'auth/unauthorized-domain') {
+        // This specific error message can be helpful for the user
+        description = `The domain ${typeof window !== "undefined" ? window.location.hostname : 'your app domain'} is not authorized for Google Sign-In. Please add it to your Firebase project's authentication settings.`;
       } else if (authError.message) {
         description = authError.message;
       }
