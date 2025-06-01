@@ -45,7 +45,7 @@ async function getOpenRouterAssistance(
      return { assistantResponse: "AI Service Configuration Error: The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is an empty string. Please provide a valid key in your .env.local file and restart your Next.js server." };
   } else {
     console.log(`NEXT_PUBLIC_OPENROUTER_API_KEY: Found (length: ${apiKey.length}, first 5 chars: ${apiKey.substring(0,5)}...)`);
-    if (apiKey.length < 20) { // Typical API keys are longer
+    if (apiKey.length < 20) { 
         console.warn("The retrieved OpenRouter API key seems unusually short. Please double-check it in your .env.local file:", apiKey);
     }
   }
@@ -65,7 +65,7 @@ async function getOpenRouterAssistance(
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`, // The API key is used here
+        "Authorization": `Bearer ${apiKey}`, 
         "Content-Type": "application/json",
         "HTTP-Referer": siteUrl, 
         "X-Title": siteName,     
@@ -77,11 +77,9 @@ async function getOpenRouterAssistance(
     });
 
     if (!response.ok) {
-      // Try to get more detailed error info from OpenRouter
       const errorData = await response.json().catch(() => ({ message: response.statusText, error: { message: response.statusText } }));
       console.error("OpenRouter API Error (raw response):", response.status, response.statusText, errorData); 
       const apiErrorMessage = errorData.error?.message || errorData.message || response.statusText;
-      // Throw an error that includes the API's message
       throw new Error(`API request failed with status ${response.status}: ${apiErrorMessage}`);
     }
 
@@ -120,7 +118,6 @@ async function getOpenRouterAssistance(
       } else if (lowerCaseErrorMessage.includes("insufficient_quota") || lowerCaseErrorMessage.includes("rate_limit_exceeded")) {
         errorMessage = "AI request failed due to rate limits or insufficient quota on your OpenRouter account. Please check your account or try again later.";
       } else {
-        // Keep the detailed error message from the API if it's not one of the common ones
         errorMessage = `AI Error: ${error.message}`;
       }
     }
@@ -329,7 +326,7 @@ function AIAssistantPageContent() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <header className="p-4 border-b bg-background sticky top-0 z-10 flex items-center justify-between max-w-6xl mx-auto w-full">
+      <header className="p-4 border-b bg-card sticky top-0 z-10 flex items-center justify-between max-w-6xl mx-auto w-full">
         <div className='flex items-center gap-2'>
           <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
             <ArrowLeft className="h-5 w-5" />
@@ -340,7 +337,7 @@ function AIAssistantPageContent() {
 
       <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col min-h-0 overflow-hidden">
         {mounted && displayContext && (
-          <div className="px-4 py-2 border-b bg-muted/40 shadow-sm">
+          <div className="px-4 py-2 border-b bg-muted shadow-sm">
             <div className="text-sm flex items-center justify-between">
               <div className="min-w-0 flex-1 pr-2 overflow-hidden">
                 <span className="font-medium text-foreground/80">Context:</span>
@@ -377,10 +374,10 @@ function AIAssistantPageContent() {
                       {msg.role === 'assistant' && <Bot className="h-6 w-6 text-primary flex-shrink-0 self-start mt-1 mb-1" />}
                       <div
                         className={cn(
-                          "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border text-sm text-foreground break-words",
+                          "prose prose-sm dark:prose-invert max-w-[85%] p-3 rounded-lg border text-sm break-words",
                           msg.role === 'user'
-                            ? 'bg-primary/10 border-primary/30'
-                            : 'bg-muted/50 border-muted'
+                            ? 'bg-primary/10 border-primary/30 text-primary-foreground dark:text-foreground' 
+                            : 'bg-secondary text-secondary-foreground dark:bg-muted dark:text-foreground' 
                         )}
                       >
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -396,7 +393,7 @@ function AIAssistantPageContent() {
                   {isSendingFollowUp && chatMessages.length > 0 && chatMessages[chatMessages.length -1].role === 'user' && (
                     <div className="flex items-end space-x-2 justify-start">
                       <Bot className="h-6 w-6 text-primary flex-shrink-0 self-start mt-1 animate-pulse" />
-                      <div className="bg-muted/50 p-3 rounded-lg border border-muted text-sm text-muted-foreground italic w-fit">
+                      <div className="bg-muted p-3 rounded-lg border border-border text-sm text-muted-foreground italic w-fit">
                         Assistant is typing... <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
                       </div>
                     </div>
@@ -410,7 +407,7 @@ function AIAssistantPageContent() {
             <Button
               variant="outline"
               size="icon"
-              className="absolute bottom-4 right-4 h-9 w-9 rounded-full shadow-md bg-background hover:bg-muted z-20"
+              className="absolute bottom-4 right-4 h-9 w-9 rounded-full shadow-md bg-card hover:bg-muted z-20 border-border"
               onClick={() => scrollToBottom('smooth')}
               aria-label="Scroll to bottom"
             >
@@ -419,7 +416,7 @@ function AIAssistantPageContent() {
           )}
         </div>
 
-        <div className="p-4 border-t bg-background">
+        <div className="p-4 border-t border-border bg-background">
           <div className="flex items-start space-x-2">
             <Textarea
               placeholder={placeholderText}
@@ -432,7 +429,7 @@ function AIAssistantPageContent() {
                 }
               }}
               rows={1}
-              className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm"
+              className="flex-1 resize-none min-h-[40px] max-h-[120px] text-sm bg-input text-foreground placeholder:text-muted-foreground"
               disabled={!mounted || isProcessing}
             />
             <Button
@@ -451,7 +448,7 @@ function AIAssistantPageContent() {
         </div>
       </div>
 
-      <div className="p-3 text-center border-t text-xs text-muted-foreground bg-background sticky bottom-0 z-10">
+      <div className="p-3 text-center border-t border-border text-xs text-muted-foreground bg-background sticky bottom-0 z-10">
         AI can make mistakes. Consider checking important information.
       </div>
     </div>
@@ -460,9 +457,8 @@ function AIAssistantPageContent() {
 
 export default function AIAssistantPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-screen bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
       <AIAssistantPageContent />
     </Suspense>
   );
 }
-

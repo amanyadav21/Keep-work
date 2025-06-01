@@ -44,23 +44,22 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
   }, []);
 
   useEffect(() => {
-    if (!isMounted) return; // Ensure component is mounted client-side
+    if (!isMounted) return; 
 
     if (task.isCompleted) {
       setTimeLeft('Completed');
       return;
     }
 
-    if (!task.dueDate) { // Explicitly check for missing or falsy due date
+    if (!task.dueDate) { 
       setTimeLeft('No due date');
       return;
     }
 
-    // Proceed with date calculations only if dueDate is present
     const calculateTimeLeft = () => {
       const dueDateObj = parseISO(task.dueDate);
       if (!isValid(dueDateObj)) {
-        setTimeLeft("Invalid date format"); // More specific message for invalid dates
+        setTimeLeft("Invalid date format"); 
         return;
       }
 
@@ -73,10 +72,10 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
       setTimeLeft(timeLeftString.replace(/^in\s+/, '') + " left");
     };
 
-    calculateTimeLeft(); // Initial calculation
-    const intervalId = setInterval(calculateTimeLeft, 60000); // Update every minute
+    calculateTimeLeft(); 
+    const intervalId = setInterval(calculateTimeLeft, 60000); 
 
-    return () => clearInterval(intervalId); // Cleanup interval on unmount
+    return () => clearInterval(intervalId); 
   }, [task.dueDate, task.isCompleted, isMounted]);
 
 
@@ -96,7 +95,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
       <Card
         className={cn(
           "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px]",
-          task.isCompleted ? "bg-muted" : "bg-card"
+          task.isCompleted ? "bg-muted/70 dark:bg-muted/40" : "bg-card" // Adjusted completed task background
         )}
       >
         <CardContent className="p-4 relative flex-grow flex flex-col">
@@ -117,7 +116,6 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             {task.description}
           </CardTitle>
 
-          {/* Middle section for subtasks or spacer */}
           <div className="flex-1 min-h-0 flex flex-col">
             {task.subtasks && task.subtasks.length > 0 ? (
               <div className="mt-3 space-y-2 flex-1 flex flex-col min-h-0">
@@ -128,10 +126,10 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                       <span className="font-medium">Subtasks</span>
                       <span>{completedSubtasks}/{totalSubtasks}</span>
                     </div>
-                    <Progress value={subtaskProgress} className="h-1.5" />
+                    <Progress value={subtaskProgress} className="h-1.5 bg-primary/20 [&>div]:bg-primary" />
                   </div>
                 )}
-                <ScrollArea className="flex-1 pr-1 -mr-1"> {/* flex-1 makes ScrollArea use available space */}
+                <ScrollArea className="flex-1 pr-1 -mr-1"> 
                   <div className="space-y-1.5 py-0.5">
                   {task.subtasks.map((subtask) => (
                     <div key={subtask.id} className="flex items-center space-x-2">
@@ -158,17 +156,16 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 </ScrollArea>
               </div>
             ) : (
-              <div className="flex-1"></div> /* Empty spacer if no subtasks */
+              <div className="flex-1"></div> 
             )}
           </div>
           
-          {/* Date/Category Info Bar - at the bottom of CardContent */}
           <div className={cn(
             "pt-3 text-xs flex items-center justify-between gap-x-2", 
             task.isCompleted ? "text-muted-foreground" : "text-muted-foreground/90"
           )}>
-            <Badge variant="secondary" className="text-xs py-0.5 px-1.5 font-medium shrink-0">
-              <CategoryIcon className={cn("h-3.5 w-3.5 mr-1", task.isCompleted ? "text-muted-foreground" : "text-primary")} />
+            <Badge variant="secondary" className="text-xs py-0.5 px-1.5 font-medium shrink-0 bg-secondary/70 text-secondary-foreground">
+              <CategoryIcon className={cn("h-3.5 w-3.5 mr-1", task.isCompleted ? "text-muted-foreground/80" : "text-primary")} />
               {task.category}
             </Badge>
              {task.dueDate && (
@@ -186,7 +183,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               <p className={cn(
                 "font-medium text-xs flex items-center",
                 isOverdue ? "text-destructive" : 
-                task.isCompleted ? "text-status-green" : 
+                task.isCompleted ? "text-[hsl(var(--status-green))]" : // Using hsl for status-green
                 "text-primary"
               )}>
                 {isOverdue && <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />}
@@ -200,7 +197,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             )}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="ghost" size="icon" aria-label="Get AI Assistance" className="h-7 w-7 text-primary hover:text-primary">
+                  <Button asChild variant="ghost" size="icon" aria-label="Get AI Assistance" className="h-7 w-7 text-primary hover:text-primary/80 hover:bg-primary/10">
                     <Link href={`/ai-assistant?taskDescription=${encodeURIComponent(task.description)}`}>
                       <Brain className="h-4 w-4" />
                     </Link>
@@ -212,7 +209,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(task)} aria-label="Edit task" className="h-7 w-7">
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(task)} aria-label="Edit task" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -222,7 +219,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                   <Button variant="ghost" size="icon" onClick={() => onDelete(task.id)} aria-label="Delete task" className="text-destructive hover:text-destructive/80 h-7 w-7">
+                   <Button variant="ghost" size="icon" onClick={() => onDelete(task.id)} aria-label="Delete task" className="text-destructive/80 hover:text-destructive hover:bg-destructive/10 h-7 w-7">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -238,4 +235,3 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
-

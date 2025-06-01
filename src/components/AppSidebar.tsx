@@ -9,7 +9,7 @@ import {
   LayoutDashboard,
   ListTodo,
   ListChecks,
-  ListFilter, // Added for All Tasks filter
+  ListFilter, 
   Users,
   Bell,
   Tag,
@@ -18,8 +18,6 @@ import {
   User,
   Settings as SettingsIcon,
   LogOut,
-  GraduationCap,
-  PanelLeft,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -38,14 +36,14 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton, // Ensure this component can handle 'isActive'
+  SidebarMenuButton, 
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  sidebarMenuButtonVariants, // Import variants
 } from '@/components/ui/sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from '@/contexts/AuthContext';
 import type { TaskFilter } from '@/types';
 import { cn } from '@/lib/utils';
@@ -65,8 +63,8 @@ interface NavItemConfig {
   disabled?: boolean;
   isPageLink?: boolean;
   isExternal?: boolean;
-  isFilter?: boolean; // Added to identify filter items
-  filterName?: TaskFilter; // Added for filter items
+  isFilter?: boolean; 
+  filterName?: TaskFilter; 
 }
 
 export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
@@ -103,7 +101,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     const sectionContent = (
       <>
         {sectionTitle && !isIconOnly && (
-          <div className="px-3 pt-3 pb-1 text-xs font-semibold uppercase text-sidebar-foreground/70 tracking-wider">
+          <div className="px-3 pt-3 pb-1 text-xs font-semibold uppercase text-muted-foreground/70 tracking-wider">
             {sectionTitle}
           </div>
         )}
@@ -118,20 +116,21 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
 
             const buttonContent = (
               <>
-                <item.icon className={cn("h-5 w-5 shrink-0")} />
+                <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
                 {!isIconOnly && <span className="truncate">{item.label}</span>}
               </>
             );
-
+            
             const commonButtonProps = {
-              variant: isActive ? 'secondary' : 'ghost' as const,
+              variant: "ghost" as const, // Use ghost for default nav items
               size: isIconOnly ? 'icon' : 'default' as const,
               className: cn(
-                isIconOnly ? "" : "w-full justify-start"
+                isIconOnly ? "" : "w-full justify-start",
+                isActive ? "bg-primary/10 text-primary font-semibold" : "text-foreground hover:bg-muted" 
               ),
               onClick: item.action,
               disabled: item.disabled,
-              isActive: isActive, // Pass isActive to SidebarMenuButton
+              isActive: isActive, 
               "aria-label": item.tooltip,
               tooltip: item.tooltip,
             };
@@ -155,7 +154,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                     menuButton
                   )
                 ) : (
-                   <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-sidebar-ring transition-colors focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant, size: commonButtonProps.size}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
+                   <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant, size: commonButtonProps.size}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
                     {buttonContent}
                    </div>
                 )}
@@ -172,7 +171,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     return (
       <Sidebar
         side="left"
-        className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm animate-pulse"
+        className="shadow-sm animate-pulse" // Removed direct bg/text, relies on Sidebar component's new defaults
       >
         <SidebarHeader>
            <div className={cn("h-7 w-7 bg-muted rounded-md shrink-0", isIconOnly && "mx-auto")}></div>
@@ -187,7 +186,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
               <SidebarSeparator />
               {[...Array(1)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
               <SidebarSeparator />
-              {[...Array(3)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} {/* Filters placeholder */}
+              {[...Array(3)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} 
               <SidebarSeparator />
               {[...Array(4)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
               <SidebarSeparator />
@@ -213,7 +212,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   return (
     <Sidebar
       side="left"
-      className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm"
+      className="shadow-sm" // Relies on Sidebar component's new defaults (bg-card, text-foreground)
     >
       <SidebarHeader className="flex items-center">
         <SidebarTrigger className="shrink-0" tooltip="Toggle Sidebar" />
@@ -226,7 +225,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                <SidebarMenuItem className={isIconOnly ? 'flex justify-center' : ''}>
                   <SidebarMenuButton
                     onClick={onAddTask}
-                    variant="primary"
+                    variant="primary" // Uses main theme primary
                     size={isIconOnly ? "icon" : "lg"}
                     className={cn(isIconOnly ? "" : "w-full justify-start h-10 text-base")}
                     tooltip="Add New Task"
@@ -259,7 +258,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
               <Button
                 variant="ghost"
                 className={cn(
-                  "focus-visible:ring-sidebar-ring focus-visible:ring-offset-sidebar-background",
+                  "focus-visible:ring-ring focus-visible:ring-offset-background text-foreground hover:bg-muted", // Use theme variables
                   isIconOnly
                     ? 'p-0 flex items-center justify-center h-9 w-9 rounded-full'
                     : 'px-2 py-1.5 h-auto w-full justify-start'
@@ -268,14 +267,14 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
               >
                 <Avatar className={cn("h-8 w-8 shrink-0", isIconOnly ? '' : 'mr-2')}>
                   <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
-                  <AvatarFallback>{userInitial}</AvatarFallback>
+                  <AvatarFallback className="bg-muted text-muted-foreground">{userInitial}</AvatarFallback>
                 </Avatar>
                 {!isIconOnly && (
                   <div className="flex flex-col items-start truncate min-w-0">
-                    <span className="text-sm font-medium text-sidebar-foreground truncate">
+                    <span className="text-sm font-medium text-foreground truncate">
                       {user.displayName || user.email?.split('@')[0]}
                     </span>
-                    <span className="text-xs text-sidebar-foreground/70 truncate -mt-0.5">
+                    <span className="text-xs text-muted-foreground truncate -mt-0.5">
                       View Profile
                     </span>
                   </div>
@@ -320,5 +319,3 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     </Sidebar>
   );
 }
-
-    
