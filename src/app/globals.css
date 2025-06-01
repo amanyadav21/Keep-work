@@ -5,14 +5,14 @@
 
 @layer base {
   :root {
-    /* Updated Theme - Blue Primary, Orange/Amber Accent */
+    /* Updated Theme - Blue Primary (#3B8CDC equivalent), Orange/Amber Accent */
     --background: 220 25% 98%; /* Off-white with a hint of blue */
     --foreground: 220 10% 20%; /* Dark cool gray */
     --card: 0 0% 100%; /* White */
     --card-foreground: 220 10% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 10% 15%;
-    --primary: 210 70% 50%; /* A clear, professional blue */
+    --primary: 209 68% 55%; /* New Blue: Visually like #3B8CDC */
     --primary-foreground: 0 0% 100%; /* White */
     --secondary: 220 20% 92%; /* Light gray, slightly bluish */
     --secondary-foreground: 220 10% 30%;
@@ -24,10 +24,10 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 15% 88%; /* Slightly softer border */
     --input: 220 15% 94%; /* Lighter input background */
-    --ring: 210 70% 55%; /* Primary color for focus rings */
+    --ring: 209 68% 58%; /* Adjusted for new primary blue */
     
     --chart-1: 120 60% 65%;
-    --chart-2: 210 80% 70%; /* Can align with primary */
+    --chart-2: 209 68% 70%; /* Adjusted for new primary blue */
     --chart-3: 45 90% 70%; /* Can align with accent */
     --chart-4: 0 75% 75%;
     --chart-5: 260 60% 75%;
@@ -43,7 +43,7 @@
     /* Priority Colors */
     --priority-high: 0 70% 50%; /* Destructive red */
     --priority-medium: 30 90% 55%; /* Accent orange/amber */
-    --priority-low: 210 70% 50%; /* Primary blue */
+    --priority-low: 209 68% 55%; /* New Primary blue */
   }
 
   .dark {
@@ -53,7 +53,7 @@
     --card-foreground: 220 10% 85%;
     --popover: 220 15% 18%;
     --popover-foreground: 220 10% 85%;
-    --primary: 210 70% 60%; /* Brighter blue for dark mode */
+    --primary: 209 68% 60%; /* Brighter new blue for dark mode */
     --primary-foreground: 0 0% 100%;
     --secondary: 220 15% 25%; /* Darker secondary */
     --secondary-foreground: 220 10% 70%;
@@ -65,10 +65,10 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 10% 28%; /* Darker border */
     --input: 220 10% 22%; /* Darker input */
-    --ring: 210 70% 65%;
+    --ring: 209 68% 63%; /* Adjusted for new primary blue in dark mode */
 
     --chart-1: 120 50% 55%;
-    --chart-2: 210 70% 60%;
+    --chart-2: 209 68% 60%; /* Adjusted for new primary blue in dark mode */
     --chart-3: 45 80% 60%;
     --chart-4: 0 65% 65%;
     --chart-5: 260 50% 65%;
@@ -78,7 +78,7 @@
     /* Priority Colors Dark */
     --priority-high: 0 65% 60%; /* Brighter destructive red */
     --priority-medium: 30 80% 60%; /* Brighter accent orange/amber */
-    --priority-low: 210 70% 60%; /* Brighter primary blue */
+    --priority-low: 209 68% 60%; /* Brighter new primary blue */
   }
 }
 
@@ -119,3 +119,4 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.7); /* Darken on hover */
 }
+
