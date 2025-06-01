@@ -84,20 +84,6 @@ const PricingCard = ({
   </div>
 );
 
-const TestimonialCard = ({ quote, author, role, avatar }: { quote: string; author: string; role: string; avatar: string }) => (
-  <div className="bg-card p-6 rounded-lg shadow-lg border border-border">
-    <p className="text-muted-foreground italic mb-4">"{quote}"</p>
-    <div className="flex items-center">
-      <Image src={avatar} alt={author} width={40} height={40} className="rounded-full mr-3" data-ai-hint="person avatar" />
-      <div>
-        <p className="font-semibold text-foreground">{author}</p>
-        <p className="text-xs text-muted-foreground">{role}</p>
-      </div>
-    </div>
-  </div>
-);
-
-
 export function LandingPage() {
   return (
     <>
@@ -199,31 +185,6 @@ export function LandingPage() {
             </div>
           </div>
         </section>
-
-        <section id="testimonials" className="py-16 md:py-24 bg-background border-b border-border">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14">
-              <h2 className="text-3xl md:text-4xl font-bold mb-3 text-foreground">Loved by Students Like You</h2>
-              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                See how Upnext is helping students stay organized and achieve their goals.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <TestimonialCard 
-                quote="Upnext completely changed how I manage my coursework. I'm less stressed and more productive than ever!"
-                author="Sarah L."
-                role="University Student"
-                avatar="https://placehold.co/80x80.png"
-              />
-              <TestimonialCard 
-                quote="The deadline tracking and priority features are lifesavers. I finally feel on top of my assignments."
-                author="Michael B."
-                role="College Sophomore"
-                avatar="https://placehold.co/80x80.png"
-              />
-            </div>
-          </div>
-        </section>
         
         <section id="pricing" className="py-16 md:py-24 bg-muted/30 border-b border-border">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -300,7 +261,6 @@ export function LandingPage() {
                 <ul className="space-y-2.5 text-sm">
                   <li><Link href="/#features" className="hover:text-primary transition-colors">Features</Link></li>
                   <li><Link href="/#pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-                  <li><Link href="/#testimonials" className="hover:text-primary transition-colors">Testimonials</Link></li>
                   <li><Link href="/updates" className="hover:text-primary transition-colors opacity-70">Updates (Soon)</Link></li>
                 </ul>
               </div>
