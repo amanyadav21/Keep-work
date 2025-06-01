@@ -2,14 +2,14 @@
 "use client";
 
 import { useState, useEffect, memo } from 'react';
-import type { Task, TaskCategory } from '@/types';
+import type { Task, TaskCategory, TaskPriority } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'; // Added CardDescription
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { format, parseISO, isValid, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, Brain, ListChecks, BookOpen } from 'lucide-react';
+import { format, parseISO, isValid, isPast, isToday, isTomorrow, isYesterday, differenceInCalendarDays, formatDistanceToNowStrict } from 'date-fns';
+import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, Brain, ListChecks, BookOpen, Flag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -34,6 +34,38 @@ const categoryIcons: Record<TaskCategory, React.ElementType> = {
   Class: Users,
   Personal: User,
 };
+
+const priorityDotColor = (priority?: TaskPriority): string => {
+  switch (priority) {
+    case 'High':
+      return 'bg-[hsl(var(--priority-high))]';
+    case 'Medium':
+      return 'bg-[hsl(var(--priority-medium))]';
+    case 'Low':
+      return 'bg-[hsl(var(--priority-low))]';
+    default:
+      return 'bg-transparent'; // No dot for "None" or undefined
+  }
+};
+
+function formatDynamicDueDate(isoDateString: string): string {
+  const date = parseISO(isoDateString);
+  if (!isValid(date)) return "Invalid date";
+
+  if (isToday(date)) return "Today";
+  if (isTomorrow(date)) return "Tomorrow";
+  if (isYesterday(date)) return "Yesterday";
+
+  const today = new Date();
+  const diffDays = differenceInCalendarDays(date, today);
+
+  if (diffDays > 0 && diffDays <= 6) return format(date, "'Next' EEEE"); // Next Monday
+  if (diffDays < 0 && diffDays >= -6) return format(date, "'Last' EEEE"); // Last Monday
+
+  if (date.getFullYear() === today.getFullYear()) return format(date, "MMM d"); // Apr 15
+  return format(date, "MMM d, yyyy"); // Apr 15, 2023
+}
+
 
 function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
@@ -63,13 +95,14 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
         return;
       }
 
-      if (isPast(dueDateObj)) {
+      if (isPast(dueDateObj) && !isToday(dueDateObj)) { // Check if past due but not today
         setTimeLeft("Past due");
         return;
       }
       
+      // For tasks due today or in the future
       const timeLeftString = formatDistanceToNowStrict(dueDateObj, { addSuffix: true });
-      setTimeLeft(timeLeftString.replace(/^in\s+/, '') + " left");
+      setTimeLeft(timeLeftString.replace(/^in\s+/, '') + (isToday(dueDateObj) ? "" : " left"));
     };
 
     calculateTimeLeft(); 
@@ -80,8 +113,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 
 
   const dueDateObj = task.dueDate ? parseISO(task.dueDate) : null;
-  const formattedDueDate = dueDateObj && isValid(dueDateObj) ? format(dueDateObj, "MMM d, yyyy") : "No due date";
-  const isOverdue = !task.isCompleted && dueDateObj && isValid(dueDateObj) && isPast(dueDateObj);
+  const formattedDynamicDueDate = task.dueDate ? formatDynamicDueDate(task.dueDate) : "No due date";
+  const isOverdue = !task.isCompleted && dueDateObj && isValid(dueDateObj) && isPast(dueDateObj) && !isToday(dueDateObj);
 
 
   const completedSubtasks = task.subtasks?.filter(st => st.isCompleted).length || 0;
@@ -91,11 +124,10 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
   const CategoryIcon = categoryIcons[task.category] || User;
 
   const cardClickHandler = (e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
-    // Check if the click target or its parent is one of the interactive elements
     let target = e.target as HTMLElement;
     while (target && target !== e.currentTarget) {
       if (target.matches('input[type="checkbox"], button, a, [data-nocardclick="true"]')) {
-        return; // Do not trigger edit if an interactive element was clicked
+        return; 
       }
       target = target.parentElement as HTMLElement;
     }
@@ -129,17 +161,30 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             data-nocardclick="true"
             className="absolute top-3 right-3 h-5 w-5 shrink-0 z-10"
           />
-          <CardTitle
-            id={`task-title-${task.id}`}
-            className={cn(
-              "text-lg font-semibold text-foreground break-words pr-8 line-clamp-2", 
-              task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
+          <div className="flex items-start gap-2 pr-8">
+            {task.priority && task.priority !== "None" && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={cn("mt-1.5 h-2.5 w-2.5 rounded-full flex-shrink-0", priorityDotColor(task.priority))} data-nocardclick="true"></span>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start">
+                  <p>{task.priority} Priority</p>
+                </TooltipContent>
+              </Tooltip>
             )}
-          >
-            {task.title || task.description /* Show description if title is missing */}
-          </CardTitle>
+            <CardTitle
+              id={`task-title-${task.id}`}
+              className={cn(
+                "text-lg font-semibold text-foreground break-words line-clamp-2", 
+                task.priority && task.priority !== "None" ? "" : "ml-0", // No margin if no dot
+                task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
+              )}
+            >
+              {task.title || task.description /* Show description if title is missing */}
+            </CardTitle>
+          </div>
           {task.title && task.description && ( /* Only show description if title is also present */
-            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.isCompleted && "line-through")}>
+            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}>
               {task.description}
             </CardDescription>
           )}
@@ -201,9 +246,9 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               {task.category}
             </Badge>
              {task.dueDate && (
-              <div className="flex items-center shrink-0">
+              <div className={cn("flex items-center shrink-0", isOverdue ? "text-destructive font-medium" : "")}>
                   <CalendarDays className="h-3.5 w-3.5 mr-1" />
-                  <span className="truncate">{formattedDueDate}</span>
+                  <span className="truncate">{formattedDynamicDueDate}</span>
               </div>
             )}
           </div>
@@ -216,6 +261,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 "font-medium text-xs flex items-center",
                 isOverdue ? "text-destructive" : 
                 task.isCompleted ? "text-[hsl(var(--status-green))]" :
+                (task.dueDate && isToday(parseISO(task.dueDate)) && !task.isCompleted) ? "text-accent" : // Emphasize "Today" for pending tasks
                 "text-primary"
               )}>
                 {isOverdue && <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />}
@@ -228,8 +274,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               "flex items-center space-x-1",
               task.isCompleted ? "opacity-60" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
             )}
-            onClick={(e) => e.stopPropagation()} /* Stop propagation for the whole div */
-            onKeyDown={(e) => e.stopPropagation()} /* Stop propagation for the whole div */
+            onClick={(e) => e.stopPropagation()} 
+            onKeyDown={(e) => e.stopPropagation()} 
             data-nocardclick="true"
           >
               <Tooltip>
@@ -272,4 +318,3 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
-

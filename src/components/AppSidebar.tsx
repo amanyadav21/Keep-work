@@ -18,6 +18,7 @@ import {
   User,
   Settings as SettingsIcon,
   LogOut,
+  CalendarClock, // For "Today" filter
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
-  sidebarMenuButtonVariants, // Import variants
+  sidebarMenuButtonVariants,
 } from '@/components/ui/sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
@@ -81,6 +82,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
 
   const filterNavItems: NavItemConfig[] = [
     { action: () => onFilterChange('all'), label: 'All Tasks', icon: ListFilter, tooltip: 'All Tasks', isFilter: true, filterName: 'all' },
+    { action: () => onFilterChange('today'), label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
     { action: () => onFilterChange('pending'), label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
     { action: () => onFilterChange('completed'), label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
   ];
@@ -122,7 +124,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             );
             
             const commonButtonProps = {
-              variant: "ghost" as const, // Use ghost for default nav items
+              variant: "ghost" as const,
               size: isIconOnly ? 'icon' : 'default' as const,
               className: cn(
                 isIconOnly ? "" : "w-full justify-start",
@@ -171,7 +173,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     return (
       <Sidebar
         side="left"
-        className="shadow-sm animate-pulse" // Removed direct bg/text, relies on Sidebar component's new defaults
+        className="shadow-sm animate-pulse"
       >
         <SidebarHeader>
            <div className={cn("h-7 w-7 bg-muted rounded-md shrink-0", isIconOnly && "mx-auto")}></div>
@@ -186,7 +188,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
               <SidebarSeparator />
               {[...Array(1)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
               <SidebarSeparator />
-              {[...Array(3)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} 
+              {[...Array(4)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} 
               <SidebarSeparator />
               {[...Array(4)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
               <SidebarSeparator />
@@ -212,7 +214,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   return (
     <Sidebar
       side="left"
-      className="shadow-sm" // Relies on Sidebar component's new defaults (bg-card, text-foreground)
+      className="shadow-sm"
     >
       <SidebarHeader className="flex items-center">
         <SidebarTrigger className="shrink-0" tooltip="Toggle Sidebar" />
@@ -225,7 +227,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                <SidebarMenuItem className={isIconOnly ? 'flex justify-center' : ''}>
                   <SidebarMenuButton
                     onClick={onAddTask}
-                    variant="primary" // Uses main theme primary
+                    variant="primary"
                     size={isIconOnly ? "icon" : "lg"}
                     className={cn(isIconOnly ? "" : "w-full justify-start h-10 text-base")}
                     tooltip="Add New Task"
@@ -258,7 +260,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
               <Button
                 variant="ghost"
                 className={cn(
-                  "focus-visible:ring-ring focus-visible:ring-offset-background text-foreground hover:bg-muted", // Use theme variables
+                  "focus-visible:ring-ring focus-visible:ring-offset-background text-foreground hover:bg-muted",
                   isIconOnly
                     ? 'p-0 flex items-center justify-center h-9 w-9 rounded-full'
                     : 'px-2 py-1.5 h-auto w-full justify-start'

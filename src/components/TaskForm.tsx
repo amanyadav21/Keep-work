@@ -28,10 +28,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Save, PlusCircle, Loader2, Trash2, ListChecks } from "lucide-react";
+import { CalendarIcon, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
-import type { Task, TaskCategory, Subtask } from "@/types";
+import type { Task, TaskCategory, Subtask, TaskPriority } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,6 +40,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 
 const taskCategories: [TaskCategory, ...TaskCategory[]] = ["Assignment", "Class", "Personal"];
+const taskPriorities: [TaskPriority, ...TaskPriority[]] = ["None", "Low", "Medium", "High"];
+
 
 const subtaskSchema = z.object({
   id: z.string().optional(),
@@ -52,6 +54,7 @@ const taskFormSchema = z.object({
   description: z.string().min(3, "Description must be at least 3 characters").max(500, "Description must be at most 500 characters"),
   dueDate: z.date({ required_error: "Due date is required." }),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
+  priority: z.enum(taskPriorities).optional().default("None"),
   subtasks: z.array(subtaskSchema).optional(),
 });
 
@@ -73,6 +76,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           description: editingTask.description,
           dueDate: editingTask.dueDate ? parseISO(editingTask.dueDate) : new Date(new Date().setHours(23, 59, 59, 999)),
           category: editingTask.category,
+          priority: editingTask.priority || "None",
           subtasks: editingTask.subtasks?.map(st => ({...st})) || [],
         }
       : {
@@ -80,6 +84,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           description: "",
           dueDate: new Date(new Date().setHours(23, 59, 59, 999)), 
           category: undefined,
+          priority: "None",
           subtasks: [],
         },
   });
@@ -213,6 +218,33 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           />
         </div>
 
+        <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center">
+                  <Flag className="mr-2 h-4 w-4 text-muted-foreground" /> Priority
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value || "None"}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {taskPriorities.map((priority) => (
+                      <SelectItem key={priority} value={priority}>
+                        {priority === "None" ? "No Priority" : priority}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
              <ListChecks className="h-5 w-5 text-primary" />
@@ -290,4 +322,3 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     </Form>
   );
 }
-

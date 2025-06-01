@@ -39,6 +39,11 @@
 
     /* Status Green (used in TaskItem) */
     --status-green: 145 63% 40%; /* A balanced green */
+
+    /* Priority Colors */
+    --priority-high: 0 70% 50%; /* Destructive red */
+    --priority-medium: 30 90% 55%; /* Accent orange/amber */
+    --priority-low: 210 70% 50%; /* Primary blue */
   }
 
   .dark {
@@ -69,6 +74,11 @@
     --chart-5: 260 50% 65%;
     
     --status-green: 145 55% 55%; /* Lighter green for dark mode */
+
+    /* Priority Colors Dark */
+    --priority-high: 0 65% 60%; /* Brighter destructive red */
+    --priority-medium: 30 80% 60%; /* Brighter accent orange/amber */
+    --priority-low: 210 70% 60%; /* Brighter primary blue */
   }
 }
 

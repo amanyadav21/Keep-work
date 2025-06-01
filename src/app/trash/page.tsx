@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, orderBy, Timestamp } from 'firebase/firestore';
-import { ArrowLeft, Undo, Trash2, Inbox, Loader2 } from 'lucide-react';
+import { ArrowLeft, Undo, Trash2, Inbox, Loader2, Flag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow, parseISO, isValid } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -74,10 +74,11 @@ export default function TrashPage() {
 
         return {
           id: docSnap.id,
-          title: data.title || '', // Add title, default to empty string
+          title: data.title || '',
           description: data.description,
           dueDate,
           category: data.category,
+          priority: data.priority || 'None',
           isCompleted: data.isCompleted,
           createdAt,
           isTrashed: data.isTrashed,
@@ -142,10 +143,13 @@ export default function TrashPage() {
   const handleEmptyTrash = useCallback(async () => {
     if (!user || trashedTasks.length === 0) return;
     try {
-      for (const task of trashedTasks) {
+      // Consider using a batched write for performance if deleting many tasks
+      const batch = writeBatch(db);
+      trashedTasks.forEach(task => {
         const taskDocRef = doc(db, `users/${user.uid}/tasks`, task.id);
-        await deleteDoc(taskDocRef);
-      }
+        batch.delete(taskDocRef);
+      });
+      await batch.commit();
       toast({ title: "Trash Emptied", description: "All tasks in the trash have been permanently deleted." });
     } catch (error: any) {
       console.error("Error emptying trash:", error);
@@ -193,7 +197,7 @@ export default function TrashPage() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure you want to empty the trash?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action is permanent and cannot be undone. All tasks in the trash will be deleted forever.
+                    This action is permanent and cannot be undone. All {trashedTasks.length} task(s) in the trash will be deleted forever.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -232,15 +236,36 @@ export default function TrashPage() {
               {trashedTasks.map((task) => (
                 <div key={task.id} className="bg-card p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
-                    <p className="font-medium text-foreground line-through">{task.title || task.description}</p>
+                    <div className="flex items-center gap-2">
+                      {task.priority && task.priority !== "None" && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Flag
+                                className={cn(
+                                  "h-4 w-4",
+                                  task.priority === "High" && "text-destructive",
+                                  task.priority === "Medium" && "text-accent",
+                                  task.priority === "Low" && "text-primary"
+                                )}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p>{task.priority} Priority</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                       <p className="font-medium text-foreground line-through">{task.title || task.description}</p>
+                    </div>
                      {task.title && task.description && (
-                        <p className="text-xs text-muted-foreground line-through">{task.description.substring(0,70)}...</p>
+                        <p className="text-xs text-muted-foreground line-through pl-6">{task.description.substring(0,70)}...</p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1 pl-6">
                       Trashed {task.trashedAt ? formatDistanceToNow(new Date(task.trashedAt), { addSuffix: true }) : 'some time ago'}
                     </p>
                   </div>
-                  <div className="flex space-x-2 flex-shrink-0 mt-2 sm:mt-0">
+                  <div className="flex space-x-2 flex-shrink-0 mt-2 sm:mt-0 self-end sm:self-center">
                     <Button variant="outline" size="sm" onClick={() => handleRestoreTask(task.id)}>
                       <Undo className="h-4 w-4 mr-2" />
                       Restore
@@ -275,4 +300,3 @@ export default function TrashPage() {
     </div>
   );
 }
-

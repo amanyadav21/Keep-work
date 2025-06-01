@@ -7,10 +7,10 @@ import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
-import type { Task, TaskFilter } from '@/types';
+import type { Task, TaskFilter, TaskPriority } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { formatISO, parseISO, isValid } from 'date-fns';
+import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Brain, Plus, Loader2 } from 'lucide-react';
@@ -26,6 +26,13 @@ interface HomePageProps {
   params: Record<string, never>;
   searchParams: { [key: string]: string | string[] | undefined };
 }
+
+const priorityOrder: Record<TaskPriority, number> = {
+  "High": 1,
+  "Medium": 2,
+  "Low": 3,
+  "None": 4,
+};
 
 export default function HomePage({ params, searchParams }: HomePageProps) {
   const { user, loading: authLoading } = useAuth();
@@ -48,6 +55,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     if (user && isMounted) {
       setIsLoadingTasks(true);
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
+      // Note: Complex ordering (like by priority then date) might require composite indexes in Firestore.
+      // For now, we sort client-side after fetching tasks ordered by creation time and non-trashed.
       const q = query(tasksCollectionRef, where("isTrashed", "==", false), orderBy("createdAt", "desc"));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -81,16 +90,16 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
           return {
             id: docSnap.id,
-            title: data.title || '', // Add title, default to empty string if not present
+            title: data.title || '',
             description: data.description,
             dueDate,
             category: data.category,
+            priority: data.priority || "None", // Default to None if not present
             isCompleted: data.isCompleted,
             createdAt,
             isTrashed: data.isTrashed || false,
             trashedAt,
             subtasks: data.subtasks || [],
-            // userId: data.userId, // userId is already part of the collection path
           } as Task;
         });
         setTasks(tasksData);
@@ -128,10 +137,11 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     try {
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
       const newTaskData = {
-        title: data.title, // Add title
+        title: data.title,
         description: data.description,
         dueDate: formatISO(data.dueDate),
         category: data.category,
+        priority: data.priority || "None",
         isCompleted: false,
         createdAt: serverTimestamp(),
         subtasks: data.subtasks?.map(st => ({
@@ -139,7 +149,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           text: st.text,
           isCompleted: st.isCompleted || false,
         })) || [],
-        userId: user.uid, // Keep for potential cross-user scenarios if rules allow, though usually implicit
+        userId: user.uid,
         isTrashed: false,
         trashedAt: null,
       };
@@ -157,11 +167,12 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     }
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
-      const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = { // Omit fields not typically updated
-        title: data.title, // Add title
+      const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = { 
+        title: data.title,
         description: data.description,
         dueDate: formatISO(data.dueDate),
         category: data.category,
+        priority: data.priority || "None",
         subtasks: data.subtasks?.map(st => ({
           id: st.id || crypto.randomUUID(),
           text: st.text,
@@ -251,14 +262,25 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
+      // Sort by completion status (incomplete first)
       if (a.isCompleted !== b.isCompleted) {
         return a.isCompleted ? 1 : -1;
       }
+      // If both are incomplete, sort by priority
+      if (!a.isCompleted && !b.isCompleted) {
+        const priorityA = priorityOrder[a.priority || "None"];
+        const priorityB = priorityOrder[b.priority || "None"];
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+      }
+      // Then sort by due date
       const dueDateA = a.dueDate ? parseISO(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       const dueDateB = b.dueDate ? parseISO(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       if (dueDateA !== dueDateB) {
         return dueDateA - dueDateB;
       }
+      // Finally, sort by creation date (older first, for stable sort if all else equal)
       const createdAtA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
       const createdAtB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
       return createdAtA - createdAtB; 
@@ -272,6 +294,12 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         return nonTrashedTasks.filter(task => !task.isCompleted);
       case 'completed':
         return nonTrashedTasks.filter(task => task.isCompleted);
+      case 'today':
+        return nonTrashedTasks.filter(task => {
+          if (!task.dueDate) return false;
+          const dueDate = parseISO(task.dueDate);
+          return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
+        });
       default: // 'all'
         return nonTrashedTasks;
     }
@@ -295,7 +323,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   return (
     <>
       <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />
-      <Header onAddTask={handleOpenAddForm} /> 
+      <Header /> 
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
         <div className="w-full max-w-6xl mx-auto">
@@ -313,7 +341,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                    <div className="h-6 bg-muted rounded w-3/4"></div> {/* Title placeholder */}
+                    <div className="h-4 bg-muted rounded w-1/4"></div> {/* Priority + Title placeholder */}
+                    <div className="h-6 bg-muted rounded w-3/4"></div>
                     <div className="h-4 bg-muted rounded w-full mt-1"></div> {/* Description line 1 */}
                     <div className="h-4 bg-muted rounded w-1/2"></div> {/* Description line 2 */}
                     <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
@@ -373,6 +402,3 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     </>
   );
 }
-
-    
-

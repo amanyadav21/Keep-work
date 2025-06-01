@@ -2,6 +2,7 @@
 import type { User as FirebaseUserType } from 'firebase/auth';
 
 export type TaskCategory = "Assignment" | "Class" | "Personal";
+export type TaskPriority = "High" | "Medium" | "Low" | "None";
 
 export interface Subtask {
   id: string;
@@ -11,10 +12,11 @@ export interface Subtask {
 
 export interface Task {
   id: string;
-  title: string; // Added new title field
+  title: string;
   description: string;
   dueDate: string; // ISO string date
   category: TaskCategory;
+  priority?: TaskPriority; // Added priority field
   isCompleted: boolean;
   createdAt: string; // ISO string date for reference
   subtasks?: Subtask[];
@@ -23,7 +25,7 @@ export interface Task {
   trashedAt?: string | null; // ISO string date or null
 }
 
-export type TaskFilter = "all" | "pending" | "completed";
+export type TaskFilter = "all" | "pending" | "completed" | "today"; // Added "today" filter
 
 // For Student Assistant (Chat)
 export interface ChatMessage {
@@ -33,4 +35,3 @@ export interface ChatMessage {
 }
 
 export type FirebaseUser = FirebaseUserType;
-
