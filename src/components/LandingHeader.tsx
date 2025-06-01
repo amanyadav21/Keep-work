@@ -28,7 +28,7 @@ export function LandingHeader() {
     <header className={cn(
       "sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
       "border-b border-border/40", // Mobile: full-width with bottom border
-      "sm:border-none sm:max-w-5xl sm:mx-auto sm:mt-3 sm:rounded-full sm:border sm:border-border/60 sm:shadow-lg" // Desktop: floating pill
+      "sm:border-none sm:max-w-5xl sm:mx-auto sm:mt-3 sm:rounded-full sm:border sm:border-border sm:shadow-lg" // Desktop: floating pill with solid border
     )}>
       <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center group">
