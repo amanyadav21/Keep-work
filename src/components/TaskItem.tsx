@@ -141,7 +141,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     <TooltipProvider delayDuration={150}>
       <Card
         className={cn(
-          "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px] cursor-pointer",
+          "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer",
           task.isCompleted ? "bg-muted/70 dark:bg-muted/40" : "bg-card"
         )}
         onClick={cardClickHandler}
@@ -318,3 +318,4 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
+

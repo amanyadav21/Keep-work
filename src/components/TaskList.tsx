@@ -25,7 +25,7 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSu
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-4">
+    <div className="grid gap-4 py-4 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
       {tasks.map((task) => (
         <TaskItem
           key={task.id}
@@ -39,3 +39,4 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSu
     </div>
   );
 }
+
