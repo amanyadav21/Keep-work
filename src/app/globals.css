@@ -92,6 +92,14 @@
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
+  /* Improved link styling */
+  a {
+    @apply text-primary hover:text-primary/80 transition-colors duration-150;
+  }
+  /* Ensure headings have good contrast and appropriate margins */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
 }
 
 /* Custom Solid Scrollbar - using theme variables */
@@ -111,4 +119,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.7); /* Darken on hover */
 }
-

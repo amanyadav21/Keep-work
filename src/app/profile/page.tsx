@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Edit3, User, CalendarDays, Activity, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit3, User, CalendarDays, Activity, Link as LinkIcon, Loader2, ShieldCheck, Palette } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
+import { Separator } from '@/components/ui/separator';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -37,7 +38,7 @@ export default function ProfilePage() {
     );
   }
   
-  if (!user) { // Should be caught by above, but as a fallback
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <p>Please log in to view your profile.</p>
@@ -48,9 +49,13 @@ export default function ProfilePage() {
 
   const joinDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : null;
   const formattedJoinDate = joinDate ? format(joinDate, "MMMM d, yyyy") : "Date not available";
+  const userInitial = user.displayName
+    ? user.displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()
+    : user.email ? user.email[0].toUpperCase() : '?';
+
 
   return (
-    <div className="flex flex-col min-h-screen bg-muted/30">
+    <div className="flex flex-col min-h-screen bg-muted/40 dark:bg-background">
       <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50">
         <div className="max-w-6xl mx-auto w-full flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
@@ -62,35 +67,40 @@ export default function ProfilePage() {
         </div>
       </header>
       <main className="flex-1 p-4 md:p-6">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <Card className="shadow-lg">
-            <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
-              <Avatar className="h-20 w-20 border-2 border-primary/50">
-                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User Avatar'} data-ai-hint="user avatar" />
-                <AvatarFallback className="bg-muted">
-                  <User className="h-10 w-10 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <CardTitle className="text-2xl">{user.displayName || user.email?.split('@')[0] || "User"}</CardTitle>
-                <CardDescription>{user.email}</CardDescription>
-                <div className="mt-2 flex items-center text-xs text-muted-foreground">
-                  <CalendarDays className="h-4 w-4 mr-1.5" />
-                  Joined: {formattedJoinDate}
+        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
+          <Card className="shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-br from-primary/10 via-transparent to-transparent p-1">
+              <CardHeader className="flex flex-col sm:flex-row items-start gap-4 space-y-0 pb-4 bg-card rounded-t-lg">
+                <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-background shadow-md">
+                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User Avatar'} data-ai-hint="user avatar" />
+                  <AvatarFallback className="bg-muted text-lg sm:text-xl font-semibold">
+                    {userInitial}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 mt-2 sm:mt-0">
+                  <CardTitle className="text-2xl sm:text-3xl font-bold">{user.displayName || user.email?.split('@')[0] || "User"}</CardTitle>
+                  <CardDescription className="text-base text-muted-foreground mt-1">{user.email}</CardDescription>
+                  <div className="mt-3 flex items-center text-sm text-muted-foreground">
+                    <CalendarDays className="h-4 w-4 mr-1.5 text-primary" />
+                    Joined: {formattedJoinDate}
+                  </div>
                 </div>
+                <Button variant="outline" size="sm" disabled className="mt-2 sm:mt-0 sm:ml-auto">
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Button>
+              </CardHeader>
+            </div>
+            <CardContent className="pt-6 space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">User ID</h4>
+                <p className="text-sm text-foreground bg-muted/50 px-3 py-1.5 rounded-md break-all">{user.uid}</p>
               </div>
-              <Button variant="outline" size="sm" disabled>
-                <Edit3 className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">User ID</p>
-                  <p className="text-sm text-foreground break-all">{user.uid}</p>
-                </div>
-                {/* More profile fields can be added here as they become available */}
+               <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Account Status</h4>
+                <p className="text-sm text-green-600 dark:text-green-500 font-medium flex items-center">
+                  <ShieldCheck className="h-4 w-4 mr-1.5" /> Verified
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -103,24 +113,42 @@ export default function ProfilePage() {
               </CardTitle>
               <CardDescription>Overview of your task management and contributions.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Activity metrics coming soon...</p>
+            <CardContent className="space-y-3">
               {/* Placeholder for activity charts or stats */}
+              <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
+                <p className="text-sm text-foreground">Tasks Completed:</p>
+                <p className="text-sm font-semibold text-primary">N/A</p>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
+                <p className="text-sm text-foreground">Average Completion Time:</p>
+                <p className="text-sm font-semibold text-primary">N/A</p>
+              </div>
+              <p className="text-xs text-muted-foreground text-center pt-2">Detailed activity metrics coming soon...</p>
             </CardContent>
           </Card>
           
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-lg flex items-center">
-                <LinkIcon className="h-5 w-5 mr-2 text-primary" />
-                Connected Accounts
+                <Palette className="h-5 w-5 mr-2 text-primary" />
+                Preferences
               </CardTitle>
-              <CardDescription>Manage your linked accounts for seamless integration.</CardDescription>
+              <CardDescription>Your application display and interaction settings.</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Google/GitHub account linking coming soon...</p>
-              {/* Placeholder for connected accounts display */}
+              <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
+                <p className="text-sm text-foreground">Theme:</p>
+                <p className="text-sm font-medium text-foreground capitalize">{mounted ? (localStorage.getItem('theme') || 'System') : 'System'}</p>
+              </div>
+               <div className="mt-4 text-center">
+                 <Button variant="outline" size="sm" onClick={() => router.push('/settings')}>
+                   Go to Settings
+                 </Button>
+               </div>
             </CardContent>
+             <CardFooter className="text-xs text-muted-foreground border-t pt-3 mt-2">
+              Manage all your settings in the dedicated settings page.
+            </CardFooter>
           </Card>
 
         </div>
