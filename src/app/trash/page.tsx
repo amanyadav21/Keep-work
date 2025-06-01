@@ -42,8 +42,8 @@ export default function TrashPage() {
     const q = query(tasksCollectionRef, where("isTrashed", "==", true), orderBy("trashedAt", "desc"));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const tasksData = querySnapshot.docs.map(doc => {
-        const data = doc.data();
+      const tasksData = querySnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
         
         let dueDate;
         if (data.dueDate instanceof Timestamp) {
@@ -51,7 +51,7 @@ export default function TrashPage() {
         } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
           dueDate = data.dueDate;
         } else {
-          dueDate = new Date().toISOString(); // Fallback
+          dueDate = new Date().toISOString(); 
         }
 
         let createdAt;
@@ -60,7 +60,7 @@ export default function TrashPage() {
         } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
           createdAt = data.createdAt;
         } else {
-          createdAt = new Date().toISOString(); // Fallback
+          createdAt = new Date().toISOString(); 
         }
         
         let trashedAt;
@@ -69,11 +69,12 @@ export default function TrashPage() {
         } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
           trashedAt = data.trashedAt;
         } else {
-          trashedAt = new Date().toISOString(); // Fallback
+          trashedAt = new Date().toISOString(); 
         }
 
         return {
-          id: doc.id,
+          id: docSnap.id,
+          title: data.title || '', // Add title, default to empty string
           description: data.description,
           dueDate,
           category: data.category,
@@ -211,7 +212,7 @@ export default function TrashPage() {
             <div className="grid gap-4">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="bg-card p-4 rounded-lg shadow animate-pulse">
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                  <div className="h-5 bg-muted rounded w-3/4 mb-2"></div> {/* Title placeholder */}
                   <div className="h-3 bg-muted rounded w-1/2 mb-3"></div>
                   <div className="flex justify-end space-x-2">
                     <div className="h-8 w-20 bg-muted rounded"></div>
@@ -231,8 +232,11 @@ export default function TrashPage() {
               {trashedTasks.map((task) => (
                 <div key={task.id} className="bg-card p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
-                    <p className="font-medium text-foreground line-through">{task.description}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground line-through">{task.title || task.description}</p>
+                     {task.title && task.description && (
+                        <p className="text-xs text-muted-foreground line-through">{task.description.substring(0,70)}...</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
                       Trashed {task.trashedAt ? formatDistanceToNow(new Date(task.trashedAt), { addSuffix: true }) : 'some time ago'}
                     </p>
                   </div>
@@ -252,7 +256,7 @@ export default function TrashPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Task Permanently?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to permanently delete "{task.description.substring(0,50)}..."? This action cannot be undone.
+                            Are you sure you want to permanently delete "{(task.title || task.description).substring(0,50)}..."? This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -271,3 +275,4 @@ export default function TrashPage() {
     </div>
   );
 }
+

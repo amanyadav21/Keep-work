@@ -42,12 +42,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 const taskCategories: [TaskCategory, ...TaskCategory[]] = ["Assignment", "Class", "Personal"];
 
 const subtaskSchema = z.object({
-  id: z.string().optional(), // Optional for new subtasks, present for existing
+  id: z.string().optional(),
   text: z.string().min(1, "Subtask description cannot be empty.").max(200, "Subtask too long"),
   isCompleted: z.boolean().default(false),
 });
 
 const taskFormSchema = z.object({
+  title: z.string().min(1, "Title is required.").max(150, "Title must be at most 150 characters"),
   description: z.string().min(3, "Description must be at least 3 characters").max(500, "Description must be at most 500 characters"),
   dueDate: z.date({ required_error: "Due date is required." }),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
@@ -68,14 +69,16 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     resolver: zodResolver(taskFormSchema),
     defaultValues: editingTask
       ? {
+          title: editingTask.title || "",
           description: editingTask.description,
           dueDate: editingTask.dueDate ? parseISO(editingTask.dueDate) : new Date(new Date().setHours(23, 59, 59, 999)),
           category: editingTask.category,
           subtasks: editingTask.subtasks?.map(st => ({...st})) || [],
         }
       : {
+          title: "",
           description: "",
-          dueDate: new Date(new Date().setHours(23, 59, 59, 999)), // Default to end of current day
+          dueDate: new Date(new Date().setHours(23, 59, 59, 999)), 
           category: undefined,
           subtasks: [],
         },
@@ -101,14 +104,30 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     onSubmit(data, editingTask?.id);
     toast({
       title: editingTask ? "Task Updated" : "Task Added",
-      description: `"${data.description.substring(0, 30)}${data.description.length > 30 ? "..." : ""}" ${editingTask ? 'updated' : 'added'}.`,
+      description: `"${data.title.substring(0, 30)}${data.title.length > 30 ? "..." : ""}" ${editingTask ? 'updated' : 'added'}.`,
     });
     onClose();
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 p-1">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Task Title</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="E.g., History Midterm Essay"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="description"
@@ -117,7 +136,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
               <FormLabel>Task Description</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="E.g., Finish reading Chapter 3 for History class..."
+                  placeholder="E.g., Research and write a 5-page essay on the Roman Empire..."
                   {...field}
                   className="min-h-[100px] resize-none"
                 />
@@ -194,9 +213,11 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           />
         </div>
 
-        {/* Subtasks Section */}
         <div className="space-y-3">
-          <FormLabel className="flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" /> Subtasks / Checklist</FormLabel>
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+             <ListChecks className="h-5 w-5 text-primary" />
+             Subtasks / Checklist
+          </div>
           <div className="flex gap-2">
             <Input
               ref={newSubtaskInputRef}
@@ -269,3 +290,4 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     </Form>
   );
 }
+

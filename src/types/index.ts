@@ -11,6 +11,7 @@ export interface Subtask {
 
 export interface Task {
   id: string;
+  title: string; // Added new title field
   description: string;
   dueDate: string; // ISO string date
   category: TaskCategory;
@@ -29,7 +30,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
-  // identifiedTaskType is removed as it was specific to the previous AI's output schema
 }
 
 export type FirebaseUser = FirebaseUserType;
+

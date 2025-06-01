@@ -6,7 +6,7 @@ import type { Task, TaskCategory } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'; // Added CardDescription
 import { Progress } from '@/components/ui/progress';
 import { format, parseISO, isValid, isPast, formatDistanceToNowStrict } from 'date-fns';
 import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, Brain, ListChecks, BookOpen } from 'lucide-react';
@@ -90,35 +90,64 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 
   const CategoryIcon = categoryIcons[task.category] || User;
 
+  const cardClickHandler = (e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
+    // Check if the click target or its parent is one of the interactive elements
+    let target = e.target as HTMLElement;
+    while (target && target !== e.currentTarget) {
+      if (target.matches('input[type="checkbox"], button, a, [data-nocardclick="true"]')) {
+        return; // Do not trigger edit if an interactive element was clicked
+      }
+      target = target.parentElement as HTMLElement;
+    }
+    onEdit(task);
+  };
+  
+  const aiContextDescription = `${task.title}${task.description ? ': ' + task.description : ''}`;
+
+
   return (
     <TooltipProvider delayDuration={150}>
       <Card
         className={cn(
-          "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px]",
-          task.isCompleted ? "bg-muted/70 dark:bg-muted/40" : "bg-card" // Adjusted completed task background
+          "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow duration-200 min-h-[180px] cursor-pointer",
+          task.isCompleted ? "bg-muted/70 dark:bg-muted/40" : "bg-card"
         )}
+        onClick={cardClickHandler}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') cardClickHandler(e);}}
+        role="button"
+        tabIndex={0}
+        aria-label={`Edit task: ${task.title || task.description}`}
       >
-        <CardContent className="p-4 relative flex-grow flex flex-col">
-          <Checkbox
+        <CardHeader className="p-4 pb-2 relative">
+           <Checkbox
             id={`task-complete-${task.id}`}
             checked={task.isCompleted}
             onCheckedChange={() => onToggleComplete(task.id)}
-            aria-labelledby={`task-desc-${task.id}`}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();}}
+            aria-labelledby={`task-title-${task.id}`}
+            data-nocardclick="true"
             className="absolute top-3 right-3 h-5 w-5 shrink-0 z-10"
           />
           <CardTitle
-            id={`task-desc-${task.id}`}
+            id={`task-title-${task.id}`}
             className={cn(
-              "text-lg font-semibold text-foreground break-words pr-10 line-clamp-3 mb-1.5", 
-              task.isCompleted ? "line-through text-muted-foreground" : ""
+              "text-lg font-semibold text-foreground break-words pr-8 line-clamp-2", 
+              task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
             )}
           >
-            {task.description}
+            {task.title || task.description /* Show description if title is missing */}
           </CardTitle>
-
+          {task.title && task.description && ( /* Only show description if title is also present */
+            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.isCompleted && "line-through")}>
+              {task.description}
+            </CardDescription>
+          )}
+        </CardHeader>
+        <CardContent className="p-4 pt-0 flex-grow flex flex-col min-h-0">
           <div className="flex-1 min-h-0 flex flex-col">
             {task.subtasks && task.subtasks.length > 0 ? (
-              <div className="mt-3 space-y-2 flex-1 flex flex-col min-h-0">
+              <div className="mt-1 space-y-2 flex-1 flex flex-col min-h-0">
                 <Separator className="mb-2" />
                 {totalSubtasks > 0 && (
                    <div className="mb-1.5">
@@ -137,6 +166,9 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                         id={`subtask-${task.id}-${subtask.id}`}
                         checked={subtask.isCompleted}
                         onCheckedChange={() => onToggleSubtask(task.id, subtask.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();}}
+                        data-nocardclick="true"
                         className="h-4 w-4 shrink-0"
                         aria-labelledby={`subtask-text-${task.id}-${subtask.id}`}
                       />
@@ -183,7 +215,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               <p className={cn(
                 "font-medium text-xs flex items-center",
                 isOverdue ? "text-destructive" : 
-                task.isCompleted ? "text-[hsl(var(--status-green))]" : // Using hsl for status-green
+                task.isCompleted ? "text-[hsl(var(--status-green))]" :
                 "text-primary"
               )}>
                 {isOverdue && <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />}
@@ -191,14 +223,19 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </p>
             )}
           </div>
-           <div className={cn(
+           <div 
+            className={cn(
               "flex items-center space-x-1",
               task.isCompleted ? "opacity-60" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
-            )}>
+            )}
+            onClick={(e) => e.stopPropagation()} /* Stop propagation for the whole div */
+            onKeyDown={(e) => e.stopPropagation()} /* Stop propagation for the whole div */
+            data-nocardclick="true"
+          >
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button asChild variant="ghost" size="icon" aria-label="Get AI Assistance" className="h-7 w-7 text-primary hover:text-primary/80 hover:bg-primary/10">
-                    <Link href={`/ai-assistant?taskDescription=${encodeURIComponent(task.description)}`}>
+                    <Link href={`/ai-assistant?taskDescription=${encodeURIComponent(aiContextDescription)}`} onClick={(e) => e.stopPropagation()} data-nocardclick="true">
                       <Brain className="h-4 w-4" />
                     </Link>
                   </Button>
@@ -209,7 +246,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(task)} aria-label="Edit task" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted">
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(task); }} data-nocardclick="true" aria-label="Edit task" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -219,7 +256,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                   <Button variant="ghost" size="icon" onClick={() => onDelete(task.id)} aria-label="Delete task" className="text-destructive/80 hover:text-destructive hover:bg-destructive/10 h-7 w-7">
+                   <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} data-nocardclick="true" aria-label="Delete task" className="text-destructive/80 hover:text-destructive hover:bg-destructive/10 h-7 w-7">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -235,3 +272,4 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
+

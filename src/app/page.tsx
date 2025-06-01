@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { LandingPage } from '@/components/LandingPage'; // Import the LandingPage component
+import { LandingPage } from '@/components/LandingPage';
 
 
 interface HomePageProps {
@@ -81,12 +81,16 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
           return {
             id: docSnap.id,
-            ...data,
+            title: data.title || '', // Add title, default to empty string if not present
+            description: data.description,
             dueDate,
+            category: data.category,
+            isCompleted: data.isCompleted,
             createdAt,
             isTrashed: data.isTrashed || false,
             trashedAt,
             subtasks: data.subtasks || [],
+            // userId: data.userId, // userId is already part of the collection path
           } as Task;
         });
         setTasks(tasksData);
@@ -110,7 +114,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
       return () => unsubscribe();
     } else if (!user && isMounted && !authLoading) {
-      setTasks([]); // Clear tasks if user logs out or is not authenticated
+      setTasks([]); 
       setIsLoadingTasks(false);
     }
   }, [user, toast, isMounted, authLoading]);
@@ -124,6 +128,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     try {
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
       const newTaskData = {
+        title: data.title, // Add title
         description: data.description,
         dueDate: formatISO(data.dueDate),
         category: data.category,
@@ -134,12 +139,11 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           text: st.text,
           isCompleted: st.isCompleted || false,
         })) || [],
-        userId: user.uid,
+        userId: user.uid, // Keep for potential cross-user scenarios if rules allow, though usually implicit
         isTrashed: false,
         trashedAt: null,
       };
       await addDoc(tasksCollectionRef, newTaskData);
-      // Toast moved to TaskForm
     } catch (error: any) {
       console.error("Error adding task:", error);
       toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
@@ -153,7 +157,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     }
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
-      const updatedTaskData: Partial<Task> = {
+      const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = { // Omit fields not typically updated
+        title: data.title, // Add title
         description: data.description,
         dueDate: formatISO(data.dueDate),
         category: data.category,
@@ -164,7 +169,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         })) || [],
       };
       await updateDoc(taskDocRef, updatedTaskData);
-      // Toast moved to TaskForm
       setEditingTask(null);
     } catch (error: any) {
       console.error("Error updating task:", error);
@@ -221,7 +225,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         isTrashed: true,
         trashedAt: serverTimestamp()
       });
-      toast({ title: "Task Moved to Trash", description: `"${task.description.substring(0,25)}..." moved to trash.` });
+      toast({ title: "Task Moved to Trash", description: `"${(task.title || task.description).substring(0,25)}..." moved to trash.` });
       setTaskToDelete(null);
     } catch (error: any) {
       console.error("Error moving task to trash:", error);
@@ -238,8 +242,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
   const handleOpenAddForm = useCallback(() => {
     if (!user) {
-      // This case should ideally not be reached if the button isn't shown to unauth users,
-      // but as a safeguard:
       toast({ title: "Please Log In", description: "You need to be logged in to add tasks.", variant: "default" });
       return;
     }
@@ -286,15 +288,14 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     );
   }
 
-  if (!user) { // Render LandingPage if user is not authenticated
-    return <LandingPage />; // LandingPage now includes its own header
+  if (!user) {
+    return <LandingPage />;
   }
 
-  // Authenticated user view
   return (
     <>
       <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />
-      <Header onAddTask={handleOpenAddForm} /> {/* Header for authenticated users */}
+      <Header onAddTask={handleOpenAddForm} /> 
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
         <div className="w-full max-w-6xl mx-auto">
@@ -312,8 +313,9 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                    <div className="h-5 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-1/2"></div>
+                    <div className="h-6 bg-muted rounded w-3/4"></div> {/* Title placeholder */}
+                    <div className="h-4 bg-muted rounded w-full mt-1"></div> {/* Description line 1 */}
+                    <div className="h-4 bg-muted rounded w-1/2"></div> {/* Description line 2 */}
                     <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
                 </div>
               ))}
@@ -330,7 +332,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         </div>
       </main>
 
-      {/* Dialogs and Tooltips for authenticated users */}
       <Dialog open={isFormOpen} onOpenChange={(open) => {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
@@ -358,7 +359,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
             <AlertDialogDesc>
-              This will move the task "{tasks.find(t => t.id === taskToDelete)?.description.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
+              This will move the task "{(tasks.find(t => t.id === taskToDelete)?.title || tasks.find(t => t.id === taskToDelete)?.description)?.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
             </AlertDialogDesc>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -369,9 +370,9 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* AI Assistant FAB removed from here */}
     </>
   );
 }
 
     
+
