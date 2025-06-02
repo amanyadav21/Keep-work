@@ -125,10 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
+      // Log the current origin to help debug "unauthorized-domain" errors
       if (typeof window !== "undefined") {
         console.log("Attempting Google Sign-In from origin:", window.location.origin);
       }
-
       const result = await signInWithPopup(auth, provider);
       const googleUser = result.user;
 
@@ -160,13 +160,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/');
         return { user: googleUser, error: null };
       }
-      return { user: null, error: "Google Sign-In did not return a user."}; // Should not happen if signInWithPopup succeeds
+      // This line should ideally not be reached if signInWithPopup succeeds and returns a user.
+      // If it does, it indicates an unexpected state.
+      toast({ title: "Google Sign-In Issue", description: "Google Sign-In did not complete as expected.", variant: "destructive" });
+      return { user: null, error: "Google Sign-In did not return a user."};
     } catch (error) {
       const authError = error as AuthError;
       console.error("Google Sign-In error:", authError);
       let description = "An unexpected error occurred during Google Sign-In.";
+      let toastVariant: "default" | "destructive" | null | undefined = "destructive";
+
       if (authError.code === 'auth/popup-closed-by-user') {
-        description = "Google Sign-In popup was closed. Please try again.";
+        description = "Google Sign-In popup was closed. Please try again if you wish to sign in with Google.";
+        toastVariant = "default"; // Changed to default for user-initiated cancellation
       } else if (authError.code === 'auth/account-exists-with-different-credential') {
         description = "An account already exists with this email. Please sign in using the original method.";
       } else if (authError.code === 'auth/unauthorized-domain') {
@@ -176,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (authError.message) {
         description = authError.message;
       }
-      toast({ title: "Google Sign-In Failed", description, variant: "destructive" });
+      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant });
       return { user: null, error: description };
     } finally {
       setLoading(false);
