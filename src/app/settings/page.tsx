@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Bell, Globe, Trash2, UserCog, Moon, Sun, Eye, EyeOff, Palette, KeyRound, Brush, Loader2 } from 'lucide-react';
+import { ArrowLeft, Bell, Globe, Trash2, UserCog, Moon, Sun, Eye, EyeOff, Palette, KeyRound, Brush, Loader2, Edit3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
