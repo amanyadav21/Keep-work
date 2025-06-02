@@ -40,14 +40,22 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
-    const user = await logIn(email, password);
-    // Error handling is now more robust within logIn method
+    setError(''); // Clear previous errors
+    const result = await logIn(email, password);
+    if (result.error) {
+      setError(result.error); // Set local error state for inline display
+    }
+    // Successful login is handled by AuthContext (redirect, toast)
   };
 
   const handleGoogleSignIn = async () => {
     if (!loading) {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      if (result.error) {
+        // Google sign-in errors are primarily handled by toast in AuthContext
+        // but you could set local error state if needed:
+        // setError(result.error);
+      }
     }
   };
 
@@ -84,7 +92,7 @@ export default function LoginPage() {
                 className="text-base"
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-destructive text-center px-2 py-1 bg-destructive/10 rounded-md">{error}</p>}
             <Button type="submit" className="w-full text-base py-3" disabled={loading}>
               {loading && !password ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {loading && password ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Log In'}
@@ -108,7 +116,7 @@ export default function LoginPage() {
             onClick={handleGoogleSignIn}
             disabled={loading}
           >
-            {loading ? (
+            {loading && !email && !password ? ( // Show loader only if not already loading for email/pass
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <GoogleIcon className="h-5 w-5" />

@@ -18,13 +18,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
+// Define a common result type for auth operations
+export type AuthResult = { user: FirebaseUserType | null; error: string | null };
+
 interface AuthContextType {
   user: FirebaseUserType | null;
   loading: boolean;
-  signUp: (email: string, pass: string) => Promise<FirebaseUserType | null>;
-  logIn: (email: string, pass: string) => Promise<FirebaseUserType | null>;
+  signUp: (email: string, pass: string) => Promise<AuthResult>;
+  logIn: (email: string, pass: string) => Promise<AuthResult>;
   logOut: () => Promise<void>;
-  signInWithGoogle: () => Promise<FirebaseUserType | null>;
+  signInWithGoogle: () => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,17 +46,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signUp = async (email: string, pass: string): Promise<FirebaseUserType | null> => {
+  const signUp = async (email: string, pass: string): Promise<AuthResult> => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       
-      // Save user info to Firestore
       if (userCredential.user) {
         const userDocRef = doc(db, "users", userCredential.user.uid);
         await setDoc(userDocRef, {
           uid: userCredential.user.uid,
-          displayName: userCredential.user.displayName || email.split('@')[0], // Use email prefix if displayName is null
+          displayName: userCredential.user.displayName || email.split('@')[0],
           email: userCredential.user.email,
           photoURL: userCredential.user.photoURL,
           createdAt: serverTimestamp(),
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(userCredential.user);
       toast({ title: "Signup Successful", description: "Welcome!" });
       router.push('/'); 
-      return userCredential.user;
+      return { user: userCredential.user, error: null };
     } catch (error) {
       const authError = error as AuthError;
       console.error("Signup error:", authError);
@@ -78,18 +80,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description = authError.message;
       }
       toast({ title: "Signup Failed", description, variant: "destructive" });
-      return null;
+      return { user: null, error: description };
     } finally {
       setLoading(false);
     }
   };
 
-  const logIn = async (email: string, pass: string): Promise<FirebaseUserType | null> => {
+  const logIn = async (email: string, pass: string): Promise<AuthResult> => {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       
-      // Update lastLogin in Firestore
       if (userCredential.user) {
         const userDocRef = doc(db, "users", userCredential.user.uid);
         await updateDoc(userDocRef, {
@@ -101,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(userCredential.user);
       toast({ title: "Login Successful", description: "Welcome back!" });
       router.push('/'); 
-      return userCredential.user;
+      return { user: userCredential.user, error: null };
     } catch (error) {
       const authError = error as AuthError;
       console.error("Login error:", authError);
@@ -114,17 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description = authError.message; 
       }
       toast({ title: "Login Failed", description, variant: "destructive" });
-      return null;
+      return { user: null, error: description };
     } finally {
       setLoading(false);
     }
   };
 
-  const signInWithGoogle = async (): Promise<FirebaseUserType | null> => {
+  const signInWithGoogle = async (): Promise<AuthResult> => {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      // Log the current origin to help debug "unauthorized-domain" errors
       if (typeof window !== "undefined") {
         console.log("Attempting Google Sign-In from origin:", window.location.origin);
       }
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           await updateDoc(userDocRef, {
             lastLogin: serverTimestamp(),
-            displayName: googleUser.displayName, // Keep displayName and photoURL updated
+            displayName: googleUser.displayName, 
             photoURL: googleUser.photoURL,
           });
           console.log("Existing user signed in with Google:", googleUser.displayName);
@@ -158,9 +158,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setUser(googleUser);
         router.push('/');
-        return googleUser;
+        return { user: googleUser, error: null };
       }
-      return null;
+      return { user: null, error: "Google Sign-In did not return a user."}; // Should not happen if signInWithPopup succeeds
     } catch (error) {
       const authError = error as AuthError;
       console.error("Google Sign-In error:", authError);
@@ -170,13 +170,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (authError.code === 'auth/account-exists-with-different-credential') {
         description = "An account already exists with this email. Please sign in using the original method.";
       } else if (authError.code === 'auth/unauthorized-domain') {
-        // This specific error message can be helpful for the user
         description = `The domain ${typeof window !== "undefined" ? window.location.hostname : 'your app domain'} is not authorized for Google Sign-In. Please add it to your Firebase project's authentication settings.`;
+      } else if (authError.code === 'auth/operation-not-allowed') {
+        description = "Google Sign-In is not enabled for this project. Please enable it in the Firebase console (Authentication -> Sign-in method).";
       } else if (authError.message) {
         description = authError.message;
       }
       toast({ title: "Google Sign-In Failed", description, variant: "destructive" });
-      return null;
+      return { user: null, error: description };
     } finally {
       setLoading(false);
     }

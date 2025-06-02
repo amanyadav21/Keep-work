@@ -50,12 +50,18 @@ export default function SignupPage() {
       setError("Password should be at least 6 characters.");
       return;
     }
-    await signUp(email, password);
+    const result = await signUp(email, password);
+    if (result.error) {
+      setError(result.error);
+    }
   };
 
   const handleGoogleSignIn = async () => {
     if (!loading) {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      if (result.error) {
+        // setError(result.error); // Optional: show Google sign-in errors inline too
+      }
     }
   };
 
@@ -87,7 +93,7 @@ export default function SignupPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="•••••••• (min. 6 characters)"
                 required
                 className="text-base"
               />
@@ -104,7 +110,7 @@ export default function SignupPage() {
                 className="text-base"
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-destructive text-center px-2 py-1 bg-destructive/10 rounded-md">{error}</p>}
             <Button type="submit" className="w-full text-base py-3" disabled={loading}>
              {loading && password ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Sign Up'}
             </Button>
@@ -127,7 +133,7 @@ export default function SignupPage() {
             onClick={handleGoogleSignIn}
             disabled={loading}
           >
-            {loading ? (
+            {loading && !email && !password ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <GoogleIcon className="h-5 w-5" />
