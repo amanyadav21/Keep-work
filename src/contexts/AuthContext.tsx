@@ -16,7 +16,7 @@ import {
 import { auth, db } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 
 // Define a common result type for auth operations
 export type AuthResult = { user: FirebaseUserType | null; error: string | null };
@@ -32,6 +32,44 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper function to manage Firestore user data for Google Sign-In
+async function manageGoogleUserData(googleUser: FirebaseUserType, currentToast: ReturnType<typeof useToast>['toast']): Promise<void> {
+  const userDocRef = doc(db, "users", googleUser.uid);
+  try {
+    const docSnap = await getDoc(userDocRef);
+
+    if (!docSnap.exists()) {
+      await setDoc(userDocRef, {
+        uid: googleUser.uid,
+        displayName: googleUser.displayName,
+        email: googleUser.email,
+        photoURL: googleUser.photoURL,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+      });
+      console.log("New Google user data saved to Firestore:", googleUser.displayName);
+      currentToast({ title: "Account Created", description: `Welcome, ${googleUser.displayName}! Your account has been set up.` });
+    } else {
+      await updateDoc(userDocRef, {
+        lastLogin: serverTimestamp(),
+        displayName: googleUser.displayName, // Keep displayName and photoURL synced
+        photoURL: googleUser.photoURL,
+      });
+      console.log("Existing Google user data updated:", googleUser.displayName);
+      currentToast({ title: "Welcome Back", description: `Signed in as ${googleUser.displayName}!` });
+    }
+  } catch (firestoreError) {
+    console.error("Error managing Google user data in Firestore:", firestoreError);
+    currentToast({
+      title: "Data Sync Error",
+      description: "Could not save or update your user information. Please try again.",
+      variant: "destructive",
+    });
+    // Optionally re-throw or handle more specifically if needed
+  }
+}
+
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FirebaseUserType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,32 +80,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+      if (currentUser) {
+        // Optional: Could consider a light "Session restored" toast or just silent update
+        // router.push('/'); // Re-evaluate if this auto-redirect here is always desired
+      } else {
+        // User is signed out
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [router]); // Added router to dependency array if it's used inside useEffect
 
   const signUp = async (email: string, pass: string): Promise<AuthResult> => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const firebaseUser = userCredential.user;
       
-      if (userCredential.user) {
-        const userDocRef = doc(db, "users", userCredential.user.uid);
+      if (firebaseUser) {
+        const userDocRef = doc(db, "users", firebaseUser.uid);
         await setDoc(userDocRef, {
-          uid: userCredential.user.uid,
-          displayName: userCredential.user.displayName || email.split('@')[0],
-          email: userCredential.user.email,
-          photoURL: userCredential.user.photoURL,
+          uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || email.split('@')[0],
+          email: firebaseUser.email,
+          photoURL: firebaseUser.photoURL,
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
         });
-        console.log("New user signed up and data saved to Firestore:", userCredential.user.displayName || email.split('@')[0]);
+        console.log("New user signed up and data saved to Firestore:", firebaseUser.displayName || email.split('@')[0]);
       }
-      
-      setUser(userCredential.user);
+      // setUser(firebaseUser); // Let onAuthStateChanged handle this
       toast({ title: "Signup Successful", description: "Welcome!" });
       router.push('/'); 
-      return { user: userCredential.user, error: null };
+      return { user: firebaseUser, error: null };
     } catch (error) {
       const authError = error as AuthError;
       console.error("Signup error:", authError);
@@ -79,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (authError.message) {
         description = authError.message;
       }
-      toast({ title: "Signup Failed", description, variant: "destructive" });
+      // toast({ title: "Signup Failed", description, variant: "destructive" }); // Error is returned to be displayed on form
       return { user: null, error: description };
     } finally {
       setLoading(false);
@@ -90,19 +134,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const firebaseUser = userCredential.user;
       
-      if (userCredential.user) {
-        const userDocRef = doc(db, "users", userCredential.user.uid);
+      if (firebaseUser) {
+        const userDocRef = doc(db, "users", firebaseUser.uid);
         await updateDoc(userDocRef, {
           lastLogin: serverTimestamp(),
         });
-        console.log("User logged in, lastLogin updated:", userCredential.user.displayName);
+        console.log("User logged in, lastLogin updated:", firebaseUser.displayName);
       }
 
-      setUser(userCredential.user);
+      // setUser(firebaseUser); // Let onAuthStateChanged handle this
       toast({ title: "Login Successful", description: "Welcome back!" });
       router.push('/'); 
-      return { user: userCredential.user, error: null };
+      return { user: firebaseUser, error: null };
     } catch (error) {
       const authError = error as AuthError;
       console.error("Login error:", authError);
@@ -114,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (authError.message) {
         description = authError.message; 
       }
-      toast({ title: "Login Failed", description, variant: "destructive" });
+      // toast({ title: "Login Failed", description, variant: "destructive" }); // Error is returned to be displayed on form
       return { user: null, error: description };
     } finally {
       setLoading(false);
@@ -123,9 +168,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async (): Promise<AuthResult> => {
     setLoading(true);
-    const provider = new GoogleAuthProvider();
     try {
-      // Log the current origin to help debug "unauthorized-domain" errors
+      // Check if user is ALREADY signed in (e.g., via another tab or recent same-tab action)
+      if (auth.currentUser) {
+        console.log("User already signed in (auth.currentUser exists), attempting to sync data:", auth.currentUser.email);
+        await manageGoogleUserData(auth.currentUser, toast);
+        // setUser(auth.currentUser); // Let onAuthStateChanged handle global state update
+        // router.push('/'); // Let onAuthStateChanged handle navigation
+        return { user: auth.currentUser, error: null };
+      }
+
+      const provider = new GoogleAuthProvider();
       if (typeof window !== "undefined") {
         console.log("Attempting Google Sign-In from origin:", window.location.origin);
       }
@@ -133,37 +186,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const googleUser = result.user;
 
       if (googleUser) {
-        const userDocRef = doc(db, "users", googleUser.uid);
-        const docSnap = await getDoc(userDocRef);
-
-        if (!docSnap.exists()) {
-          await setDoc(userDocRef, {
-            uid: googleUser.uid,
-            displayName: googleUser.displayName,
-            email: googleUser.email,
-            photoURL: googleUser.photoURL,
-            createdAt: serverTimestamp(),
-            lastLogin: serverTimestamp(),
-          });
-          console.log("New user signed in with Google and data saved to Firestore:", googleUser.displayName);
-          toast({ title: "Sign-in Successful", description: `Welcome, ${googleUser.displayName}!` });
-        } else {
-          await updateDoc(userDocRef, {
-            lastLogin: serverTimestamp(),
-            displayName: googleUser.displayName, 
-            photoURL: googleUser.photoURL,
-          });
-          console.log("Existing user signed in with Google:", googleUser.displayName);
-          toast({ title: "Welcome Back", description: `Signed in as ${googleUser.displayName}!` });
-        }
-        setUser(googleUser);
-        router.push('/');
+        await manageGoogleUserData(googleUser, toast);
+        // setUser(googleUser); // Let onAuthStateChanged handle global state update
+        // router.push('/'); // Let onAuthStateChanged handle navigation
         return { user: googleUser, error: null };
       }
-      // This line should ideally not be reached if signInWithPopup succeeds and returns a user.
-      // If it does, it indicates an unexpected state.
+      
+      // This case should ideally not be reached if signInWithPopup is successful
       toast({ title: "Google Sign-In Issue", description: "Google Sign-In did not complete as expected.", variant: "destructive" });
       return { user: null, error: "Google Sign-In did not return a user."};
+
     } catch (error) {
       const authError = error as AuthError;
       console.error("Google Sign-In error:", authError);
@@ -172,13 +204,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (authError.code === 'auth/popup-closed-by-user') {
         description = "Google Sign-In popup was closed. Please try again if you wish to sign in with Google.";
-        toastVariant = "default"; // Changed to default for user-initiated cancellation
+        toastVariant = "default";
       } else if (authError.code === 'auth/account-exists-with-different-credential') {
         description = "An account already exists with this email. Please sign in using the original method.";
       } else if (authError.code === 'auth/unauthorized-domain') {
         description = `The domain ${typeof window !== "undefined" ? window.location.hostname : 'your app domain'} is not authorized for Google Sign-In. Please add it to your Firebase project's authentication settings.`;
       } else if (authError.code === 'auth/operation-not-allowed') {
-        description = "Google Sign-In is not enabled for this project. Please enable it in the Firebase console (Authentication -> Sign-in method).";
+        description = "Google Sign-In is not enabled for this project. Please enable it in the Firebase console (Authentication -> Sign-in method). Also, ensure your Project support email is set.";
       } else if (authError.message) {
         description = authError.message;
       }
@@ -193,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await signOut(auth);
-      setUser(null);
+      // setUser(null); // Let onAuthStateChanged handle this
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
       router.push('/login'); 
     } catch (error) {
