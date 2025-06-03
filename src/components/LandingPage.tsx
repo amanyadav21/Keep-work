@@ -25,7 +25,7 @@ const BentoGridItem = ({
   iconClassName?: string;
 }) => (
   <div className={cn(
-    "rounded-xl shadow-lg p-6 md:p-8 flex flex-col transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl border border-transparent hover:border-primary/20", 
+    "rounded-xl shadow-lg p-6 md:p-8 flex flex-col transition-all duration-300 hover:scale-[1.03] hover:shadow-xl border border-border/30 hover:border-primary/70", 
     className
     )}>
     <div className={cn("mb-4 p-3 rounded-lg w-fit transition-colors duration-300", iconContainerClassName)}>
@@ -100,14 +100,23 @@ export function LandingPage() {
       <div className="flex flex-col min-h-screen bg-background text-foreground"> 
         
         <section className="relative py-20 md:py-32 lg:py-40 px-4 text-center overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-primary/5 via-transparent to-transparent -z-10 opacity-50"></div>
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-primary/10 via-transparent to-transparent opacity-50"></div>
+            {/* You can add more complex background elements here if needed, e.g., SVG patterns, subtle animations */}
+          </div>
           
           <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Link href="#features" className="inline-flex items-center justify-center gap-2 mb-6 px-4 py-1.5 bg-card text-sm font-medium text-primary rounded-full border border-primary/20 shadow-md group hover:shadow-lg transition-shadow">
-              <Sparkles className="h-4 w-4 text-primary/80 group-hover:text-primary transition-colors" />
-              Plan. Track. Achieve. Effortlessly.
-              <ArrowRight className="h-4 w-4 text-primary/80 group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
-            </Link>
+            <Badge 
+              variant="outline" 
+              className="mb-6 px-4 py-2 text-sm font-medium text-primary border-primary/30 shadow-md group hover:shadow-lg transition-shadow hover:bg-primary/5 cursor-default"
+              asChild={false} // Ensure it's not a link if not intended
+            >
+              <Link href="#features" className="inline-flex items-center justify-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary/80 group-hover:text-primary transition-colors" />
+                Plan. Track. Achieve. Effortlessly.
+                <ArrowRight className="h-4 w-4 text-primary/80 group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </Badge>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6 !leading-tight text-foreground">
               Elevate Your Productivity with <span className="text-primary">Upnext</span>
             </h1>
@@ -155,41 +164,41 @@ export function LandingPage() {
                 icon={CalendarClock}
                 title="Deadline Tracking"
                 description="Never miss a due date. Get notified about upcoming deadlines. Sync with your calendar for a seamless overview."
-                className="md:col-span-2 lg:col-span-2 bg-accent/10 text-accent-foreground dark:text-accent"
-                iconContainerClassName="bg-accent/20 dark:bg-accent/10"
-                iconClassName="text-accent"
+                className="md:col-span-2 lg:col-span-2 bg-accent text-accent-foreground"
+                iconContainerClassName="bg-accent-foreground/20 dark:bg-accent-foreground/10"
+                iconClassName="text-accent-foreground"
               />
               <BentoGridItem
                 icon={Zap}
                 title="Focus Mode"
                 description="Minimize distractions. Our focus mode helps you stay in the zone and get more done in less time."
-                className="md:col-span-2 lg:col-span-2 bg-secondary text-secondary-foreground"
-                iconContainerClassName="bg-primary/10 dark:bg-primary/5"
-                iconClassName="text-primary"
+                className="md:col-span-2 lg:col-span-2 bg-gradient-to-br from-teal-500 to-cyan-600 text-white"
+                iconContainerClassName="bg-white/20"
+                iconClassName="text-white/90"
               />
                <BentoGridItem
                 icon={RefreshCw}
                 title="Cross-Platform Sync"
                 description="Access your tasks and schedule from anywhere, on any device. Your data is always up-to-date."
                 className="md:col-span-3 lg:col-span-2 bg-card text-card-foreground"
-                iconContainerClassName="bg-primary/10 dark:bg-primary/5"
-                iconClassName="text-primary"
+                iconContainerClassName="bg-green-500/10 dark:bg-green-400/10"
+                iconClassName="text-green-600 dark:text-green-400"
               />
               <BentoGridItem
                 icon={Users}
                 title="Collaboration Tools"
                 description="Work together on group projects. Share tasks, assign responsibilities, and track progress in real-time. (Coming Soon)"
                 className="md:col-span-2 lg:col-span-2 bg-muted text-muted-foreground"
-                iconContainerClassName="bg-primary/10 dark:bg-primary/5"
-                iconClassName="text-primary"
+                iconContainerClassName="bg-foreground/5 dark:bg-foreground/10"
+                iconClassName="text-foreground/70"
               />
                <BentoGridItem
                 icon={BarChart3}
                 title="Progress Analytics"
                 description="Visualize your productivity, identify patterns, and track improvements with insightful charts and reports. (Coming Soon)"
-                className="md:col-span-3 lg:col-span-3 bg-card text-card-foreground"
-                iconContainerClassName="bg-accent/20 dark:bg-accent/10"
-                iconClassName="text-accent"
+                className="md:col-span-3 lg:col-span-3 bg-muted text-muted-foreground"
+                iconContainerClassName="bg-foreground/5 dark:bg-foreground/10"
+                iconClassName="text-foreground/70"
               />
             </div>
           </div>
