@@ -8,6 +8,7 @@ import { ArrowRight, Sparkles, CheckSquare, CalendarClock, Zap, Users, BarChart3
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { LandingHeader } from '@/components/LandingHeader';
+import { Card } from '@/components/ui/card'; // Added Card import
 
 const BentoGridItem = ({
   icon: Icon,
@@ -25,14 +26,14 @@ const BentoGridItem = ({
   iconClassName?: string;
 }) => (
   <div className={cn(
-    "rounded-xl shadow-lg p-6 md:p-8 flex flex-col transition-all duration-300 hover:scale-[1.03] hover:shadow-xl border border-border/30 hover:border-primary/70 group/bentoitem", // Added group/bentoitem
+    "rounded-xl shadow-lg p-6 md:p-8 flex flex-col transition-all duration-300 hover:scale-[1.03] hover:shadow-xl border border-border/30 hover:border-primary/70 group/bentoitem",
     className
     )}>
     <div className={cn(
-      "mb-4 p-3 rounded-lg w-fit transition-colors duration-300 group-hover/bentoitem:shadow-inner group-hover/bentoitem:bg-opacity-80", // Subtle icon container hover
+      "mb-4 p-3 rounded-lg w-fit transition-colors duration-300 group-hover/bentoitem:shadow-inner group-hover/bentoitem:bg-opacity-80",
       iconContainerClassName
       )}>
-      <Icon className={cn("h-8 w-8 md:h-10 md:w-10 transition-transform group-hover/bentoitem:scale-105", iconClassName)} /> {/* Icon scale on hover */}
+      <Icon className={cn("h-8 w-8 md:h-10 md:w-10 transition-transform group-hover/bentoitem:scale-105", iconClassName)} />
     </div>
     <h3 className="text-xl md:text-2xl font-semibold mb-2 text-foreground">{title}</h3>
     <p className="text-sm md:text-base opacity-90 dark:opacity-80 leading-relaxed flex-grow">{description}</p>
