@@ -199,7 +199,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                     <Progress value={subtaskProgress} className="h-1.5 bg-primary/20 [&>div]:bg-primary" />
                   </div>
                 )}
-                <ScrollArea className="flex-1 pr-1 -mr-1"> 
+                <ScrollArea className="flex-1 pr-1 -mr-1 max-h-28"> 
                   <div className="space-y-1.5 py-0.5 px-1">
                   {task.subtasks.map((subtask) => (
                     <div key={subtask.id} className="flex items-center space-x-2 group/subtask p-1 rounded hover:bg-muted/50 transition-colors">
