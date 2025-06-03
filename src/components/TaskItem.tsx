@@ -138,7 +138,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
       <Card
         className={cn(
           "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow duration-200 cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
-          task.isCompleted ? "bg-muted/70 dark:bg-muted/40 hover:shadow-md" : "bg-card"
+          task.isCompleted ? "bg-muted/60 dark:bg-muted/30 hover:shadow-md" : "bg-card"
         )}
         onClick={cardClickHandler}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') cardClickHandler(e);}}
@@ -221,7 +221,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                           subtask.isCompleted ? "line-through text-muted-foreground/70" : "text-foreground/90",
                           "group-hover/subtask:text-foreground"
                         )}
-                        onClick={(e) => e.stopPropagation()} // Allow clicking label to toggle
+                        onClick={(e) => e.stopPropagation()} 
                         data-nocardclick="true"
                       >
                         {subtask.text}
@@ -305,3 +305,4 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
+

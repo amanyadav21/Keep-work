@@ -40,21 +40,17 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(''); // Clear previous errors
+    setError(''); 
     const result = await logIn(email, password);
     if (result.error) {
-      setError(result.error); // Set local error state for inline display
+      setError(result.error); 
     }
-    // Successful login is handled by AuthContext (redirect, toast)
   };
 
   const handleGoogleSignIn = async () => {
     if (!loading) {
       const result = await signInWithGoogle();
       if (result.error) {
-        // Google sign-in errors are primarily handled by toast in AuthContext
-        // but you could set local error state if needed:
-        // setError(result.error);
       }
     }
   };
@@ -66,7 +62,7 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold">Welcome Back!</CardTitle>
           <CardDescription>Log in to continue to Upnext.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -116,7 +112,7 @@ export default function LoginPage() {
             onClick={handleGoogleSignIn}
             disabled={loading}
           >
-            {loading && !email && !password ? ( // Show loader only if not already loading for email/pass
+            {loading && !email && !password ? ( 
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <GoogleIcon className="h-5 w-5" />
@@ -137,3 +133,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

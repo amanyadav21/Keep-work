@@ -84,9 +84,8 @@ const PricingCard = ({
       variant={isPopular ? 'default' : buttonVariant}
       className={cn(
         "w-full mt-auto",
-        isPopular && "bg-primary text-primary-foreground hover:bg-primary/90", // For popular plan
-        !isPopular && buttonVariant === 'default' && "bg-muted hover:bg-muted/80 text-foreground", // For Basic (Free) plan
-        // Outline variant will take care of itself if buttonVariant === 'outline' for Team plan
+        isPopular && "bg-primary text-primary-foreground hover:bg-primary/90", 
+        !isPopular && buttonVariant === 'default' && "bg-muted hover:bg-muted/80 text-foreground", 
       )}
     >
       <Link href={actionLink}>{buttonText}</Link>
