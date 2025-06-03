@@ -4,6 +4,7 @@
 import type { Task } from '@/types';
 import { TaskItem } from './TaskItem';
 import { Lightbulb } from 'lucide-react';
+import Masonry from 'react-masonry-css';
 
 interface TaskListProps {
   tasks: Task[];
@@ -12,6 +13,15 @@ interface TaskListProps {
   onDelete: (id:string) => void;
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
 }
+
+const breakpointColumnsObj = {
+  default: 4, // 4 columns for large screens
+  1280: 3,    // 3 columns for typical desktop
+  1024: 3,    // 3 columns for smaller desktops/large tablets
+  768: 2,     // 2 columns for tablets
+  640: 1      // 1 column for mobile
+};
+
 
 export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskListProps) {
   if (tasks.length === 0) {
@@ -25,18 +35,23 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSu
   }
 
   return (
-    <div className="grid items-start gap-4 py-4 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+    <Masonry
+      breakpointCols={breakpointColumnsObj}
+      className="flex w-full -ml-4 py-4" // Negative margin to counteract item padding, if item has padding
+      columnClassName="pl-4 bg-clip-padding" // Add padding to column, children will fill it
+    >
       {tasks.map((task) => (
-        <TaskItem
-          key={task.id}
-          task={task}
-          onToggleComplete={onToggleComplete}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onToggleSubtask={onToggleSubtask}
-        />
+        <div key={task.id} className="mb-4"> {/* Add margin bottom to each item wrapper */}
+          <TaskItem
+            task={task}
+            onToggleComplete={onToggleComplete}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onToggleSubtask={onToggleSubtask}
+          />
+        </div>
       ))}
-    </div>
+    </Masonry>
   );
 }
 
