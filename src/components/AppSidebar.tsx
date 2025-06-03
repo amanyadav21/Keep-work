@@ -32,6 +32,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -211,6 +217,34 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     ? user.displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()
     : user.email ? user.email[0].toUpperCase() : '?';
 
+  const userMenuButton = (
+    <Button
+      variant="ghost"
+      className={cn(
+        "focus-visible:ring-ring focus-visible:ring-offset-background text-foreground hover:bg-muted",
+        isIconOnly
+          ? 'p-0 flex items-center justify-center h-9 w-9 rounded-full'
+          : 'px-2 py-1.5 h-auto w-full justify-start'
+      )}
+      aria-label="User Menu"
+    >
+      <Avatar className={cn("h-8 w-8 shrink-0", isIconOnly ? '' : 'mr-2')}>
+        <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
+        <AvatarFallback className="bg-muted text-muted-foreground">{userInitial}</AvatarFallback>
+      </Avatar>
+      {!isIconOnly && (
+        <div className="flex flex-col items-start truncate min-w-0">
+          <span className="text-sm font-medium text-foreground truncate">
+            {user.displayName || user.email?.split('@')[0]}
+          </span>
+          <span className="text-xs text-muted-foreground truncate -mt-0.5">
+            View Profile
+          </span>
+        </div>
+      )}
+    </Button>
+  );
+
   return (
     <Sidebar
       side="left"
@@ -256,33 +290,18 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
           isIconOnly ? 'w-full flex-col space-y-2' : 'justify-between w-full'
         )}>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "focus-visible:ring-ring focus-visible:ring-offset-background text-foreground hover:bg-muted",
-                  isIconOnly
-                    ? 'p-0 flex items-center justify-center h-9 w-9 rounded-full'
-                    : 'px-2 py-1.5 h-auto w-full justify-start'
-                )}
-                aria-label="User Menu"
-              >
-                <Avatar className={cn("h-8 w-8 shrink-0", isIconOnly ? '' : 'mr-2')}>
-                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
-                  <AvatarFallback className="bg-muted text-muted-foreground">{userInitial}</AvatarFallback>
-                </Avatar>
-                {!isIconOnly && (
-                  <div className="flex flex-col items-start truncate min-w-0">
-                    <span className="text-sm font-medium text-foreground truncate">
-                      {user.displayName || user.email?.split('@')[0]}
-                    </span>
-                    <span className="text-xs text-muted-foreground truncate -mt-0.5">
-                      View Profile
-                    </span>
-                  </div>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
+            {isIconOnly ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>{userMenuButton}</DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="right" align="center">
+                  <p>{user.displayName || user.email?.split('@')[0] || "Account options"}</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <DropdownMenuTrigger asChild>{userMenuButton}</DropdownMenuTrigger>
+            )}
             <DropdownMenuContent sideOffset={isIconOnly ? 10 : 5} side={isIconOnly ? "right" : "top"} align="start" className="w-56 mb-1 bg-popover text-popover-foreground">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
