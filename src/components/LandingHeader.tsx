@@ -36,12 +36,12 @@ export function LandingHeader() {
         </Link>
 
         <div className="flex items-center gap-3 md:gap-4">
-          <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+          <nav className="hidden md:flex items-center space-x-1 text-sm font-medium">
             {navItems.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className="text-muted-foreground transition-colors hover:text-primary"
+                className="text-muted-foreground transition-all duration-150 hover:text-primary px-3 py-1.5 rounded-md hover:bg-muted"
               >
                 {item.label}
               </Link>
@@ -76,12 +76,12 @@ export function LandingHeader() {
 
                 <ScrollArea className="flex-grow">
                   <div className="p-6">
-                    <nav className="flex flex-col space-y-4">
+                    <nav className="flex flex-col space-y-1">
                       {navItems.map((item) => (
                         <SheetClose asChild key={item.label}>
                           <Link
                             href={item.href}
-                            className="text-md text-muted-foreground hover:text-primary py-1"
+                            className="text-lg text-foreground hover:text-primary py-2.5 px-3 rounded-md hover:bg-muted transition-colors duration-150"
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
                             {item.label}
