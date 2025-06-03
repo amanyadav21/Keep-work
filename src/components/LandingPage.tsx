@@ -78,7 +78,17 @@ const PricingCard = ({
         </li>
       ))}
     </ul>
-    <Button asChild size="lg" variant={isPopular ? 'default' : buttonVariant} className={cn("w-full mt-auto", isPopular ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-muted hover:bg-muted/80 text-foreground')}>
+    <Button
+      asChild
+      size="lg"
+      variant={isPopular ? 'default' : buttonVariant}
+      className={cn(
+        "w-full mt-auto",
+        isPopular && "bg-primary text-primary-foreground hover:bg-primary/90", // For popular plan
+        !isPopular && buttonVariant === 'default' && "bg-muted hover:bg-muted/80 text-foreground", // For Basic (Free) plan
+        // Outline variant will take care of itself if buttonVariant === 'outline' for Team plan
+      )}
+    >
       <Link href={actionLink}>{buttonText}</Link>
     </Button>
   </div>
@@ -203,7 +213,7 @@ export function LandingPage() {
                 priceDetails="For individuals getting started."
                 features={["Up to 3 active projects", "Basic task management", "Email reminders", "Limited AI Assistant"]}
                 buttonText="Get Started"
-                buttonVariant="outline"
+                buttonVariant="default" 
               />
               <PricingCard
                 planName="Pro"
@@ -295,3 +305,4 @@ export function LandingPage() {
     </>
   );
 }
+
