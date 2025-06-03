@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -10,7 +10,7 @@ import { TaskList } from '@/components/TaskList';
 import type { Task, TaskFilter, TaskPriority } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay } from 'date-fns';
+import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay, set, getHours, getMinutes, getSeconds, getMilliseconds } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Brain, Plus, Loader2 } from 'lucide-react';
@@ -21,11 +21,11 @@ import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LandingPage } from '@/components/LandingPage';
 
-
-interface HomePageProps {
-  params: Record<string, never>;
-  searchParams: { [key: string]: string | string[] | undefined };
-}
+// HomePage no longer needs params or searchParams as props
+// interface HomePageProps {
+//   params: Record<string, never>;
+//   searchParams: { [key: string]: string | string[] | undefined };
+// }
 
 const priorityOrder: Record<TaskPriority, number> = {
   "High": 1,
@@ -34,7 +34,7 @@ const priorityOrder: Record<TaskPriority, number> = {
   "None": 4,
 };
 
-export default function HomePage({ params, searchParams }: HomePageProps) {
+export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -43,6 +43,9 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [quickAddInput, setQuickAddInput] = useState("");
+  const quickAddInputRef = useRef<HTMLInputElement>(null);
+
 
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -55,8 +58,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     if (user && isMounted) {
       setIsLoadingTasks(true);
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
-      // Note: Complex ordering (like by priority then date) might require composite indexes in Firestore.
-      // For now, we sort client-side after fetching tasks ordered by creation time and non-trashed.
       const q = query(tasksCollectionRef, where("isTrashed", "==", false), orderBy("createdAt", "desc"));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -94,7 +95,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
             description: data.description,
             dueDate,
             category: data.category,
-            priority: data.priority || "None", // Default to None if not present
+            priority: data.priority || "None",
             isCompleted: data.isCompleted,
             createdAt,
             isTrashed: data.isTrashed || false,
@@ -129,6 +130,37 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   }, [user, toast, isMounted, authLoading]);
 
 
+  const handleQuickAddTask = useCallback(async () => {
+    if (!user || !quickAddInput.trim()) {
+      if (!user) toast({ title: "Not Authenticated", description: "Please log in to add tasks.", variant: "destructive" });
+      return;
+    }
+    try {
+      const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
+      const todayEndOfDay = set(new Date(), { hours: 23, minutes: 59, seconds: 59, milliseconds: 999 });
+
+      const newTaskData = {
+        title: quickAddInput.trim(),
+        description: "", // Empty description for quick add
+        dueDate: formatISO(todayEndOfDay), // Default due date to today
+        category: "Personal" as Task["category"], // Default category
+        priority: "None" as Task["priority"], // Default priority
+        isCompleted: false,
+        createdAt: serverTimestamp(),
+        subtasks: [],
+        userId: user.uid,
+        isTrashed: false,
+        trashedAt: null,
+      };
+      await addDoc(tasksCollectionRef, newTaskData);
+      toast({ title: "Task Added", description: `"${quickAddInput.trim().substring(0,30)}..." added quickly.` });
+      setQuickAddInput(""); // Clear input after adding
+    } catch (error: any) {
+      console.error("Error quick adding task:", error);
+      toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
+    }
+  }, [user, quickAddInput, toast]);
+
   const handleAddTask = useCallback(async (data: TaskFormValues) => {
     if (!user) {
       toast({ title: "Not Authenticated", description: "Please log in to add tasks.", variant: "destructive" });
@@ -138,7 +170,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
       const newTaskData = {
         title: data.title,
-        description: data.description,
+        description: data.description || "", // Ensure description is always a string
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
@@ -169,7 +201,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
       const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = { 
         title: data.title,
-        description: data.description,
+        description: data.description || "", // Ensure description is always a string
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
@@ -262,11 +294,9 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
-      // Sort by completion status (incomplete first)
       if (a.isCompleted !== b.isCompleted) {
         return a.isCompleted ? 1 : -1;
       }
-      // If both are incomplete, sort by priority
       if (!a.isCompleted && !b.isCompleted) {
         const priorityA = priorityOrder[a.priority || "None"];
         const priorityB = priorityOrder[b.priority || "None"];
@@ -274,13 +304,11 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           return priorityA - priorityB;
         }
       }
-      // Then sort by due date
       const dueDateA = a.dueDate ? parseISO(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       const dueDateB = b.dueDate ? parseISO(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       if (dueDateA !== dueDateB) {
         return dueDateA - dueDateB;
       }
-      // Finally, sort by creation date (older first, for stable sort if all else equal)
       const createdAtA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
       const createdAtB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
       return createdAtA - createdAtB; 
@@ -300,7 +328,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
-      default: // 'all'
+      default: 
         return nonTrashedTasks;
     }
   }, [sortedTasks, filter]);
@@ -326,25 +354,32 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       <Header /> 
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="mb-6 max-w-2xl mx-auto">
-            <Button
-              className="w-full h-12 px-4 py-3 text-base bg-card text-foreground/80 border border-border rounded-lg shadow justify-start hover:text-foreground hover:border-primary hover:bg-primary/10 hover:shadow-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-background"
-              onClick={handleOpenAddForm}
-            >
-              <Plus className="mr-3 h-5 w-5" />
-              Take a note...
-            </Button>
+        <div className="w-full max-w-3xl mx-auto">
+          <div className="mb-6 shadow-lg rounded-lg border border-input focus-within:border-primary focus-within:ring-2 focus-within:ring-ring transition-all">
+            <Input
+              ref={quickAddInputRef}
+              type="text"
+              placeholder="Take a note..."
+              value={quickAddInput}
+              onChange={(e) => setQuickAddInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && quickAddInput.trim()) {
+                  handleQuickAddTask();
+                  e.preventDefault(); 
+                }
+              }}
+              className="w-full h-12 px-4 py-3 text-base bg-card text-foreground placeholder:text-muted-foreground border-none focus-visible:ring-0"
+            />
           </div>
           
           {isLoadingTasks ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                    <div className="h-4 bg-muted rounded w-1/4"></div> {/* Priority + Title placeholder */}
+                    <div className="h-4 bg-muted rounded w-1/4"></div>
                     <div className="h-6 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-full mt-1"></div> {/* Description line 1 */}
-                    <div className="h-4 bg-muted rounded w-1/2"></div> {/* Description line 2 */}
+                    <div className="h-4 bg-muted rounded w-full mt-1"></div> 
+                    <div className="h-4 bg-muted rounded w-1/2"></div> 
                     <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
                 </div>
               ))}
@@ -402,3 +437,4 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     </>
   );
 }
+
