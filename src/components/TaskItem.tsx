@@ -44,7 +44,7 @@ const priorityDotColor = (priority?: TaskPriority): string => {
     case 'Low':
       return 'bg-[hsl(var(--priority-low))]';
     default:
-      return 'bg-transparent'; 
+      return 'bg-transparent';
   }
 };
 
@@ -59,11 +59,11 @@ function formatDynamicDueDate(isoDateString: string): string {
   const today = new Date();
   const diffDays = differenceInCalendarDays(date, today);
 
-  if (diffDays > 0 && diffDays <= 6) return format(date, "'Next' EEEE"); 
-  if (diffDays < 0 && diffDays >= -6) return format(date, "'Last' EEEE"); 
+  if (diffDays > 0 && diffDays <= 6) return format(date, "'Next' EEEE");
+  if (diffDays < 0 && diffDays >= -6) return format(date, "'Last' EEEE");
 
-  if (date.getFullYear() === today.getFullYear()) return format(date, "MMM d"); 
-  return format(date, "MMM d, yyyy"); 
+  if (date.getFullYear() === today.getFullYear()) return format(date, "MMM d");
+  return format(date, "MMM d, yyyy");
 }
 
 
@@ -76,14 +76,14 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
   }, []);
 
   useEffect(() => {
-    if (!isMounted) return; 
+    if (!isMounted) return;
 
     if (task.isCompleted) {
       setTimeLeft('Completed');
       return;
     }
 
-    if (!task.dueDate) { 
+    if (!task.dueDate) {
       setTimeLeft('No due date');
       return;
     }
@@ -91,23 +91,23 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     const calculateTimeLeft = () => {
       const dueDateObj = parseISO(task.dueDate);
       if (!isValid(dueDateObj)) {
-        setTimeLeft("Invalid date format"); 
+        setTimeLeft("Invalid date format");
         return;
       }
 
-      if (isPast(dueDateObj) && !isToday(dueDateObj)) { 
+      if (isPast(dueDateObj) && !isToday(dueDateObj)) {
         setTimeLeft("Past due");
         return;
       }
-      
+
       const timeLeftString = formatDistanceToNowStrict(dueDateObj, { addSuffix: true });
       setTimeLeft(timeLeftString.replace(/^in\s+/, '') + (isToday(dueDateObj) ? "" : " left"));
     };
 
-    calculateTimeLeft(); 
-    const intervalId = setInterval(calculateTimeLeft, 60000); 
+    calculateTimeLeft();
+    const intervalId = setInterval(calculateTimeLeft, 60000);
 
-    return () => clearInterval(intervalId); 
+    return () => clearInterval(intervalId);
   }, [task.dueDate, task.isCompleted, isMounted]);
 
 
@@ -126,13 +126,13 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     let target = e.target as HTMLElement;
     while (target && target !== e.currentTarget) {
       if (target.matches('input[type="checkbox"], button, a, [data-nocardclick="true"]')) {
-        return; 
+        return;
       }
       target = target.parentElement as HTMLElement;
     }
     onEdit(task);
   };
-  
+
   return (
     <TooltipProvider delayDuration={150}>
       <Card
@@ -171,73 +171,71 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             <CardTitle
               id={`task-title-${task.id}`}
               className={cn(
-                "text-lg font-semibold text-foreground break-words line-clamp-2", 
-                task.priority && task.priority !== "None" ? "" : "ml-0", 
+                "text-lg font-semibold text-foreground break-words line-clamp-2",
+                task.priority && task.priority !== "None" ? "" : "ml-0",
                 task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
               )}
             >
               {task.title || task.description }
             </CardTitle>
           </div>
-          {task.title && task.description && ( 
+          {task.title && task.description && (
             <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}>
               {task.description}
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent className="p-4 pt-0 flex-grow flex flex-col min-h-0">
-          <div className="flex-1 min-h-0 flex flex-col">
-            {task.subtasks && task.subtasks.length > 0 ? (
-              <div className="mt-2 space-y-2 flex-1 flex flex-col min-h-0">
-                <Separator className="mb-2" />
-                {totalSubtasks > 0 && (
-                   <div className="mb-1.5 px-1">
-                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-0.5">
-                      <span className="font-medium">Subtasks</span>
-                      <span>{completedSubtasks}/{totalSubtasks}</span>
-                    </div>
-                    <Progress value={subtaskProgress} className="h-1.5 bg-primary/20 [&>div]:bg-primary" />
+        <CardContent className="p-4 pt-0"> {/* Removed flex-grow and flex-col min-h-0 */}
+          {task.subtasks && task.subtasks.length > 0 && (
+            <div className="mt-2 space-y-2"> {/* Removed flex-1 and flex-col min-h-0 */}
+              <Separator className="mb-2" />
+              {totalSubtasks > 0 && (
+                 <div className="mb-1.5 px-1">
+                  <div className="flex justify-between items-center text-xs text-muted-foreground mb-0.5">
+                    <span className="font-medium">Subtasks</span>
+                    <span>{completedSubtasks}/{totalSubtasks}</span>
                   </div>
-                )}
-                <ScrollArea className="flex-1 pr-1 -mr-1 max-h-28"> 
-                  <div className="space-y-1.5 py-0.5 px-1">
-                  {task.subtasks.map((subtask) => (
-                    <div key={subtask.id} className="flex items-center space-x-2 group/subtask p-1 rounded hover:bg-muted/50 transition-colors">
-                      <Checkbox
-                        id={`subtask-${task.id}-${subtask.id}`}
-                        checked={subtask.isCompleted}
-                        onCheckedChange={() => onToggleSubtask(task.id, subtask.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();}}
-                        data-nocardclick="true"
-                        className="h-4 w-4 shrink-0 border-primary/70 data-[state=checked]:bg-primary"
-                        aria-labelledby={`subtask-text-${task.id}-${subtask.id}`}
-                      />
-                      <label
-                        htmlFor={`subtask-${task.id}-${subtask.id}`}
-                        id={`subtask-text-${task.id}-${subtask.id}`}
-                        className={cn(
-                          "text-sm break-words cursor-pointer flex-1",
-                          subtask.isCompleted ? "line-through text-muted-foreground/70" : "text-foreground/90",
-                          "group-hover/subtask:text-foreground"
-                        )}
-                        onClick={(e) => e.stopPropagation()} 
-                        data-nocardclick="true"
-                      >
-                        {subtask.text}
-                      </label>
-                    </div>
-                  ))}
+                  <Progress value={subtaskProgress} className="h-1.5 bg-primary/20 [&>div]:bg-primary" />
+                </div>
+              )}
+              <ScrollArea className="max-h-28 pr-1 -mr-1"> {/* Removed flex-1 */}
+                <div className="space-y-1.5 py-0.5 px-1">
+                {task.subtasks.map((subtask) => (
+                  <div key={subtask.id} className="flex items-center space-x-2 group/subtask p-1 rounded hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      id={`subtask-${task.id}-${subtask.id}`}
+                      checked={subtask.isCompleted}
+                      onCheckedChange={() => onToggleSubtask(task.id, subtask.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();}}
+                      data-nocardclick="true"
+                      className="h-4 w-4 shrink-0 border-primary/70 data-[state=checked]:bg-primary"
+                      aria-labelledby={`subtask-text-${task.id}-${subtask.id}`}
+                    />
+                    <label
+                      htmlFor={`subtask-${task.id}-${subtask.id}`}
+                      id={`subtask-text-${task.id}-${subtask.id}`}
+                      className={cn(
+                        "text-sm break-words cursor-pointer flex-1",
+                        subtask.isCompleted ? "line-through text-muted-foreground/70" : "text-foreground/90",
+                        "group-hover/subtask:text-foreground"
+                      )}
+                      onClick={(e) => e.stopPropagation()}
+                      data-nocardclick="true"
+                    >
+                      {subtask.text}
+                    </label>
                   </div>
-                </ScrollArea>
-              </div>
-            ) : (
-              <div className="flex-1"></div> 
-            )}
-          </div>
-          
+                ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
           <div className={cn(
-            "pt-3 text-xs flex items-center justify-between gap-x-2", 
+            "pt-3 text-xs flex items-center justify-between gap-x-2",
+            // Add margin-top if no subtasks, to separate metadata from header content
+            !(task.subtasks && task.subtasks.length > 0) ? "mt-2" : "",
             task.isCompleted ? "text-muted-foreground" : "text-muted-foreground/90"
           )}>
             <Badge variant="secondary" className="text-xs py-0.5 px-1.5 font-medium shrink-0 bg-secondary/70 text-secondary-foreground">
@@ -258,9 +256,9 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             {(isMounted && timeLeft) && (
               <p className={cn(
                 "font-medium text-xs flex items-center",
-                isOverdue ? "text-destructive" : 
+                isOverdue ? "text-destructive" :
                 task.isCompleted ? "text-[hsl(var(--status-green))]" :
-                (task.dueDate && isToday(parseISO(task.dueDate)) && !task.isCompleted) ? "text-accent" : 
+                (task.dueDate && isToday(parseISO(task.dueDate)) && !task.isCompleted) ? "text-accent" :
                 "text-primary"
               )}>
                 {isOverdue && <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />}
@@ -268,13 +266,13 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </p>
             )}
           </div>
-           <div 
+           <div
             className={cn(
               "flex items-center space-x-1",
               task.isCompleted ? "opacity-60" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150"
             )}
-            onClick={(e) => e.stopPropagation()} 
-            onKeyDown={(e) => e.stopPropagation()} 
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
             data-nocardclick="true"
           >
               <Tooltip>
