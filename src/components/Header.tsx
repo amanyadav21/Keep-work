@@ -19,10 +19,10 @@ import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'; // Import 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface HeaderProps {
-  onAddTask: () => void; // This prop might become unused if AddTask moves to AppSidebar
+  // onAddTask prop removed as it's no longer used
 }
 
-export function Header({ onAddTask }: HeaderProps) {
+export function Header({}: HeaderProps) { // onAddTask removed from destructuring
   const { user, logOut, loading: authLoading } = useAuth();
   const { isMobile, isMobileSheetOpen, effectiveSidebarWidth } = useSidebar(); // Get sidebar context
 
@@ -32,7 +32,7 @@ export function Header({ onAddTask }: HeaderProps) {
 
   return (
     // Header is sticky *within* the MainContentWrapper which has dynamic margin-left
-    <header className="sticky top-0 z-30 py-3 px-4 md:px-6 border-b bg-background shadow-sm">
+    <header className="sticky top-0 z-30 py-3 px-4 md:px-6 border-b bg-background/95 backdrop-blur-sm shadow-sm">
       <div className="w-full max-w-6xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-2">
           {/* SidebarTrigger is now in AppSidebar's header by default, but can be placed here if design requires */}
@@ -130,4 +130,3 @@ export function Header({ onAddTask }: HeaderProps) {
     </header>
   );
 }
-
