@@ -168,47 +168,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async (): Promise<AuthResult> => {
     setLoading(true);
+    console.log("signInWithGoogle: Attempting Google Sign-In...");
+    console.log("signInWithGoogle: Current auth.currentUser:", auth.currentUser);
+    if (typeof window !== "undefined") {
+      console.log("signInWithGoogle: Current window.location.origin:", window.location.origin);
+      console.log("signInWithGoogle: Firebase App Name:", auth.app.name);
+    }
+
     try {
-      // Check if user is ALREADY signed in (e.g., via another tab or recent same-tab action)
       if (auth.currentUser) {
-        console.log("User already signed in (auth.currentUser exists), attempting to sync data:", auth.currentUser.email);
+        console.log("signInWithGoogle: User already signed in, attempting to sync data:", auth.currentUser.email);
         await manageGoogleUserData(auth.currentUser, toast);
-        // setUser(auth.currentUser); // Let onAuthStateChanged handle global state update
-        // router.push('/'); // Let onAuthStateChanged handle navigation
         return { user: auth.currentUser, error: null };
       }
 
       const provider = new GoogleAuthProvider();
-      if (typeof window !== "undefined") {
-        console.log("Attempting Google Sign-In from origin:", window.location.origin);
-      }
+      // Optional: You can add custom parameters if needed, e.g., to force account selection
+      // provider.setCustomParameters({ prompt: 'select_account' });
+      
+      console.log("signInWithGoogle: Calling signInWithPopup...");
       const result = await signInWithPopup(auth, provider);
       const googleUser = result.user;
+      console.log("signInWithGoogle: signInWithPopup successful. User:", googleUser);
 
       if (googleUser) {
         await manageGoogleUserData(googleUser, toast);
-        // setUser(googleUser); // Let onAuthStateChanged handle global state update
-        // router.push('/'); // Let onAuthStateChanged handle navigation
         return { user: googleUser, error: null };
       }
       
-      // This case should ideally not be reached if signInWithPopup is successful
-      toast({ title: "Google Sign-In Issue", description: "Google Sign-In did not complete as expected.", variant: "destructive" });
+      console.warn("signInWithGoogle: signInWithPopup returned, but no googleUser object.");
+      toast({ title: "Google Sign-In Issue", description: "Google Sign-In did not complete as expected (no user object).", variant: "destructive" });
       return { user: null, error: "Google Sign-In did not return a user."};
 
     } catch (error) {
       const authError = error as AuthError;
-      console.error("Google Sign-In error:", authError);
-      let description = "An unexpected error occurred during Google Sign-In.";
+      console.error("signInWithGoogle: Full error object:", JSON.stringify(authError, null, 2));
+      console.error("signInWithGoogle: Error code:", authError.code);
+      console.error("signInWithGoogle: Error message:", authError.message);
+
+      let description = "An unexpected error occurred during Google Sign-In. Please check the browser console for more details.";
       let toastVariant: "default" | "destructive" | null | undefined = "destructive";
 
       if (authError.code === 'auth/popup-closed-by-user') {
         description = "Google Sign-In popup was closed. This might be due to: 1. Pop-up blockers. 2. Your website's domain (e.g., keepwork.codeupto.com or localhost) not being added to 'Authorized domains' in your Firebase project settings. 3. The 'Project support email' not being set in your Google Cloud Console's OAuth consent screen. Please check these configurations and try again.";
         toastVariant = "default";
+      } else if (authError.code === 'auth/cancelled-popup-request') {
+        description = "Google Sign-In was cancelled. Another popup may have been opened or the request was cancelled by the browser.";
+        toastVariant = "default";
+      } else if (authError.code === 'auth/popup-blocked') {
+        description = "Google Sign-In popup was blocked by the browser. Please disable your pop-up blocker for this site and try again.";
+        toastVariant = "default";
       } else if (authError.code === 'auth/account-exists-with-different-credential') {
         description = "An account already exists with this email. Please sign in using the original method.";
       } else if (authError.code === 'auth/unauthorized-domain') {
-        description = `The domain ${typeof window !== "undefined" ? window.location.hostname : 'your app domain'} is not authorized for Google Sign-In. Please add it to your Firebase project's 'Authorized domains' list (Authentication -> Settings).`;
+        description = `The domain ${typeof window !== "undefined" ? window.location.hostname : 'your app domain'} is not authorized for Google Sign-In. Please add it to your Firebase project's 'Authorized domains' list (Authentication -> Settings -> Authorized domains).`;
       } else if (authError.code === 'auth/operation-not-allowed') {
         description = "Google Sign-In is not enabled for this project. Please enable it in the Firebase console (Authentication -> Sign-in method). Also, ensure your 'Project support email' is set in the Google Cloud Console OAuth consent screen.";
       } else if (authError.message) {
@@ -218,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { user: null, error: description };
     } finally {
       setLoading(false);
+      console.log("signInWithGoogle: Process finished.");
     }
   };
 
