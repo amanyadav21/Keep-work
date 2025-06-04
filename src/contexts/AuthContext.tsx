@@ -174,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async (): Promise<AuthResult> => {
     setLoading(true);
-    const currentHostname = typeof window !== "undefined" ? window.location.origin : 'your app domain (unknown)';
+    const currentHostname = typeof window !== "undefined" ? window.location.origin : 'YOUR_APP_DOMAIN (Could not determine)';
     console.log("signInWithGoogle: Attempting Google Sign-In...");
     console.log("signInWithGoogle: Current auth.currentUser:", auth.currentUser);
     if (typeof window !== "undefined") {
@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let toastVariant: "default" | "destructive" | null | undefined = "destructive";
       
       if (authError.code === 'auth/popup-closed-by-user') {
-        description = `Google Sign-In popup was closed. This often means the current domain ('${currentHostname}') is not in your Firebase project's "Authorized domains" list. Also, ensure "Project support email" is set in your Google Cloud Console (OAuth consent screen). Other causes: Pop-up blockers. Please verify these configurations in Firebase and Google Cloud Console.`;
+        description = `Google Sign-In popup was closed. \n1. CRITICAL: Ensure "Project support email" is set in Google Cloud Console (APIs & Services > OAuth consent screen). \n2. VERIFY: The domain '${currentHostname}' IS in your Firebase project's "Authorized domains" list (Authentication > Settings). \n3. CHECK: API Key restrictions in Google Cloud (APIs & Services > Credentials) are not blocking this domain or the Identity Toolkit API. \n4. TRY: Disabling pop-up blockers.`;
         toastVariant = "default";
       } else if (authError.code === 'auth/cancelled-popup-request') {
         description = "Google Sign-In was cancelled. Another popup may have been opened or the request was cancelled by the browser.";
@@ -234,7 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (authError.message) {
         description = authError.message;
       }
-      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant, duration: 20000 });
+      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant, duration: 25000 }); // Increased duration
       return { user: null, error: description };
     } finally {
       setLoading(false);
