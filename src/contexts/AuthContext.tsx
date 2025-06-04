@@ -174,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async (): Promise<AuthResult> => {
     setLoading(true);
+    const currentHostname = typeof window !== "undefined" ? window.location.origin : 'your app domain (unknown)';
     console.log("signInWithGoogle: Attempting Google Sign-In...");
     console.log("signInWithGoogle: Current auth.currentUser:", auth.currentUser);
     if (typeof window !== "undefined") {
@@ -189,8 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const provider = new GoogleAuthProvider();
-      // Optional: You can add custom parameters if needed, e.g., to force account selection
-      // provider.setCustomParameters({ prompt: 'select_account' });
+      provider.setCustomParameters({ prompt: 'select_account' }); // Ensure account selection dialog
 
       console.log("signInWithGoogle: Calling signInWithPopup...");
       const result = await signInWithPopup(auth, provider);
@@ -209,20 +209,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     } catch (error) {
       const authError = error as AuthError;
-      // Enhanced logging for the full error object
       console.error("signInWithGoogle: Full error object:", JSON.stringify(authError, null, 2));
       console.error("signInWithGoogle: Error code:", authError.code);
       console.error("signInWithGoogle: Error message:", authError.message);
 
-      let description = "An unexpected error occurred during Google Sign-In. Please check the browser console for more details.";
+      let description = `An unexpected error occurred during Google Sign-In from '${currentHostname}'. Please check the browser console for more details.`;
       let toastVariant: "default" | "destructive" | null | undefined = "destructive";
-      const currentHostname = typeof window !== "undefined" ? window.location.origin : 'your app domain (unknown)';
-
+      
       if (authError.code === 'auth/popup-closed-by-user') {
-        description = `Google Sign-In popup was closed. This often means the current domain ('${currentHostname}') is not in your Firebase project's "Authorized domains" list.
-        Also, ensure "Project support email" is set in your Google Cloud Console (OAuth consent screen).
-        Other causes: Pop-up blockers.
-        Please verify these configurations in Firebase and Google Cloud Console.`;
+        description = `Google Sign-In popup was closed. This often means the current domain ('${currentHostname}') is not in your Firebase project's "Authorized domains" list. Also, ensure "Project support email" is set in your Google Cloud Console (OAuth consent screen). Other causes: Pop-up blockers. Please verify these configurations in Firebase and Google Cloud Console.`;
         toastVariant = "default";
       } else if (authError.code === 'auth/cancelled-popup-request') {
         description = "Google Sign-In was cancelled. Another popup may have been opened or the request was cancelled by the browser.";
