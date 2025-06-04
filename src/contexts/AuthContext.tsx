@@ -203,18 +203,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let toastVariant: "default" | "destructive" | null | undefined = "destructive";
 
       if (authError.code === 'auth/popup-closed-by-user') {
-        description = "Google Sign-In popup was closed before completion. This might be due to pop-up blockers or a configuration issue (e.g., this website's domain may not be authorized for Google Sign-In in your Firebase project). Please check your browser settings and try again. If the issue persists, verify your Firebase project configuration.";
+        description = "Google Sign-In popup was closed. This might be due to: 1. Pop-up blockers. 2. Your website's domain (e.g., keepwork.codeupto.com or localhost) not being added to 'Authorized domains' in your Firebase project settings. 3. The 'Project support email' not being set in your Google Cloud Console's OAuth consent screen. Please check these configurations and try again.";
         toastVariant = "default";
       } else if (authError.code === 'auth/account-exists-with-different-credential') {
         description = "An account already exists with this email. Please sign in using the original method.";
       } else if (authError.code === 'auth/unauthorized-domain') {
-        description = `The domain ${typeof window !== "undefined" ? window.location.hostname : 'your app domain'} is not authorized for Google Sign-In. Please add it to your Firebase project's authentication settings.`;
+        description = `The domain ${typeof window !== "undefined" ? window.location.hostname : 'your app domain'} is not authorized for Google Sign-In. Please add it to your Firebase project's 'Authorized domains' list (Authentication -> Settings).`;
       } else if (authError.code === 'auth/operation-not-allowed') {
-        description = "Google Sign-In is not enabled for this project. Please enable it in the Firebase console (Authentication -> Sign-in method). Also, ensure your Project support email is set.";
+        description = "Google Sign-In is not enabled for this project. Please enable it in the Firebase console (Authentication -> Sign-in method). Also, ensure your 'Project support email' is set in the Google Cloud Console OAuth consent screen.";
       } else if (authError.message) {
         description = authError.message;
       }
-      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant, duration: 10000 });
+      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant, duration: 15000 });
       return { user: null, error: description };
     } finally {
       setLoading(false);
@@ -256,3 +256,4 @@ export function useAuth() {
   }
   return context;
 }
+
