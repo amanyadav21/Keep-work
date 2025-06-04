@@ -193,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (googleUser) {
         await manageGoogleUserData(googleUser, toast);
+        router.push('/');
         return { user: googleUser, error: null };
       }
       
@@ -208,9 +209,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       let description = "An unexpected error occurred during Google Sign-In. Please check the browser console for more details.";
       let toastVariant: "default" | "destructive" | null | undefined = "destructive";
+      const currentHostname = typeof window !== "undefined" ? window.location.hostname : 'your app domain';
 
       if (authError.code === 'auth/popup-closed-by-user') {
-        description = "Google Sign-In popup was closed. This might be due to: 1. Pop-up blockers. 2. Your website's domain (e.g., keepwork.codeupto.com or localhost) not being added to 'Authorized domains' in your Firebase project settings. 3. The 'Project support email' not being set in your Google Cloud Console's OAuth consent screen. Please check these configurations and try again.";
+        description = `Google Sign-In popup was closed. This often means the current domain ('${currentHostname}') is not in your Firebase project's "Authorized domains" list.
+        Other common causes:
+        1. Pop-up blockers.
+        2. The "Project support email" not being set in your Google Cloud Console's OAuth consent screen.
+        Please verify these configurations in Firebase and Google Cloud Console.`;
         toastVariant = "default";
       } else if (authError.code === 'auth/cancelled-popup-request') {
         description = "Google Sign-In was cancelled. Another popup may have been opened or the request was cancelled by the browser.";
@@ -221,13 +227,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (authError.code === 'auth/account-exists-with-different-credential') {
         description = "An account already exists with this email. Please sign in using the original method.";
       } else if (authError.code === 'auth/unauthorized-domain') {
-        description = `The domain ${typeof window !== "undefined" ? window.location.hostname : 'your app domain'} is not authorized for Google Sign-In. Please add it to your Firebase project's 'Authorized domains' list (Authentication -> Settings -> Authorized domains).`;
+        description = `The domain '${currentHostname}' is not authorized for Google Sign-In. Please add it to your Firebase project's 'Authorized domains' list (Authentication -> Settings -> Authorized domains).`;
       } else if (authError.code === 'auth/operation-not-allowed') {
         description = "Google Sign-In is not enabled for this project. Please enable it in the Firebase console (Authentication -> Sign-in method). Also, ensure your 'Project support email' is set in the Google Cloud Console OAuth consent screen.";
       } else if (authError.message) {
         description = authError.message;
       }
-      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant, duration: 15000 });
+      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant, duration: 20000 });
       return { user: null, error: description };
     } finally {
       setLoading(false);
