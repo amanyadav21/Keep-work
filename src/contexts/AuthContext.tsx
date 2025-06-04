@@ -203,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let toastVariant: "default" | "destructive" | null | undefined = "destructive";
 
       if (authError.code === 'auth/popup-closed-by-user') {
-        description = "Google Sign-In popup was closed. Please try again if you wish to sign in with Google.";
+        description = "Google Sign-In popup was closed before completion. This might be due to pop-up blockers or a configuration issue (e.g., this website's domain may not be authorized for Google Sign-In in your Firebase project). Please check your browser settings and try again. If the issue persists, verify your Firebase project configuration.";
         toastVariant = "default";
       } else if (authError.code === 'auth/account-exists-with-different-credential') {
         description = "An account already exists with this email. Please sign in using the original method.";
@@ -214,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (authError.message) {
         description = authError.message;
       }
-      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant });
+      toast({ title: "Google Sign-In Not Completed", description, variant: toastVariant, duration: 10000 });
       return { user: null, error: description };
     } finally {
       setLoading(false);
