@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ArrowLeft, Loader2, Send, UserCircle, Bot, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, UserCircle, Bot, ChevronDown, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useLocalStorage from '@/hooks/useLocalStorage';
@@ -56,7 +56,7 @@ async function getOpenRouterAssistance(
 
 
   const messagesForAPI = [
-    { role: "system", content: "You are a helpful student assistant. Provide concise and relevant answers." },
+    { role: "system", content: "You are a helpful student assistant. Provide concise and relevant answers related to academic topics, study skills, and productivity. Be friendly and encouraging." },
     ...conversationHistory.map(msg => ({ role: msg.role, content: msg.content })),
     { role: "user", content: currentInquiry }
   ];
@@ -99,7 +99,15 @@ async function getOpenRouterAssistance(
     // --- More Specific Error Handling ---
     if (error.message) {
       const lowerCaseErrorMessage = error.message.toLowerCase();
-      if (lowerCaseErrorMessage.includes("no auth credentials found")) {
+       const currentHostname = typeof window !== "undefined" ? window.location.origin : 'YOUR_APP_DOMAIN (Could not determine)';
+      if (lowerCaseErrorMessage.includes("popup-closed-by-user") || lowerCaseErrorMessage.includes("popup_closed_by_user")) {
+        errorMessage = `Google Sign-In popup was closed. This often means the current domain ('${currentHostname}') is not in your Firebase project's "Authorized domains" list. 
+        1. **CRITICAL: Ensure "Project support email" is set in Google Cloud Console (APIs & Services > OAuth consent screen).** 
+        2. **VERIFY: The domain '${currentHostname}' IS in your Firebase project's "Authorized domains" list (Authentication > Settings).** 
+        3. **CHECK: API Key restrictions in Google Cloud (APIs & Services > Credentials) are not blocking this domain or the Identity Toolkit API.** 
+        4. **TRY: Disabling pop-up blockers.** 
+        Please verify these configurations in Firebase and Google Cloud Console.`;
+      } else if (lowerCaseErrorMessage.includes("no auth credentials found")) {
          errorMessage = `AI Authentication Error: OpenRouter reported "No auth credentials found". This means the API key was not sent or was malformed in the request to OpenRouter. 
          1. **Verify .env.local**: Ensure NEXT_PUBLIC_OPENROUTER_API_KEY is correctly set.
          2. **Restart Server**: You MUST restart your Next.js development server after changes to .env.local.
@@ -131,6 +139,13 @@ const GENERAL_INQUIRY_PLACEHOLDER = "How can I help you today?";
 const SERVER_RENDER_PLACEHOLDER = "Enter your general inquiry here...";
 const AI_UNAVAILABLE_MESSAGE = "AI Assistant is currently unavailable. Please check your AI service configuration, API key in .env.local, and restart your server.";
 
+const suggestedQueries = [
+  { id: 'explain', label: "Explain concept...", query: "Explain in simple terms: " },
+  { id: 'draft', label: "Draft email to...", query: "Help me draft an email to " },
+  { id: 'summarize', label: "Summarize text...", query: "Summarize this for me: "},
+  { id: 'ideas', label: "Brainstorm ideas...", query: "Brainstorm ideas for " },
+  { id: 'studyplan', label: "Create study plan...", query: "Help me create a study plan for " },
+];
 
 function AIAssistantPageContent() {
   const router = useRouter();
@@ -151,6 +166,7 @@ function AIAssistantPageContent() {
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
@@ -415,10 +431,37 @@ function AIAssistantPageContent() {
             </Button>
           )}
         </div>
+        
+        {mounted && !isProcessing && chatMessages.length > 0 && (
+          <div className="px-4 pt-3 pb-2 border-t border-border bg-background shadow-sm">
+            <div className="flex items-center mb-2 gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <p className="text-xs font-medium text-muted-foreground">Try these suggestions:</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {suggestedQueries.map((sq) => (
+                <Button
+                  key={sq.id}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-auto py-1.5 px-3 rounded-full hover:bg-accent/10 hover:border-primary/50"
+                  onClick={() => {
+                    setCurrentUserInput(sq.query);
+                    textAreaRef.current?.focus();
+                  }}
+                  disabled={isProcessing}
+                >
+                  {sq.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="p-4 border-t border-border bg-background">
           <div className="flex items-start space-x-2">
             <Textarea
+              ref={textAreaRef}
               placeholder={placeholderText}
               value={currentUserInput}
               onChange={(e) => setCurrentUserInput(e.target.value)}
@@ -462,3 +505,4 @@ export default function AIAssistantPage() {
     </Suspense>
   );
 }
+
