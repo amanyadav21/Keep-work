@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from 'react'; // Added React import
 import { usePathname, useRouter }
 from 'next/navigation';
 import Link from 'next/link';
@@ -263,7 +264,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             
             {mainNavItems.length > 0 && <SidebarSeparator/>}
             {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
-            {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0) ? <SidebarSeparator /> : null}
+            {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 && (categoryNavItems.length > 0 || managementNavItems.length > 0)) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
             <SidebarSeparator />
             {renderNavItems(categoryNavItems, isIconOnly ? undefined : 'Categories')}
