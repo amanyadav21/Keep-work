@@ -1,7 +1,7 @@
 
 "use client";
 
-import * as React from 'react'; // Added React import
+import * as React from 'react';
 import { usePathname, useRouter }
 from 'next/navigation';
 import Link from 'next/link';
@@ -77,9 +77,9 @@ interface NavItemConfig {
 export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
-  const { state: sidebarState, collapsible, isMobile, open: sidebarOpen, defaultOpen } = useSidebar(); // Added defaultOpen
+  const { state: sidebarState, collapsible, isMobile, open: sidebarOpen, defaultOpen } = useSidebar();
   const router = useRouter();
-  const [clientMounted, setClientMounted] = React.useState(false); // Added for client-side only checks
+  const [clientMounted, setClientMounted] = React.useState(false);
 
   React.useEffect(() => {
     setClientMounted(true);
@@ -139,10 +139,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             
             const commonButtonProps = {
               variant: "ghost" as const,
-              // size: isIconOnly ? 'icon' : 'default' as const, // Size handled by SidebarMenuButton now
               className: cn(
-                // isIconOnly ? "" : "w-full justify-start", // Class handled by SidebarMenuButton
-                // isActive ? "bg-primary/10 text-primary font-semibold" : "text-foreground hover:bg-muted" // Active class handled by SidebarMenuButton
+                // Active class now handled by SidebarMenuButton's internal logic
               ),
               onClick: item.action,
               disabled: item.disabled,
@@ -170,7 +168,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                     menuButton
                   )
                 ) : (
-                   <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant, /*size: commonButtonProps.size*/}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
+                   <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
                     {buttonContent}
                    </div>
                 )}
@@ -264,11 +262,15 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             
             {mainNavItems.length > 0 && <SidebarSeparator/>}
             {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
+            
+            {/* Conditionally render separator based on if previous section had items AND current section has items */}
             {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 && (categoryNavItems.length > 0 || managementNavItems.length > 0)) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
-            <SidebarSeparator />
+            
+            {(filterNavItems.length > 0 && categoryNavItems.length > 0) || (filterNavItems.length === 0 && categoryNavItems.length > 0 && managementNavItems.length > 0) ? <SidebarSeparator /> : null}
             {renderNavItems(categoryNavItems, isIconOnly ? undefined : 'Categories')}
-            <SidebarSeparator />
+            
+            {categoryNavItems.length > 0 && managementNavItems.length > 0 ? <SidebarSeparator /> : null}
             {renderNavItems(managementNavItems, isIconOnly ? undefined : 'Management')}
           </div>
         </ScrollArea>
@@ -323,10 +325,22 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
           </DropdownMenu>
 
           <div className={isIconOnly ? 'mt-0' : ''}>
-            <ThemeToggle />
+            {isIconOnly ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <ThemeToggle />
+                </TooltipTrigger>
+                <TooltipContent side="right" align="center">
+                  <p>Toggle Theme</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <ThemeToggle />
+            )}
           </div>
         </div>
       </SidebarFooter>
     </Sidebar>
   );
 }
+
