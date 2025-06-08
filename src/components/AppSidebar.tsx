@@ -6,7 +6,7 @@ from 'next/navigation';
 import Link from 'next/link';
 import {
   PlusCircle,
-  LayoutDashboard,
+  // LayoutDashboard, // Removed Dashboard Icon
   ListTodo,
   ListChecks,
   ListFilter, 
@@ -84,7 +84,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   const isIconOnly = !isMobile && sidebarState === 'collapsed' && collapsible === 'icon';
 
   const mainNavItems: NavItemConfig[] = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard, tooltip: 'Dashboard', isPageLink: true },
+    // { href: '/', label: 'Dashboard', icon: LayoutDashboard, tooltip: 'Dashboard', isPageLink: true }, // Dashboard removed
   ];
 
   const filterNavItems: NavItemConfig[] = [
@@ -108,6 +108,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   ];
 
   const renderNavItems = (items: NavItemConfig[], sectionTitle?: string) => {
+    if (items.length === 0) return null; // Don't render section if no items (e.g., mainNavItems after removing Dashboard)
+
     const sectionContent = (
       <>
         {sectionTitle && !isIconOnly && (
@@ -194,7 +196,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
               <div className={cn("h-10 bg-muted rounded", isIconOnly ? "w-9" : "w-full")}></div>
               <SidebarSeparator />
-              {[...Array(1)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
+              {/* Placeholder for mainNavItems if any, removed one for Dashboard */}
               <SidebarSeparator />
               {[...Array(5)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} 
               <SidebarSeparator />
@@ -274,7 +276,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
               </SidebarMenuItem>
             </SidebarMenu>
 
-            <SidebarSeparator/>
+            {mainNavItems.length > 0 && <SidebarSeparator/>}
             {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
             <SidebarSeparator />
             {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
