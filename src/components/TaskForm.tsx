@@ -39,7 +39,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
 
-const taskCategories: [TaskCategory, ...TaskCategory[]] = ["Assignment", "Class", "Personal"];
+const taskCategories: [TaskCategory, ...TaskCategory[]] = ["General", "Assignment", "Class", "Personal"];
 const taskPriorities: [TaskPriority, ...TaskPriority[]] = ["None", "Low", "Medium", "High"];
 
 
@@ -83,7 +83,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           title: "",
           description: "",
           dueDate: new Date(new Date().setHours(23, 59, 59, 999)), 
-          category: undefined,
+          category: "General", // Default to General for new tasks
           priority: "None",
           subtasks: [],
         },
@@ -322,3 +322,4 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     </Form>
   );
 }
+
