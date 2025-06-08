@@ -219,15 +219,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (authError.code === 'auth/popup-closed-by-user') {
         title = "Google Sign-In Configuration Issue";
-        description = `The Google Sign-In popup closed before completing. This is typically due to Firebase/Google Cloud project configuration. Please verify the following:
-        
-1.  **Authorized Domain:** Is '${currentHostname}' (your app's current domain) EXACTLY listed in Firebase Console -> Authentication -> Settings -> Authorized domains?
-2.  **Project Support Email:** Is the "User support email" set in Google Cloud Console -> APIs & Services -> OAuth consent screen? This is CRITICAL.
-3.  **API Key Restrictions:** In Google Cloud Console -> APIs & Services -> Credentials, check if your API key has restrictions that might block this domain or the "Identity Toolkit API".
-4.  **Pop-up Blockers:** Try temporarily disabling any pop-up blockers.
+        description = `The Google Sign-In popup closed before completing. This usually means a Firebase or Google Cloud project configuration issue. PLEASE METICULOUSLY VERIFY:
 
-If these are correct, check your browser console for further error details from Google.`;
-        toastVariant = "default"; // More instructional
+1.  **Authorized Domain:** The domain '${currentHostname}' (your app's current URL) MUST be EXACTLY listed in: Firebase Console -> Project Settings -> Authentication -> Settings -> Authorized domains.
+2.  **Project Support Email:** The "User support email" MUST be set in: Google Cloud Console -> APIs & Services -> OAuth consent screen. THIS IS CRITICAL.
+3.  **API Key Restrictions:** Check API key restrictions in: Google Cloud Console -> APIs & Services -> Credentials. Ensure it's not blocking this domain or the "Identity Toolkit API".
+4.  **Pop-up Blockers:** Temporarily disable any pop-up blockers.
+5.  **Browser's Network Tab:** If all above are correct, open your browser's Developer Tools (F12 or Right-Click -> Inspect), go to the 'Network' tab, and try signing in again. Look for any failed requests (often red) to Google domains for more specific error messages.
+
+If these are correct, also check the general browser console for further error details from Google.`;
+        toastVariant = "default"; 
       } else if (authError.code === 'auth/cancelled-popup-request') {
         title = "Google Sign-In Cancelled";
         description = "Google Sign-In was cancelled. Another popup may have been opened or the request was cancelled by the browser.";
@@ -245,7 +246,7 @@ If these are correct, check your browser console for further error details from 
       } else if (authError.message) {
         description = `Google Sign-In Error: ${authError.message}. Please check the console for more details.`;
       }
-      toast({ title: title, description, variant: toastVariant, duration: 30000 }); // Increased duration for readability
+      toast({ title: title, description, variant: toastVariant, duration: 30000 }); 
       return { user: null, error: description };
     } finally {
       setLoading(false);
@@ -288,3 +289,4 @@ export function useAuth() {
   }
   return context;
 }
+
