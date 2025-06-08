@@ -39,7 +39,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   const { toast } = useToast();
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<TaskFilter>('all');
+  const [filter, setFilter] = useState<TaskFilter>('general'); // Default filter is now 'general'
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
@@ -334,6 +334,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         });
       case 'general':
         return nonTrashedTasks.filter(task => task.category === 'General');
+      case 'all': // 'all' case still here for completeness, even if 'general' is default
+        return nonTrashedTasks;
       default: 
         return nonTrashedTasks;
     }
