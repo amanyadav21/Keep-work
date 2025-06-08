@@ -36,19 +36,6 @@ const categoryIcons: Record<TaskCategory, React.ElementType> = {
   Personal: User,
 };
 
-const priorityDotColor = (priority?: TaskPriority): string => {
-  switch (priority) {
-    case 'High':
-      return 'bg-[hsl(var(--priority-high))]';
-    case 'Medium':
-      return 'bg-[hsl(var(--priority-medium))]';
-    case 'Low':
-      return 'bg-[hsl(var(--priority-low))]';
-    default:
-      return 'bg-transparent';
-  }
-};
-
 function formatDynamicDueDate(isoDateString: string): string {
   const date = parseISO(isoDateString);
   if (!isValid(date)) return "Invalid date";
@@ -139,7 +126,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
       <Card
         className={cn(
           "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
-          task.isCompleted ? "bg-muted/60 dark:bg-muted/30 hover:shadow-md" : "bg-card",
+          task.isCompleted ? "bg-muted/50 dark:bg-muted/40 hover:shadow-md" : "bg-card",
           isOverdue && !task.isCompleted ? "border-destructive/60 shadow-destructive/10 hover:shadow-destructive/20 dark:shadow-destructive/20" : ""
         )}
         onClick={cardClickHandler}
@@ -163,7 +150,17 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             {task.priority && task.priority !== "None" && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className={cn("mt-1.5 h-2.5 w-2.5 rounded-full flex-shrink-0", priorityDotColor(task.priority))} data-nocardclick="true" aria-label={`${task.priority} priority`}></span>
+                  <div className="mt-0.5 flex-shrink-0" data-nocardclick="true">
+                    <Flag
+                      className={cn(
+                        "h-5 w-5",
+                        task.priority === "High" && "text-destructive",
+                        task.priority === "Medium" && "text-accent",
+                        task.priority === "Low" && "text-primary"
+                      )}
+                      aria-label={`${task.priority} priority`}
+                    />
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="start">
                   <p>{task.priority} Priority</p>
@@ -174,7 +171,6 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               id={`task-title-${task.id}`}
               className={cn(
                 "text-lg font-semibold text-foreground break-words line-clamp-2",
-                task.priority && task.priority !== "None" ? "" : "ml-0",
                 task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
               )}
             >
@@ -182,7 +178,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             </CardTitle>
           </div>
           {task.title && task.description && (
-            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}>
+            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(1.25rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}>
               {task.description}
             </CardDescription>
           )}
