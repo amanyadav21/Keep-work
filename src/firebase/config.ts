@@ -1,3 +1,4 @@
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -5,13 +6,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyA1UNQ7L-tLWgrzWvCp2eTtOdsYKvcEvQY",
-  authDomain: "keepwork-56aa8.firebaseapp.com",
-  projectId: "keepwork-56aa8",
-  storageBucket: "keepwork-56aa8.appspot.com", // Corrected from .firebasestorage.app
-  messagingSenderId: "771175476052",
-  appId: "1:771175476052:web:43d76febcd350cc120f6c1",
-  measurementId: "G-03GMEKNKYH"
+  apiKey: "AIzaSyAoi7YVpVJcDuqAl20K5w7wp9fUePNh-vg",
+  authDomain: "taskwise-student.firebaseapp.com",
+  projectId: "taskwise-student",
+  storageBucket: "taskwise-student.firebasestorage.app",
+  messagingSenderId: "161828988974",
+  appId: "1:161828988974:web:ed4462923d2026a02257bf"
 };
 
 // Initialize Firebase
@@ -26,3 +26,4 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 export { app, auth, db };
+
