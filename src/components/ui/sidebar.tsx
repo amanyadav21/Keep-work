@@ -486,10 +486,10 @@ export const sidebarMenuButtonVariants = cva(
   {
     variants: {
       variant: {
-        default: "text-foreground hover:bg-muted hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-primary data-[active=true]:font-semibold",
+        default: "text-foreground hover:bg-muted hover:text-foreground", // Simplified: active state handled in component
         primary: "bg-primary text-primary-foreground hover:bg-primary/90 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground",
         secondary: "text-secondary-foreground hover:bg-secondary/80 data-[active=true]:bg-secondary data-[active=true]:text-secondary-foreground font-medium",
-        ghost: "text-foreground hover:bg-muted hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-primary",
+        ghost: "text-foreground hover:bg-muted hover:text-foreground", // Simplified: active state handled in component
         destructive: "text-destructive hover:bg-destructive/10 data-[active=true]:bg-destructive/20 data-[active=true]:text-destructive",
       },
       size: {
@@ -549,11 +549,11 @@ const SidebarMenuButton = React.forwardRef<
         ref={ref}
         data-sidebar="menu-button"
         data-size={effectiveSize}
-        data-active={isActive} // Pass isActive directly for styling
+        data-active={isActive} 
         className={cn(
           sidebarMenuButtonVariants({ variant, size: effectiveSize, className }),
-           isActive && (variant === "default" || variant === "ghost") ? "bg-primary/10 text-primary font-semibold" : "", // specific active style for default/ghost
-           isActive && variant === "secondary" ? "bg-secondary text-secondary-foreground font-semibold" : "" // specific active style for secondary
+           isActive && (variant === "default" || variant === "ghost") ? "bg-accent text-accent-foreground font-semibold" : "", 
+           isActive && variant === "secondary" ? "bg-secondary text-secondary-foreground font-semibold" : "" 
         )}
         {...props}
       >
@@ -567,7 +567,7 @@ const SidebarMenuButton = React.forwardRef<
       let tooltipProps: React.ComponentProps<typeof TooltipContent> = {
         side: "right",
         align: "center",
-        className: "bg-popover text-popover-foreground" // Use theme variables
+        className: "bg-popover text-popover-foreground" 
       };
       if (typeof tooltip === "string") {
         tooltipProps.children = <p>{tooltip}</p>;
