@@ -366,6 +366,8 @@ export default function HomePage() {
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
+      case 'general':
+        return nonTrashedTasks.filter(task => task.category === 'General');
       default: 
         return nonTrashedTasks;
     }
