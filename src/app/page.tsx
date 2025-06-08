@@ -21,13 +21,14 @@ import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LandingPage } from '@/components/LandingPage';
 
-// HomePage no longer needs params or searchParams as props
-// interface HomePageProps {
-//   params: Record<string, never>;
-//   searchParams: { [key: string]: string | string[] | undefined };
-// }
+
+interface HomePageProps {
+  params: Record<string, never>;
+  searchParams: { [key: string]: string | string[] | undefined };
+}
 
 const priorityOrder: Record<TaskPriority, number> = {
+  "Urgent": 0,
   "High": 1,
   "Medium": 2,
   "Low": 3,

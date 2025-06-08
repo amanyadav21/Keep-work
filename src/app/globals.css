@@ -13,13 +13,13 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 10% 15%;
     --primary: 256 100% 50%; /* New Primary: #4300FF */
-    --primary-foreground: 0 0% 100%; /* White */
+    --primary-foreground: 0 0% 100%; /* White text */
     --secondary: 220 20% 92%; /* Light gray, slightly bluish */
     --secondary-foreground: 220 10% 30%;
     --muted: 220 20% 96%; /* Very light gray, for subtle backgrounds */
     --muted-foreground: 220 10% 45%;
     --accent: 30 90% 55%; /* A warm orange/amber for contrast */
-    --accent-foreground: 20 10% 15%; /* Dark text for warm accent */
+    --accent-foreground: 0 0% 100%; /* White text on accent */
     --destructive: 0 70% 50%; /* Red */
     --destructive-foreground: 0 0% 100%;
     --border: 220 15% 88%; /* Slightly softer border */
@@ -41,6 +41,7 @@
     --status-green: 145 63% 40%; /* A balanced green */
 
     /* Priority Colors */
+    --priority-urgent: 0 85% 60%; /* Vibrant red */
     --priority-high: 0 70% 50%; /* Destructive red */
     --priority-medium: 30 90% 55%; /* Accent orange/amber */
     --priority-low: 256 100% 50%; /* New Primary color */
@@ -48,19 +49,19 @@
 
   .dark {
     --background: 220 20% 10%; /* Deep dark blueish grey */
-    --foreground: 220 10% 92%; /* Very light grey (near white) for text */
+    --foreground: 220 10% 95%; /* Closer to white for main text */
 
     --card: 220 15% 16%; /* Darker card background */
-    --card-foreground: 220 10% 90%; /* Light text for cards */
+    --card-foreground: 220 10% 92%; /* Light text for cards */
 
     --popover: 220 15% 15%; /* Popover similar to card */
-    --popover-foreground: 220 10% 90%; /* Light text for popovers */
+    --popover-foreground: 220 10% 92%; /* Light text for popovers */
 
     --primary: 256 100% 62%; /* Vibrant primary for buttons and highlights */
     --primary-foreground: 0 0% 100%; /* White text on primary buttons */
 
     --secondary: 220 15% 28%; /* Lighter secondary background for buttons */
-    --secondary-foreground: 220 10% 88%; /* Lighter text for secondary buttons/elements */
+    --secondary-foreground: 220 10% 90%; /* Lighter text for secondary buttons/elements */
 
     --muted: 220 15% 22%; /* Muted backgrounds, slightly lighter than card */
     --muted-foreground: 220 10% 65%; /* Muted text, good for placeholders or less important info */
@@ -83,7 +84,8 @@
     
     --status-green: 145 58% 50%; /* Adjusted status green for dark mode */
 
-    /* Priority Colors Dark - aligned with updated primary, accent, destructive */
+    /* Priority Colors Dark */
+    --priority-urgent: 0 80% 65%; /* Vibrant red for dark mode */
     --priority-high: 0 70% 58%; 
     --priority-medium: 30 85% 58%; 
     --priority-low: 256 100% 62%; 

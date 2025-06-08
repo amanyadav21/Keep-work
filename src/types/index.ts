@@ -2,7 +2,7 @@
 import type { User as FirebaseUserType } from 'firebase/auth';
 
 export type TaskCategory = "General" | "Assignment" | "Class" | "Personal";
-export type TaskPriority = "High" | "Medium" | "Low" | "None";
+export type TaskPriority = "Urgent" | "High" | "Medium" | "Low" | "None";
 
 export interface Subtask {
   id: string;
