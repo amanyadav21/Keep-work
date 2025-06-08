@@ -28,9 +28,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag } from "lucide-react";
+import { CalendarIcon, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag, BellRing, BellOff } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isValid } from "date-fns";
 import type { Task, TaskCategory, Subtask, TaskPriority } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
@@ -51,23 +51,36 @@ const subtaskSchema = z.object({
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required.").max(150, "Title must be at most 150 characters"),
-  description: z.string().min(3, "Description must be at least 3 characters"), // Removed .max(500, ...)
+  description: z.string().min(3, "Description must be at least 3 characters"),
   dueDate: z.date({ required_error: "Due date is required." }),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
   priority: z.enum(taskPriorities).optional().default("None"),
   subtasks: z.array(subtaskSchema).optional(),
+  reminderDate: z.date().nullable().optional(),
+  reminderTime: z.string().optional().nullable(), // HH:mm format
 });
 
 export type TaskFormValues = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
-  onSubmit: (data: TaskFormValues, existingTaskId?: string) => void;
+  onSubmit: (data: TaskFormValues & { reminderAt?: string | null }, existingTaskId?: string) => void;
   editingTask?: Task | null;
   onClose: () => void;
 }
 
 export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   const { toast } = useToast();
+
+  let initialReminderDate: Date | null = null;
+  let initialReminderTime: string = "09:00";
+
+  if (editingTask?.reminderAt && isValid(parseISO(editingTask.reminderAt))) {
+    const reminderDateTime = parseISO(editingTask.reminderAt);
+    initialReminderDate = reminderDateTime;
+    initialReminderTime = format(reminderDateTime, "HH:mm");
+  }
+
+
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: editingTask
@@ -78,14 +91,18 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           category: editingTask.category,
           priority: editingTask.priority || "None",
           subtasks: editingTask.subtasks?.map(st => ({...st})) || [],
+          reminderDate: initialReminderDate,
+          reminderTime: initialReminderTime,
         }
       : {
           title: "",
           description: "",
           dueDate: new Date(new Date().setHours(23, 59, 59, 999)), 
-          category: "General", // Default to General for new tasks
+          category: "General",
           priority: "None",
           subtasks: [],
+          reminderDate: null,
+          reminderTime: "09:00",
         },
   });
 
@@ -106,12 +123,37 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   };
 
   const handleFormSubmit = (data: TaskFormValues) => {
-    onSubmit(data, editingTask?.id);
+    let reminderAtISO: string | null = null;
+    if (data.reminderDate && data.reminderTime) {
+      try {
+        const [hours, minutes] = data.reminderTime.split(':').map(Number);
+        if (!isNaN(hours) && !isNaN(minutes)) {
+          let reminderDateTime = setSeconds(data.reminderDate, 0);
+          reminderDateTime = setMilliseconds(reminderDateTime, 0);
+          reminderDateTime = setHours(reminderDateTime, hours);
+          reminderDateTime = setMinutes(reminderDateTime, minutes);
+          reminderAtISO = reminderDateTime.toISOString();
+        }
+      } catch (e) {
+        console.error("Error parsing reminder time:", e);
+        toast({ title: "Invalid Reminder Time", description: "Please ensure reminder time is set correctly.", variant: "destructive"});
+        return;
+      }
+    }
+
+    const submissionData = { ...data, reminderAt: reminderAtISO };
+    onSubmit(submissionData, editingTask?.id);
+    
     toast({
       title: editingTask ? "Task Updated" : "Task Added",
       description: `"${data.title.substring(0, 30)}${data.title.length > 30 ? "..." : ""}" ${editingTask ? 'updated' : 'added'}.`,
     });
     onClose();
+  };
+  
+  const clearReminder = () => {
+    form.setValue("reminderDate", null);
+    form.setValue("reminderTime", "09:00"); // Reset time or set to empty if preferred
   };
 
   return (
@@ -244,6 +286,88 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
               </FormItem>
             )}
           />
+
+        <Separator />
+        <div className="space-y-2">
+            <FormLabel className="flex items-center text-sm font-medium">
+                <BellRing className="mr-2 h-4 w-4 text-muted-foreground" /> Reminder
+            </FormLabel>
+            <div className="grid grid-cols-1 sm:grid-cols-7 gap-2 items-end">
+                <div className="sm:col-span-4">
+                <FormField
+                    control={form.control}
+                    name="reminderDate"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {field.value ? (
+                                format(field.value, "PPP")
+                                ) : (
+                                <span>Pick reminder date</span>
+                                )}
+                            </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                            />
+                        </PopoverContent>
+                        </Popover>
+                        <FormMessage className="text-xs" />
+                    </FormItem>
+                    )}
+                />
+                </div>
+                <div className="sm:col-span-2">
+                <FormField
+                    control={form.control}
+                    name="reminderTime"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormControl>
+                        <Input 
+                            type="time" 
+                            {...field} 
+                            value={field.value || ""}
+                            disabled={!form.watch("reminderDate")}
+                            className={cn(!form.watch("reminderDate") && "bg-muted/50")}
+                        />
+                        </FormControl>
+                        <FormMessage className="text-xs" />
+                    </FormItem>
+                    )}
+                />
+                </div>
+                 <div className="sm:col-span-1">
+                     <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={clearReminder} 
+                        disabled={!form.watch("reminderDate")}
+                        className="w-full sm:w-10 h-10"
+                        aria-label="Clear reminder"
+                    >
+                        <BellOff className="h-4 w-4" />
+                    </Button>
+                 </div>
+            </div>
+        </div>
+        <Separator />
 
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">

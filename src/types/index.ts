@@ -16,16 +16,17 @@ export interface Task {
   description: string;
   dueDate: string; // ISO string date
   category: TaskCategory;
-  priority?: TaskPriority; // Added priority field
+  priority?: TaskPriority;
   isCompleted: boolean;
   createdAt: string; // ISO string date for reference
   subtasks?: Subtask[];
   userId?: string;
   isTrashed?: boolean;
   trashedAt?: string | null; // ISO string date or null
+  reminderAt?: string | null; // ISO string date-time or null for reminders
 }
 
-export type TaskFilter = "all" | "pending" | "completed" | "today" | "general"; // Added "general" filter
+export type TaskFilter = "all" | "pending" | "completed" | "today" | "general";
 
 // For Student Assistant (Chat)
 export interface ChatMessage {

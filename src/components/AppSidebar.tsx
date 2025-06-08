@@ -10,7 +10,6 @@ import {
   ListChecks,
   ListFilter, 
   Users,
-  Bell,
   Tag,
   Archive,
   Trash2,
@@ -19,6 +18,7 @@ import {
   LogOut,
   CalendarClock, 
   Inbox, 
+  AlarmClock, // Added AlarmClock icon
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -101,7 +101,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
 
   const categoryNavItems: NavItemConfig[] = [
     { href: '/classes', label: 'Class Section', icon: Users, tooltip: 'Class Section (Coming Soon)', disabled: true, isPageLink: true },
-    { href: '/reminders', label: 'Reminders', icon: Bell, tooltip: 'Reminders (Coming Soon)', disabled: true, isPageLink: true },
+    { href: '/reminders', label: 'Reminders', icon: AlarmClock, tooltip: 'View Reminders', disabled: false, isPageLink: true },
     { href: '/labels', label: 'Labels', icon: Tag, tooltip: 'Labels (Coming Soon)', disabled: true, isPageLink: true },
     { href: '/archive', label: 'Archive', icon: Archive, tooltip: 'Archive (Coming Soon)', disabled: true, isPageLink: true },
   ];
@@ -139,9 +139,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             
             const commonButtonProps = {
               variant: "ghost" as const,
-              className: cn(
-                // Active class now handled by SidebarMenuButton's internal logic
-              ),
               onClick: item.action,
               disabled: item.disabled,
               isActive: isActive, 
@@ -263,7 +260,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             {mainNavItems.length > 0 && <SidebarSeparator/>}
             {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
             
-            {/* Conditionally render separator based on if previous section had items AND current section has items */}
             {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 && (categoryNavItems.length > 0 || managementNavItems.length > 0)) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
             

@@ -35,7 +35,7 @@ export default function HomePage() {
   const { toast } = useToast();
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<TaskFilter>('general'); // Default filter is now 'general'
+  const [filter, setFilter] = useState<TaskFilter>('general');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
@@ -81,6 +81,14 @@ export default function HomePage() {
           } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
             trashedAt = data.trashedAt;
           }
+          
+          let reminderAt = null;
+          if (data.reminderAt instanceof Timestamp) {
+            reminderAt = data.reminderAt.toDate().toISOString();
+          } else if (typeof data.reminderAt === 'string' && isValid(parseISO(data.reminderAt))) {
+            reminderAt = data.reminderAt;
+          }
+
 
           return {
             id: docSnap.id,
@@ -93,6 +101,7 @@ export default function HomePage() {
             createdAt,
             isTrashed: data.isTrashed || false,
             trashedAt,
+            reminderAt,
             subtasks: data.subtasks || [],
           } as Task;
         });
@@ -119,7 +128,7 @@ export default function HomePage() {
             variant: "destructive",
             duration: error.code === 'unavailable' ? 8000 : 15000,
         });
-        setIsLoadingTasks(false); // Still set loading to false so UI doesn't hang indefinitely
+        setIsLoadingTasks(false); 
       });
 
       return () => unsubscribe();
@@ -130,7 +139,7 @@ export default function HomePage() {
   }, [user, toast, isMounted, authLoading]);
 
 
-  const handleAddTask = useCallback(async (data: TaskFormValues) => {
+  const handleAddTask = useCallback(async (data: TaskFormValues & { reminderAt?: string | null }) => {
     if (!user) {
       toast({ title: "Not Authenticated", description: "Please log in to add tasks.", variant: "destructive" });
       return;
@@ -153,6 +162,7 @@ export default function HomePage() {
         userId: user.uid,
         isTrashed: false,
         trashedAt: null,
+        reminderAt: data.reminderAt || null,
       };
       await addDoc(tasksCollectionRef, newTaskData);
     } catch (error: any) {
@@ -161,14 +171,13 @@ export default function HomePage() {
       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
         description = "You appear to be offline. The task will be saved locally and synced when you're back online.";
          toast({ title: "Offline Mode", description, variant: "default" });
-         // Firestore handles offline queueing, so we don't need to prevent form close or retry here.
       } else {
         toast({ title: "Error Adding Task", description, variant: "destructive" });
       }
     }
   }, [user, toast]);
 
-  const handleEditTask = useCallback(async (data: TaskFormValues, taskId: string) => {
+  const handleEditTask = useCallback(async (data: TaskFormValues & { reminderAt?: string | null }, taskId: string) => {
     if (!user) {
       toast({ title: "Not Authenticated", description: "Please log in to edit tasks.", variant: "destructive" });
       return;
@@ -181,6 +190,7 @@ export default function HomePage() {
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
+        reminderAt: data.reminderAt || null,
         subtasks: data.subtasks?.map(st => ({
           id: st.id || crypto.randomUUID(),
           text: st.text,
@@ -201,7 +211,7 @@ export default function HomePage() {
     }
   }, [user, toast]);
 
-  const handleSubmitTask = useCallback((data: TaskFormValues, existingTaskId?: string) => {
+  const handleSubmitTask = useCallback((data: TaskFormValues & { reminderAt?: string | null }, existingTaskId?: string) => {
     if (existingTaskId) {
       handleEditTask(data, existingTaskId);
     } else {
@@ -330,7 +340,7 @@ export default function HomePage() {
         });
       case 'general':
         return nonTrashedTasks.filter(task => task.category === 'General');
-      case 'all': // 'all' case still here for completeness, even if 'general' is default
+      case 'all':
         return nonTrashedTasks;
       default: 
         return nonTrashedTasks;
