@@ -111,7 +111,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     const sectionContent = (
       <>
         {sectionTitle && !isIconOnly && (
-          <div className="px-3 pt-3 pb-1 text-xs font-semibold uppercase text-muted-foreground/70 tracking-wider">
+          <div className="px-3 pt-4 pb-1.5 text-xs font-semibold uppercase text-muted-foreground/90 tracking-wider">
             {sectionTitle}
           </div>
         )}
