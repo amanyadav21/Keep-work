@@ -28,14 +28,20 @@ export default function TrashPage() {
   }, []);
 
   useEffect(() => {
-    if (!isMounted) return;
-
-    if (authLoading) {
-      setIsLoading(true);
-      return;
-    }
-    if (!user) {
+    if (isMounted && !authLoading && !user) {
       router.push('/login');
+    }
+  }, [isMounted, authLoading, user, router]);
+
+
+  useEffect(() => {
+    if (!isMounted || authLoading || !user) {
+      if (!user && !authLoading && isMounted) {
+        // This case is handled by the redirect useEffect above
+        setIsLoading(false); // Prevent further processing if redirecting
+      } else if (authLoading) {
+        setIsLoading(true);
+      }
       return;
     }
 
@@ -53,7 +59,8 @@ export default function TrashPage() {
         } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
           dueDate = data.dueDate;
         } else {
-          dueDate = new Date().toISOString();
+          // Fallback or handle as appropriate for your app, e.g., set to null or a default date
+          dueDate = new Date().toISOString(); // Example fallback
         }
 
         let createdAt;
@@ -62,7 +69,7 @@ export default function TrashPage() {
         } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
           createdAt = data.createdAt;
         } else {
-          createdAt = new Date().toISOString();
+          createdAt = new Date().toISOString(); // Example fallback
         }
 
         let trashedAt;
@@ -71,8 +78,9 @@ export default function TrashPage() {
         } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
           trashedAt = data.trashedAt;
         } else {
-          trashedAt = new Date().toISOString();
+           trashedAt = new Date().toISOString(); // Fallback if not a valid ISO string or Timestamp
         }
+
 
         return {
           id: docSnap.id,
@@ -115,7 +123,7 @@ export default function TrashPage() {
     });
 
     return () => unsubscribe();
-  }, [user, authLoading, router, toast, isMounted]);
+  }, [user, authLoading, isMounted, router, toast]);
 
   const handleRestoreTask = useCallback(async (taskId: string) => {
     if (!user) return;
@@ -186,8 +194,9 @@ export default function TrashPage() {
     );
   }
 
-  if (!user && !authLoading && isMounted) {
-     router.push('/login');
+  if (!user) {
+    // If no user (and auth is done loading, component is mounted),
+    // useEffect is handling the redirect. Show a "Redirecting..." message.
      return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -196,6 +205,7 @@ export default function TrashPage() {
     );
   }
 
+  // Actual page content if user exists
   return (
     <div className="flex flex-col min-h-screen bg-muted/30">
       <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
@@ -209,7 +219,7 @@ export default function TrashPage() {
               Trash
             </h1>
           </div>
-          {trashedTasks.length > 0 && (
+          {trashedTasks.length > 0 && !isLoading && ( // Ensure not loading before showing empty trash button
              <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm">Empty Trash</Button>
@@ -233,7 +243,7 @@ export default function TrashPage() {
 
       <main className="flex-1 p-4 md:p-6">
         <div className="max-w-3xl mx-auto">
-          {isLoading ? (
+          {isLoading ? ( // This covers loading of trashed tasks specifically
             <div className="grid gap-4">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="bg-card p-4 rounded-lg shadow animate-pulse">

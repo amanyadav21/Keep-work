@@ -20,6 +20,12 @@ export default function ProfilePage() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (mounted && !authLoading && !user) {
+      router.push('/login');
+    }
+  }, [mounted, authLoading, user, router]);
+
   if (authLoading || !mounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -28,8 +34,9 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user && !authLoading && mounted) {
-    router.push('/login');
+  if (!user) {
+    // If no user (and auth is done loading, component is mounted),
+    // useEffect is handling the redirect. Show a "Redirecting..." message.
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -38,15 +45,6 @@ export default function ProfilePage() {
     );
   }
   
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <p>Please log in to view your profile.</p>
-        <Button onClick={() => router.push('/login')} className="ml-2">Login</Button>
-      </div>
-    );
-  }
-
   const joinDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : null;
   const formattedJoinDate = joinDate ? format(joinDate, "MMMM d, yyyy") : "Date not available";
   const userInitial = user.displayName
