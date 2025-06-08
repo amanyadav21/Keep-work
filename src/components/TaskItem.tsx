@@ -138,8 +138,9 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     <TooltipProvider delayDuration={150}>
       <Card
         className={cn(
-          "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow duration-200 cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
-          task.isCompleted ? "bg-muted/60 dark:bg-muted/30 hover:shadow-md" : "bg-card"
+          "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
+          task.isCompleted ? "bg-muted/60 dark:bg-muted/30 hover:shadow-md" : "bg-card",
+          isOverdue && !task.isCompleted ? "border-destructive/60 shadow-destructive/10 hover:shadow-destructive/20 dark:shadow-destructive/20" : ""
         )}
         onClick={cardClickHandler}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') cardClickHandler(e);}}
@@ -186,9 +187,9 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent className="p-4 pt-0"> {/* Removed flex-grow and flex-col min-h-0 */}
+        <CardContent className="p-4 pt-0">
           {task.subtasks && task.subtasks.length > 0 && (
-            <div className="mt-2 space-y-2"> {/* Removed flex-1 and flex-col min-h-0 */}
+            <div className="mt-2 space-y-2">
               <Separator className="mb-2" />
               {totalSubtasks > 0 && (
                  <div className="mb-1.5 px-1">
@@ -199,7 +200,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                   <Progress value={subtaskProgress} className="h-1.5 bg-primary/20 [&>div]:bg-primary" />
                 </div>
               )}
-              <ScrollArea className="max-h-28 pr-1 -mr-1"> {/* Removed flex-1 */}
+              <ScrollArea className="max-h-28 pr-1 -mr-1">
                 <div className="space-y-1.5 py-0.5 px-1">
                 {task.subtasks.map((subtask) => (
                   <div key={subtask.id} className="flex items-center space-x-2 group/subtask p-1 rounded hover:bg-muted/50 transition-colors">
@@ -235,7 +236,6 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 
           <div className={cn(
             "pt-3 text-xs flex items-center justify-between gap-x-2",
-            // Add margin-top if no subtasks, to separate metadata from header content
             !(task.subtasks && task.subtasks.length > 0) ? "mt-2" : "",
             task.isCompleted ? "text-muted-foreground" : "text-muted-foreground/90"
           )}>
