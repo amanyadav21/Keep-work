@@ -410,18 +410,22 @@ const SidebarSeparator = React.forwardRef<
   const [clientMounted, setClientMounted] = React.useState(false);
   React.useEffect(() => { setClientMounted(true); }, []);
 
-  const showSeparator = clientMounted ? (open || collapsible !== 'icon' || isMobile) : (defaultOpen || collapsible !== 'icon');
-
-
-  if (!showSeparator) {
-    return null;
+  let isIconOnlyMode: boolean;
+  if (!clientMounted) {
+    // Approximation for SSR/pre-hydration. isMobile will be false on server.
+    isIconOnlyMode = !defaultOpen && collapsible === 'icon'; 
+  } else {
+    isIconOnlyMode = !open && collapsible === 'icon' && !isMobile;
   }
+
   return (
     <Separator
       ref={ref}
       data-sidebar="separator"
       className={cn(
-        "mx-2 my-1 w-auto bg-border",
+        isIconOnlyMode 
+          ? "my-1.5 h-px w-3/4 mx-auto bg-border/70" // Style for icon-only mode
+          : "mx-2 my-1 w-auto bg-border", // Style for expanded mode
         className
       )}
       {...props}
@@ -429,6 +433,7 @@ const SidebarSeparator = React.forwardRef<
   );
 });
 SidebarSeparator.displayName = "SidebarSeparator";
+
 
 const SidebarContent = React.forwardRef<
   HTMLDivElement,
@@ -489,10 +494,10 @@ export const sidebarMenuButtonVariants = cva(
     variants: {
       variant: {
         default: "text-foreground hover:bg-muted hover:text-foreground",
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90", // Active state for primary handled in component
-        secondary: "text-secondary-foreground hover:bg-secondary/80 data-[active=true]:bg-secondary data-[active=true]:text-secondary-foreground font-medium",
+        primary: "text-primary-foreground bg-primary hover:bg-primary/90",
+        secondary: "text-secondary-foreground bg-secondary hover:bg-secondary/80",
         ghost: "text-foreground hover:bg-muted hover:text-foreground",
-        destructive: "text-destructive hover:bg-destructive/10", // Active state for destructive handled in component
+        destructive: "text-destructive hover:bg-destructive/10 text-destructive-foreground",
       },
       size: {
         default: "h-9 text-sm",
@@ -549,19 +554,19 @@ const SidebarMenuButton = React.forwardRef<
       if (!isActive) return "";
 
       if (isIconOnlyEffective) {
-          // Collapsed (Icon-Only) Sidebar Active Item Styling (for all variants)
-          return "bg-accent text-accent-foreground";
+        // Collapsed (Icon-Only) Sidebar Active Item Styling
+        return "bg-accent text-accent-foreground"; // Consistent for all variants when icon-only
       } else {
-          // Expanded Sidebar Active Item Styling
-          if (variant === "default" || variant === "ghost") {
-              return "bg-muted text-primary font-semibold border-l-2 border-primary";
-          }
-          if (variant === "primary") {
-              return "bg-primary text-primary-foreground font-semibold"; // Already handled by CVA, but can be explicit
-          }
-          if (variant === "destructive") {
-              return "bg-destructive/10 text-destructive font-semibold border-l-2 border-destructive";
-          }
+        // Expanded Sidebar Active Item Styling
+        if (variant === "default" || variant === "ghost") {
+          return "bg-muted text-primary font-semibold border-l-2 border-primary";
+        }
+        if (variant === "primary") {
+          return "bg-primary text-primary-foreground font-semibold"; // Already has strong active appearance
+        }
+        if (variant === "destructive") {
+          return "bg-destructive/10 text-destructive font-semibold border-l-2 border-destructive";
+        }
       }
       return "";
     };
@@ -625,3 +630,4 @@ export {
   SidebarTrigger,
   useSidebar,
 };
+
