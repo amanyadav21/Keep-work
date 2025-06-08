@@ -47,38 +47,46 @@
   }
 
   .dark {
-    --background: 220 15% 12%; /* Dark desaturated blue */
-    --foreground: 220 10% 80%; /* Light gray */
-    --card: 220 15% 18%; /* Darker card */
-    --card-foreground: 220 10% 85%;
-    --popover: 220 15% 18%;
-    --popover-foreground: 220 10% 85%;
-    --primary: 256 100% 55%; /* Brighter new primary for dark mode */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 25%; /* Darker secondary */
-    --secondary-foreground: 220 10% 70%;
-    --muted: 220 15% 20%; /* Darker muted */
-    --muted-foreground: 220 10% 55%;
-    --accent: 30 80% 60%; /* Brighter orange/amber for dark mode */
-    --accent-foreground: 0 0% 100%; /* Light text for warm accent in dark */
-    --destructive: 0 65% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 10% 28%; /* Darker border */
-    --input: 220 10% 22%; /* Darker input */
-    --ring: 256 100% 58%; /* Adjusted for new primary in dark mode */
+    --background: 220 20% 10%; /* Deep dark blueish grey */
+    --foreground: 220 10% 92%; /* Very light grey (near white) for text */
+
+    --card: 220 15% 16%; /* Darker card background */
+    --card-foreground: 220 10% 90%; /* Light text for cards */
+
+    --popover: 220 15% 15%; /* Popover similar to card */
+    --popover-foreground: 220 10% 90%; /* Light text for popovers */
+
+    --primary: 256 100% 62%; /* Vibrant primary for buttons and highlights */
+    --primary-foreground: 0 0% 100%; /* White text on primary buttons */
+
+    --secondary: 220 15% 28%; /* Lighter secondary background for buttons */
+    --secondary-foreground: 220 10% 88%; /* Lighter text for secondary buttons/elements */
+
+    --muted: 220 15% 22%; /* Muted backgrounds, slightly lighter than card */
+    --muted-foreground: 220 10% 65%; /* Muted text, good for placeholders or less important info */
+
+    --accent: 30 85% 58%; /* Vibrant accent (orange/amber) */
+    --accent-foreground: 0 0% 100%; /* White text on accent elements */
+
+    --destructive: 0 70% 58%; /* Slightly brighter destructive color */
+    --destructive-foreground: 0 0% 100%; /* White text on destructive elements */
+
+    --border: 220 15% 25%; /* Softer, visible border */
+    --input: 220 15% 20%; /* Input background, distinct from card/muted */
+    --ring: 256 100% 65%; /* Ring color matching primary */
 
     --chart-1: 120 50% 55%;
-    --chart-2: 256 100% 70%; /* Adjusted for new primary in dark mode */
+    --chart-2: 256 100% 70%; 
     --chart-3: 45 80% 60%;
     --chart-4: 0 65% 65%;
     --chart-5: 260 50% 65%;
     
-    --status-green: 145 55% 55%; /* Lighter green for dark mode */
+    --status-green: 145 58% 50%; /* Adjusted status green for dark mode */
 
-    /* Priority Colors Dark */
-    --priority-high: 0 65% 60%; /* Brighter destructive red */
-    --priority-medium: 30 80% 60%; /* Brighter accent orange/amber */
-    --priority-low: 256 100% 55%; /* Brighter new primary */
+    /* Priority Colors Dark - aligned with updated primary, accent, destructive */
+    --priority-high: 0 70% 58%; 
+    --priority-medium: 30 85% 58%; 
+    --priority-low: 256 100% 62%; 
   }
 }
 
