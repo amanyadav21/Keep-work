@@ -36,6 +36,7 @@ type SidebarContextValue = {
   effectiveSidebarWidth: string;
   sidebarWidthExpanded: string;
   sidebarIconWidth: string;
+  defaultOpen: boolean; // Added for SSR consistency
 };
 
 const SidebarContext = React.createContext<SidebarContextValue | null>(null);
@@ -173,8 +174,9 @@ const SidebarProvider = React.forwardRef<
         effectiveSidebarWidth,
         sidebarWidthExpanded,
         sidebarIconWidth,
+        defaultOpen,
       }),
-      [state, open, setOpen, isMobile, isMobileSheetOpen, toggleSidebar, collapsible, effectiveSidebarWidth, sidebarWidthExpanded, sidebarIconWidth]
+      [state, open, setOpen, isMobile, isMobileSheetOpen, toggleSidebar, collapsible, effectiveSidebarWidth, sidebarWidthExpanded, sidebarIconWidth, defaultOpen]
     );
 
     return (
@@ -218,9 +220,9 @@ const Sidebar = React.forwardRef<
     }, []);
 
 
-    if (!clientMounted && context.isMobile === undefined ) {
+    if (!clientMounted && context.isMobile === undefined ) { // SSR or pre-hydration
       const ssrOpen = defaultOpen;
-      const ssrEffectiveWidth = ssrOpen ? context.sidebarWidthExpanded : context.sidebarIconWidth;
+      // const ssrEffectiveWidth = ssrOpen ? context.sidebarWidthExpanded : context.sidebarIconWidth;
 
       if (collapsible === 'offcanvas' && !ssrOpen) return null;
       if (collapsible === 'none' && !ssrOpen) return null;
@@ -377,7 +379,7 @@ const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex h-[60px] items-center border-b border-border p-3", className)}
+      className={cn("flex h-[60px] items-center border-b border-border p-3 min-w-0", className)}
       {...props}
     />
   );
@@ -404,11 +406,11 @@ const SidebarSeparator = React.forwardRef<
   React.ComponentProps<typeof Separator>
 >(({ className, ...props }, ref) => {
   const context = useSidebar();
-  const { open, collapsible, isMobile } = context;
+  const { open, collapsible, isMobile, defaultOpen } = context;
   const [clientMounted, setClientMounted] = React.useState(false);
   React.useEffect(() => { setClientMounted(true); }, []);
 
-  const showSeparator = clientMounted ? (open || collapsible !== 'icon' || isMobile) : (context.defaultOpen || collapsible !== 'icon');
+  const showSeparator = clientMounted ? (open || collapsible !== 'icon' || isMobile) : (defaultOpen || collapsible !== 'icon');
 
 
   if (!showSeparator) {
@@ -433,11 +435,11 @@ const SidebarContent = React.forwardRef<
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
   const context = useSidebar();
-  const { open, collapsible, isMobile } = context;
+  const { open, collapsible, isMobile, defaultOpen } = context;
   const [clientMounted, setClientMounted] = React.useState(false);
   React.useEffect(() => { setClientMounted(true); }, []);
 
-  const isIconOnlyMode = clientMounted ? (!open && collapsible === 'icon' && !isMobile) : (!context.defaultOpen && collapsible === 'icon');
+  const isIconOnlyMode = clientMounted ? (!open && collapsible === 'icon' && !isMobile) : (!defaultOpen && collapsible === 'icon');
 
   return (
     <div
@@ -487,10 +489,10 @@ export const sidebarMenuButtonVariants = cva(
     variants: {
       variant: {
         default: "text-foreground hover:bg-muted hover:text-foreground",
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground",
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90", // Active state for primary handled in component
         secondary: "text-secondary-foreground hover:bg-secondary/80 data-[active=true]:bg-secondary data-[active=true]:text-secondary-foreground font-medium",
         ghost: "text-foreground hover:bg-muted hover:text-foreground",
-        destructive: "text-destructive hover:bg-destructive/10 data-[active=true]:bg-destructive/20 data-[active=true]:text-destructive",
+        destructive: "text-destructive hover:bg-destructive/10", // Active state for destructive handled in component
       },
       size: {
         default: "h-9 text-sm",
@@ -547,17 +549,21 @@ const SidebarMenuButton = React.forwardRef<
       if (!isActive) return "";
 
       if (isIconOnlyEffective) {
-          // Collapsed (Icon-Only) Sidebar Active Item Styling
-          if (variant === "default" || variant === "ghost") {
-              return "bg-accent text-accent-foreground";
-          }
+          // Collapsed (Icon-Only) Sidebar Active Item Styling (for all variants)
+          return "bg-accent text-accent-foreground";
       } else {
           // Expanded Sidebar Active Item Styling
           if (variant === "default" || variant === "ghost") {
               return "bg-muted text-primary font-semibold border-l-2 border-primary";
           }
+          if (variant === "primary") {
+              return "bg-primary text-primary-foreground font-semibold"; // Already handled by CVA, but can be explicit
+          }
+          if (variant === "destructive") {
+              return "bg-destructive/10 text-destructive font-semibold border-l-2 border-destructive";
+          }
       }
-      return ""; // Default if no specific active class for current state/variant
+      return "";
     };
 
 

@@ -5,7 +5,6 @@ import { usePathname, useRouter }
 from 'next/navigation';
 import Link from 'next/link';
 import {
-  // PlusCircle removed as the button is being removed
   ListTodo,
   ListChecks,
   ListFilter, 
@@ -17,8 +16,8 @@ import {
   User,
   Settings as SettingsIcon,
   LogOut,
-  CalendarClock, // For "Today" filter
-  Inbox, // For "General" filter
+  CalendarClock, 
+  Inbox, 
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -56,7 +55,7 @@ import type { TaskFilter } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface AppSidebarProps {
-  onAddTask: () => void; // Prop remains as it's passed by HomePage, though not used for a button in sidebar anymore
+  onAddTask: () => void; 
   currentFilter: TaskFilter;
   onFilterChange: (filter: TaskFilter) => void;
 }
@@ -77,13 +76,18 @@ interface NavItemConfig {
 export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
-  const { state: sidebarState, collapsible, isMobile, open: sidebarOpen } = useSidebar();
+  const { state: sidebarState, collapsible, isMobile, open: sidebarOpen, defaultOpen } = useSidebar(); // Added defaultOpen
   const router = useRouter();
+  const [clientMounted, setClientMounted] = React.useState(false); // Added for client-side only checks
 
-  const isIconOnly = !isMobile && sidebarState === 'collapsed' && collapsible === 'icon';
+  React.useEffect(() => {
+    setClientMounted(true);
+  }, []);
+
+  const isIconOnly = clientMounted ? (!isMobile && sidebarState === 'collapsed' && collapsible === 'icon') : (!defaultOpen && collapsible === 'icon');
+
 
   const mainNavItems: NavItemConfig[] = [
-    // Dashboard removed in previous step
   ];
 
   const filterNavItems: NavItemConfig[] = [
@@ -134,10 +138,10 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             
             const commonButtonProps = {
               variant: "ghost" as const,
-              size: isIconOnly ? 'icon' : 'default' as const,
+              // size: isIconOnly ? 'icon' : 'default' as const, // Size handled by SidebarMenuButton now
               className: cn(
-                isIconOnly ? "" : "w-full justify-start",
-                isActive ? "bg-primary/10 text-primary font-semibold" : "text-foreground hover:bg-muted" 
+                // isIconOnly ? "" : "w-full justify-start", // Class handled by SidebarMenuButton
+                // isActive ? "bg-primary/10 text-primary font-semibold" : "text-foreground hover:bg-muted" // Active class handled by SidebarMenuButton
               ),
               onClick: item.action,
               disabled: item.disabled,
@@ -165,7 +169,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                     menuButton
                   )
                 ) : (
-                   <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant, size: commonButtonProps.size}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
+                   <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant, /*size: commonButtonProps.size*/}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
                     {buttonContent}
                    </div>
                 )}
@@ -193,9 +197,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
         <SidebarContent className="p-0">
           <ScrollArea className="h-full w-full p-2">
             <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
-              {/* Add New Task button placeholder removed */}
-              {/* <div className={cn("h-10 bg-muted rounded", isIconOnly ? "w-9" : "w-full")}></div> */}
-              {/* <SidebarSeparator /> */} {/* Separator after Add Task removed */}
               {[...Array(5)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} 
               <SidebarSeparator />
               {[...Array(4)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
@@ -259,27 +260,9 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
       <SidebarContent className="p-0">
         <ScrollArea className="h-full w-full p-2">
           <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
-            {/* Add New Task button removed from here */}
-            {/* 
-            <SidebarMenu className={cn(isIconOnly && "w-auto")}>
-               <SidebarMenuItem className={isIconOnly ? 'flex justify-center' : ''}>
-                  <SidebarMenuButton
-                    onClick={onAddTask}
-                    variant="primary"
-                    size={isIconOnly ? "icon" : "lg"}
-                    className={cn(isIconOnly ? "" : "w-full justify-start h-10 text-base")}
-                    tooltip="Add New Task"
-                  >
-                    <PlusCircle className="h-5 w-5 shrink-0" />
-                    {!isIconOnly && <span className="truncate">Add New Task</span>}
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu> 
-            */}
-
+            
             {mainNavItems.length > 0 && <SidebarSeparator/>}
             {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
-            {/* Add a separator if there were mainNavItems OR if there are filterNavItems and no mainNavItems */}
             {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
             <SidebarSeparator />
@@ -308,7 +291,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             ) : (
               <DropdownMenuTrigger asChild>{userMenuButton}</DropdownMenuTrigger>
             )}
-            <DropdownMenuContent sideOffset={isIconOnly ? 10 : 5} side={isIconOnly ? "right" : "top"} align="start" className="w-56 mb-1 bg-popover text-popover-foreground">
+            <DropdownMenuContent sideOffset={isIconOnly ? 10 : 5} side={isIconOnly ? "right" : "top"} align="start" className="w-60 mb-1 bg-popover text-popover-foreground">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">{user.displayName || user.email?.split('@')[0]}</p>
