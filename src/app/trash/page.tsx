@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
-import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, orderBy, Timestamp, writeBatch, FirestoreError } from 'firebase/firestore';
 import { ArrowLeft, Undo, Trash2, Inbox, Loader2, Flag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow, parseISO, isValid } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { cn } from '@/lib/utils'; // Added for cn usage
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'; // Added for Tooltip usage
 
 export default function TrashPage() {
   const { user, loading: authLoading } = useAuth();
@@ -44,14 +46,14 @@ export default function TrashPage() {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const tasksData = querySnapshot.docs.map(docSnap => {
         const data = docSnap.data();
-        
+
         let dueDate;
         if (data.dueDate instanceof Timestamp) {
           dueDate = data.dueDate.toDate().toISOString();
         } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
           dueDate = data.dueDate;
         } else {
-          dueDate = new Date().toISOString(); 
+          dueDate = new Date().toISOString();
         }
 
         let createdAt;
@@ -60,16 +62,16 @@ export default function TrashPage() {
         } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
           createdAt = data.createdAt;
         } else {
-          createdAt = new Date().toISOString(); 
+          createdAt = new Date().toISOString();
         }
-        
+
         let trashedAt;
         if (data.trashedAt instanceof Timestamp) {
           trashedAt = data.trashedAt.toDate().toISOString();
         } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
           trashedAt = data.trashedAt;
         } else {
-          trashedAt = new Date().toISOString(); 
+          trashedAt = new Date().toISOString();
         }
 
         return {
@@ -88,25 +90,27 @@ export default function TrashPage() {
       });
       setTrashedTasks(tasksData);
       setIsLoading(false);
-    }, (error) => {
+    }, (error: FirestoreError) => {
       console.error("Error fetching trashed tasks:", error);
-      if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
-          toast({
-            title: "Permissions Error",
-            description: "You don't have permission to access these tasks. Check Firestore rules.",
-            variant: "destructive",
-            duration: 10000,
-          });
+      let title = "Error Fetching Trashed Tasks";
+      let description = "Could not fetch trashed tasks. " + error.message;
+
+      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        title = "You are Offline";
+        description = "Trashed tasks could not be loaded from the server. Displaying cached data if available.";
+      } else if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
+          title = "Permissions Error";
+          description = "You don't have permission to access these tasks. Check Firestore rules.";
       } else if (error.message && error.message.toLowerCase().includes("query requires an index")) {
-           toast({
-            title: "Firestore Index Required",
-            description: "A Firestore index is needed for the trash page. Please create an index for collection group 'tasks' with: isTrashed (ASC), trashedAt (DESC). Check console for a link to create it.",
-            variant: "destructive",
-            duration: 15000,
-          });
-        } else {
-        toast({ title: "Error", description: "Could not fetch trashed tasks. " + error.message, variant: "destructive" });
+           title = "Database Index Required";
+           description = "A Firestore index is needed for the trash page. Please create an index for 'tasks' with: isTrashed (ASC), trashedAt (DESC). Check console for a link to create it.";
       }
+      toast({
+        title: title,
+        description: description,
+        variant: "destructive",
+        duration: error.code === 'unavailable' ? 8000 : 15000,
+      });
       setIsLoading(false);
     });
 
@@ -124,7 +128,13 @@ export default function TrashPage() {
       toast({ title: "Task Restored", description: "The task has been moved back to your active list." });
     } catch (error: any) {
       console.error("Error restoring task:", error);
-      toast({ title: "Error", description: `Could not restore task: ${error.message}`, variant: "destructive" });
+      let description = `Could not restore task: ${error.message}`;
+      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        description = "You appear to be offline. The change will be synced when you're back online.";
+        toast({ title: "Offline Mode", description, variant: "default" });
+      } else {
+        toast({ title: "Error Restoring Task", description, variant: "destructive" });
+      }
     }
   }, [user, toast]);
 
@@ -136,14 +146,19 @@ export default function TrashPage() {
       toast({ title: "Task Deleted Permanently", description: "The task has been permanently removed." });
     } catch (error: any) {
       console.error("Error deleting task permanently:", error);
-      toast({ title: "Error", description: `Could not delete task permanently: ${error.message}`, variant: "destructive" });
+      let description = `Could not delete task permanently: ${error.message}`;
+       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        description = "You appear to be offline. The deletion will be synced when you're back online.";
+        toast({ title: "Offline Mode", description, variant: "default" });
+      } else {
+        toast({ title: "Error Deleting Task", description, variant: "destructive" });
+      }
     }
   }, [user, toast]);
 
   const handleEmptyTrash = useCallback(async () => {
     if (!user || trashedTasks.length === 0) return;
     try {
-      // Consider using a batched write for performance if deleting many tasks
       const batch = writeBatch(db);
       trashedTasks.forEach(task => {
         const taskDocRef = doc(db, `users/${user.uid}/tasks`, task.id);
@@ -153,7 +168,13 @@ export default function TrashPage() {
       toast({ title: "Trash Emptied", description: "All tasks in the trash have been permanently deleted." });
     } catch (error: any) {
       console.error("Error emptying trash:", error);
-      toast({ title: "Error", description: `Could not empty trash: ${error.message}`, variant: "destructive" });
+      let description = `Could not empty trash: ${error.message}`;
+       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        description = "You appear to be offline. The deletion will be synced when you're back online.";
+        toast({ title: "Offline Mode", description, variant: "default" });
+      } else {
+        toast({ title: "Error Emptying Trash", description, variant: "destructive" });
+      }
     }
   }, [user, trashedTasks, toast]);
 
@@ -216,7 +237,7 @@ export default function TrashPage() {
             <div className="grid gap-4">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="bg-card p-4 rounded-lg shadow animate-pulse">
-                  <div className="h-5 bg-muted rounded w-3/4 mb-2"></div> {/* Title placeholder */}
+                  <div className="h-5 bg-muted rounded w-3/4 mb-2"></div>
                   <div className="h-3 bg-muted rounded w-1/2 mb-3"></div>
                   <div className="flex justify-end space-x-2">
                     <div className="h-8 w-20 bg-muted rounded"></div>
