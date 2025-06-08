@@ -40,7 +40,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 
 const taskCategories: [TaskCategory, ...TaskCategory[]] = ["General", "Assignment", "Class", "Personal"];
-const taskPriorities: [TaskPriority, ...TaskPriority[]] = ["None", "Low", "Medium", "High"];
+const taskPriorities: [TaskPriority, ...TaskPriority[]] = ["Urgent", "High", "Medium", "Low", "None"];
 
 
 const subtaskSchema = z.object({

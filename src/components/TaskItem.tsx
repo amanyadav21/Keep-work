@@ -121,6 +121,21 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     onEdit(task);
   };
 
+  const getPriorityClass = (priority?: TaskPriority) => {
+    switch (priority) {
+      case "Urgent":
+        return "text-[hsl(var(--priority-urgent))]";
+      case "High":
+        return "text-[hsl(var(--priority-high))]";
+      case "Medium":
+        return "text-[hsl(var(--priority-medium))]";
+      case "Low":
+        return "text-[hsl(var(--priority-low))]";
+      default:
+        return "";
+    }
+  };
+
   return (
     <TooltipProvider delayDuration={150}>
       <Card
@@ -154,9 +169,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                     <Flag
                       className={cn(
                         "h-5 w-5",
-                        task.priority === "High" && "text-destructive",
-                        task.priority === "Medium" && "text-accent",
-                        task.priority === "Low" && "text-primary"
+                        getPriorityClass(task.priority)
                       )}
                       aria-label={`${task.priority} priority`}
                     />
@@ -255,7 +268,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 "font-medium text-xs flex items-center",
                 isOverdue ? "text-destructive" :
                 task.isCompleted ? "text-[hsl(var(--status-green))]" :
-                (task.dueDate && isToday(parseISO(task.dueDate)) && !task.isCompleted) ? "text-accent" :
+                (task.dueDate && isToday(parseISO(task.dueDate)) && !task.isCompleted) ? "text-[hsl(var(--priority-medium))]" : // Medium (Accent) for "Today"
                 "text-primary"
               )}>
                 {isOverdue && <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />}

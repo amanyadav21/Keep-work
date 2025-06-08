@@ -22,19 +22,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { LandingPage } from '@/components/LandingPage';
 
 
-interface HomePageProps {
-  params: Record<string, never>;
-  searchParams: { [key: string]: string | string[] | undefined };
-}
-
 const priorityOrder: Record<TaskPriority, number> = {
+  "Urgent": 0,
   "High": 1,
   "Medium": 2,
   "Low": 3,
   "None": 4,
 };
 
-export default function HomePage({ params, searchParams }: HomePageProps) {
+export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
