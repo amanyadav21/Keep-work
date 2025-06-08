@@ -17,7 +17,7 @@ import { Brain, Plus, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/config';
-import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs, FirestoreError } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LandingPage } from '@/components/LandingPage';
 
@@ -55,8 +55,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     if (user && isMounted) {
       setIsLoadingTasks(true);
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
-      // Note: Complex ordering (like by priority then date) might require composite indexes in Firestore.
-      // For now, we sort client-side after fetching tasks ordered by creation time and non-trashed.
       const q = query(tasksCollectionRef, where("isTrashed", "==", false), orderBy("createdAt", "desc"));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -69,7 +67,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
             dueDate = data.dueDate;
           } else {
-            dueDate = new Date().toISOString(); 
+            dueDate = new Date().toISOString();
           }
 
           let createdAt;
@@ -78,9 +76,9 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
             createdAt = data.createdAt;
           } else {
-            createdAt = new Date().toISOString(); 
+            createdAt = new Date().toISOString();
           }
-          
+
           let trashedAt = null;
           if (data.trashedAt instanceof Timestamp) {
             trashedAt = data.trashedAt.toDate().toISOString();
@@ -94,7 +92,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
             description: data.description,
             dueDate,
             category: data.category,
-            priority: data.priority || "None", // Default to None if not present
+            priority: data.priority || "None",
             isCompleted: data.isCompleted,
             createdAt,
             isTrashed: data.isTrashed || false,
@@ -104,26 +102,33 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
         });
         setTasks(tasksData);
         setIsLoadingTasks(false);
-      }, (error) => {
+      }, (error: FirestoreError) => {
         console.error("Error fetching tasks:", error);
+        let title = "Error Fetching Tasks";
         let description = "Could not fetch tasks. " + error.message;
-        if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
+
+        if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+          title = "You are Offline";
+          description = "Tasks could not be loaded from the server. Displaying cached data if available. Some functionality may be limited.";
+        } else if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
+          title = "Permissions Error";
           description = "You don't have permission to access these tasks. Check Firestore rules.";
         } else if (error.message && (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("index needed"))) {
-           description = "A Firestore index is needed for fetching tasks. Please create an index for collection group 'tasks' with: isTrashed (ASC), createdAt (DESC). Check server console for a link if provided by Firebase.";
+           title = "Database Index Required";
+           description = "A Firestore index is needed for fetching tasks. Please create an index for 'tasks' with: isTrashed (ASC), createdAt (DESC). Check server console for a link if provided by Firebase.";
         }
         toast({
-            title: "Error Fetching Tasks",
+            title: title,
             description: description,
             variant: "destructive",
-            duration: 15000,
+            duration: error.code === 'unavailable' ? 8000 : 15000,
         });
-        setIsLoadingTasks(false);
+        setIsLoadingTasks(false); // Still set loading to false so UI doesn't hang indefinitely
       });
 
       return () => unsubscribe();
     } else if (!user && isMounted && !authLoading) {
-      setTasks([]); 
+      setTasks([]);
       setIsLoadingTasks(false);
     }
   }, [user, toast, isMounted, authLoading]);
@@ -156,7 +161,14 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       await addDoc(tasksCollectionRef, newTaskData);
     } catch (error: any) {
       console.error("Error adding task:", error);
-      toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
+      let description = `Could not add task: ${error.message}`;
+      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        description = "You appear to be offline. The task will be saved locally and synced when you're back online.";
+         toast({ title: "Offline Mode", description, variant: "default" });
+         // Firestore handles offline queueing, so we don't need to prevent form close or retry here.
+      } else {
+        toast({ title: "Error Adding Task", description, variant: "destructive" });
+      }
     }
   }, [user, toast]);
 
@@ -167,7 +179,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
     }
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
-      const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = { 
+      const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = {
         title: data.title,
         description: data.description,
         dueDate: formatISO(data.dueDate),
@@ -183,7 +195,13 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       setEditingTask(null);
     } catch (error: any) {
       console.error("Error updating task:", error);
-      toast({ title: "Error", description: `Could not update task: ${error.message}`, variant: "destructive" });
+      let description = `Could not update task: ${error.message}`;
+      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        description = "You appear to be offline. The task update will be saved locally and synced when you're back online.";
+        toast({ title: "Offline Mode", description, variant: "default" });
+      } else {
+        toast({ title: "Error Updating Task", description, variant: "destructive" });
+      }
     }
   }, [user, toast]);
 
@@ -205,7 +223,13 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       await updateDoc(taskDocRef, { isCompleted: !task.isCompleted });
     } catch (error: any) {
       console.error("Error toggling task complete:", error);
-      toast({ title: "Error", description: `Could not update task status: ${error.message}`, variant: "destructive" });
+      let description = `Could not update task status: ${error.message}`;
+      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        description = "You appear to be offline. The change will be synced when you're back online.";
+        toast({ title: "Offline Mode", description, variant: "default" });
+      } else {
+        toast({ title: "Error", description, variant: "destructive" });
+      }
     }
   }, [user, tasks, toast]);
 
@@ -222,7 +246,13 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       await updateDoc(taskDocRef, { subtasks: updatedSubtasks });
     } catch (error: any) {
       console.error("Error toggling subtask complete:", error);
-      toast({ title: "Error", description: `Could not update subtask status: ${error.message}`, variant: "destructive" });
+      let description = `Could not update subtask status: ${error.message}`;
+       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        description = "You appear to be offline. The change will be synced when you're back online.";
+        toast({ title: "Offline Mode", description, variant: "default" });
+      } else {
+        toast({ title: "Error", description, variant: "destructive" });
+      }
     }
   }, [user, tasks, toast]);
 
@@ -240,7 +270,13 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
       setTaskToDelete(null);
     } catch (error: any) {
       console.error("Error moving task to trash:", error);
-      toast({ title: "Error", description: `Could not move task to trash: ${error.message}`, variant: "destructive" });
+       let description = `Could not move task to trash: ${error.message}`;
+       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+        description = "You appear to be offline. The change will be synced when you're back online.";
+        toast({ title: "Offline Mode", description, variant: "default" });
+      } else {
+        toast({ title: "Error", description, variant: "destructive" });
+      }
       setTaskToDelete(null);
     }
   }, [user, tasks, toast]);
@@ -262,11 +298,9 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
-      // Sort by completion status (incomplete first)
       if (a.isCompleted !== b.isCompleted) {
         return a.isCompleted ? 1 : -1;
       }
-      // If both are incomplete, sort by priority
       if (!a.isCompleted && !b.isCompleted) {
         const priorityA = priorityOrder[a.priority || "None"];
         const priorityB = priorityOrder[b.priority || "None"];
@@ -274,16 +308,14 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           return priorityA - priorityB;
         }
       }
-      // Then sort by due date
       const dueDateA = a.dueDate ? parseISO(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       const dueDateB = b.dueDate ? parseISO(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       if (dueDateA !== dueDateB) {
         return dueDateA - dueDateB;
       }
-      // Finally, sort by creation date (older first, for stable sort if all else equal)
       const createdAtA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
       const createdAtB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
-      return createdAtA - createdAtB; 
+      return createdAtA - createdAtB;
     });
   }, [tasks]);
 
@@ -300,7 +332,7 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
-      default: // 'all'
+      default: 
         return nonTrashedTasks;
     }
   }, [sortedTasks, filter]);
@@ -323,8 +355,8 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
   return (
     <>
       <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />
-      <Header /> 
-      
+      <Header />
+
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
         <div className="w-full max-w-6xl mx-auto">
           <div className="mb-6 max-w-2xl mx-auto">
@@ -336,15 +368,15 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
               Take a note...
             </Button>
           </div>
-          
+
           {isLoadingTasks ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                    <div className="h-4 bg-muted rounded w-1/4"></div> {/* Priority + Title placeholder */}
+                    <div className="h-4 bg-muted rounded w-1/4"></div>
                     <div className="h-6 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-full mt-1"></div> {/* Description line 1 */}
-                    <div className="h-4 bg-muted rounded w-1/2"></div> {/* Description line 2 */}
+                    <div className="h-4 bg-muted rounded w-full mt-1"></div>
+                    <div className="h-4 bg-muted rounded w-1/2"></div>
                     <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
                 </div>
               ))}
