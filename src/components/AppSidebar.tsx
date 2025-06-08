@@ -5,8 +5,7 @@ import { usePathname, useRouter }
 from 'next/navigation';
 import Link from 'next/link';
 import {
-  PlusCircle,
-  // LayoutDashboard, // Removed Dashboard Icon
+  // PlusCircle removed as the button is being removed
   ListTodo,
   ListChecks,
   ListFilter, 
@@ -57,7 +56,7 @@ import type { TaskFilter } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface AppSidebarProps {
-  onAddTask: () => void;
+  onAddTask: () => void; // Prop remains as it's passed by HomePage, though not used for a button in sidebar anymore
   currentFilter: TaskFilter;
   onFilterChange: (filter: TaskFilter) => void;
 }
@@ -84,7 +83,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   const isIconOnly = !isMobile && sidebarState === 'collapsed' && collapsible === 'icon';
 
   const mainNavItems: NavItemConfig[] = [
-    // { href: '/', label: 'Dashboard', icon: LayoutDashboard, tooltip: 'Dashboard', isPageLink: true }, // Dashboard removed
+    // Dashboard removed in previous step
   ];
 
   const filterNavItems: NavItemConfig[] = [
@@ -108,7 +107,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   ];
 
   const renderNavItems = (items: NavItemConfig[], sectionTitle?: string) => {
-    if (items.length === 0) return null; // Don't render section if no items (e.g., mainNavItems after removing Dashboard)
+    if (items.length === 0) return null;
 
     const sectionContent = (
       <>
@@ -194,10 +193,9 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
         <SidebarContent className="p-0">
           <ScrollArea className="h-full w-full p-2">
             <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
-              <div className={cn("h-10 bg-muted rounded", isIconOnly ? "w-9" : "w-full")}></div>
-              <SidebarSeparator />
-              {/* Placeholder for mainNavItems if any, removed one for Dashboard */}
-              <SidebarSeparator />
+              {/* Add New Task button placeholder removed */}
+              {/* <div className={cn("h-10 bg-muted rounded", isIconOnly ? "w-9" : "w-full")}></div> */}
+              {/* <SidebarSeparator /> */} {/* Separator after Add Task removed */}
               {[...Array(5)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} 
               <SidebarSeparator />
               {[...Array(4)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
@@ -261,6 +259,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
       <SidebarContent className="p-0">
         <ScrollArea className="h-full w-full p-2">
           <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
+            {/* Add New Task button removed from here */}
+            {/* 
             <SidebarMenu className={cn(isIconOnly && "w-auto")}>
                <SidebarMenuItem className={isIconOnly ? 'flex justify-center' : ''}>
                   <SidebarMenuButton
@@ -274,11 +274,13 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                     {!isIconOnly && <span className="truncate">Add New Task</span>}
                   </SidebarMenuButton>
               </SidebarMenuItem>
-            </SidebarMenu>
+            </SidebarMenu> 
+            */}
 
             {mainNavItems.length > 0 && <SidebarSeparator/>}
             {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
-            <SidebarSeparator />
+            {/* Add a separator if there were mainNavItems OR if there are filterNavItems and no mainNavItems */}
+            {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
             <SidebarSeparator />
             {renderNavItems(categoryNavItems, isIconOnly ? undefined : 'Categories')}
@@ -344,4 +346,3 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     </Sidebar>
   );
 }
-
