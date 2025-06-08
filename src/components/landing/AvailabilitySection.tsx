@@ -60,8 +60,8 @@ export default function AvailabilitySection() {
         <div
           id="availability-circle"
           className={cn(
-            "relative w-[380px] h-[380px] xs:w-[500px] xs:h-[500px] sm:w-[640px] sm:h-[640px] md:w-[780px] md:h-[780px] lg:w-[880px] lg:h-[880px]", 
-            "rounded-full flex flex-col items-center justify-between text-center p-6 sm:p-8 md:p-10 lg:p-12",
+            "relative w-[380px] h-[380px] xs:w-[500px] xs:h-[500px] sm:w-[640px] sm:h-[640px] md:w-[780px] md:h-[780px] lg:w-[1250px] lg:h-[1250px]", 
+            "rounded-full flex flex-col items-center justify-center text-center p-6 sm:p-8 md:p-10 lg:p-12",
             "shadow-xl transition-all duration-300 ease-out hover:scale-[1.01]",
             "hover:shadow-[0_20px_50px_-15px_rgba(160,120,240,0.3)] dark:hover:shadow-[0_20px_50px_-15px_rgba(180,140,255,0.25)]"
           )}
@@ -69,12 +69,12 @@ export default function AvailabilitySection() {
             backgroundImage: 'radial-gradient(circle at 20% 20%, hsl(250, 80%, 80%), hsl(260, 85%, 65%), hsl(270, 75%, 50%))'
           }}
         >
-          <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-bold text-white !leading-tight">
+          <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl lg:text-8xl font-bold dark:text-white mb-4 xs:mb-6 md:mb-8 lg:mb-20 !leading-tight">
             Everything organized<br />Everyone connected,<br />Anywhere, anytime
           </h2>
 
           <p className="text-sm xs:text-base md:text-lg lg:text-xl text-purple-50 dark:text-purple-100 mb-6 xs:mb-8 md:mb-10 lg:mb-12 lg:mb-8">
-            Seamlessly available on all your devices:
+            Designed to follow you - on every device, every time.
           </p>
 
           <div className={cn(
