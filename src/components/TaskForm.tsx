@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarDays, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag, BellRing, MoreHorizontal, X, AlarmClock, FolderOpen, Tag, Palette } from "lucide-react";
+import { CalendarDays, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag, BellRing, MoreHorizontal, X, AlarmClock, FolderOpen, Tag, Palette, BellOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isValid, startOfDay, formatISO } from "date-fns";
 import type { Task, TaskCategory, Subtask, TaskPriority } from "@/types";
@@ -96,7 +96,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           title: "",
           description: "",
           dueDate: null,
-          category: "General", // Default category
+          category: "General", 
           priority: "None",
           subtasks: [],
           reminderDate: null,
@@ -141,7 +141,6 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
       }
     }
     
-    // Pass Date object for dueDate to onSubmit, it will be formatted there
     const submissionData = { ...data, dueDate: data.dueDate, reminderAt: reminderAtISO };
     onSubmit(submissionData, editingTask?.id);
     
@@ -154,7 +153,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   
   const clearReminder = () => {
     form.setValue("reminderDate", null);
-    form.setValue("reminderTime", "09:00"); // Reset time to default or null if preferred
+    form.setValue("reminderTime", "09:00"); 
   };
 
   const clearDueDate = () => {
@@ -173,7 +172,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
     if (descriptionTextareaRef.current) {
       descriptionTextareaRef.current.style.height = 'auto'; 
       const scrollHeight = descriptionTextareaRef.current.scrollHeight;
-      const minHeight = 60; // Corresponds to min-h-[60px]
+      const minHeight = 60; 
       descriptionTextareaRef.current.style.height = `${Math.max(scrollHeight, minHeight)}px`;
     }
   }, [watchDescription]);
@@ -208,7 +207,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                   ref={descriptionTextareaRef}
                   placeholder="Add a description..."
                   {...field}
-                  className="text-sm border-0 shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-2 min-h-[60px] resize-none placeholder:text-muted-foreground/70 overflow-hidden"
+                  className="text-sm border-0 shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-2 min-h-[60px] resize-none placeholder:text-muted-foreground/70 max-h-[200px] overflow-y-auto"
                 />
               </FormControl>
               <FormMessage />
@@ -217,7 +216,6 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
         />
         
         <div className="flex flex-wrap gap-2 my-3 items-center">
-          {/* Due Date Pill/Popover */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn("text-xs h-7 px-2.5 rounded-full", watchDueDate ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "text-muted-foreground hover:text-foreground")}>
@@ -226,7 +224,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
               </Button>
             </PopoverTrigger>
             {watchDueDate && (
-                <Button variant="ghost" size="icon" onClick={clearDueDate} className="h-6 w-6 rounded-full -ml-2 mr-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                <Button variant="ghost" size="icon" onClick={clearDueDate} className="h-6 w-6 rounded-full -ml-2 mr-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Clear due date">
                     <X className="h-3.5 w-3.5"/>
                 </Button>
             )}
@@ -247,7 +245,6 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
             </PopoverContent>
           </Popover>
 
-          {/* Priority Pill/Popover */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn("text-xs h-7 px-2.5 rounded-full", watchPriority && watchPriority !== "None" ? "bg-accent/10 text-accent-foreground border-accent/30 hover:bg-accent/20" : "text-muted-foreground hover:text-foreground")}>
@@ -262,7 +259,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                   render={({ field }) => (
                       <FormControl>
                           <select
-                            value={field.value || "None"} // Ensure value is controlled
+                            value={field.value || "None"} 
                             onChange={(e) => field.onChange(e.target.value as TaskPriority)}
                             className="w-full p-2 text-sm border-0 focus:ring-0 bg-popover text-popover-foreground rounded-md"
                           >
@@ -276,7 +273,6 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
             </PopoverContent>
           </Popover>
 
-          {/* Reminder Pill/Popover */}
           <Popover>
             <PopoverTrigger asChild>
                <Button variant="outline" size="sm" className={cn("text-xs h-7 px-2.5 rounded-full", watchReminderDate ? "bg-blue-500/10 text-blue-600 border-blue-500/30 hover:bg-blue-500/20" : "text-muted-foreground hover:text-foreground")}>
@@ -285,8 +281,8 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
               </Button>
             </PopoverTrigger>
              {watchReminderDate && (
-                <Button variant="ghost" size="icon" onClick={clearReminder} className="h-6 w-6 rounded-full -ml-2 mr-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                    <X className="h-3.5 w-3.5"/>
+                <Button variant="ghost" size="icon" onClick={clearReminder} className="h-6 w-6 rounded-full -ml-2 mr-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Clear reminder">
+                    <BellOff className="h-3.5 w-3.5"/>
                 </Button>
             )}
             <PopoverContent className="w-auto p-2 space-y-2">
@@ -309,7 +305,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                   <Input 
                     type="time" 
                     {...field} 
-                    value={field.value || ""} // Ensure value is controlled
+                    value={field.value || ""} 
                     className="h-8 text-sm"
                     disabled={!watchReminderDate}
                   />
@@ -360,9 +356,9 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                     handleAddSubtask();
                   }
                 }}
-                className="flex-grow h-9 text-sm"
+                className="flex-grow h-8 text-sm"
               />
-              <Button type="button" onClick={handleAddSubtask} variant="outline" size="icon" aria-label="Add subtask" className="h-9 w-9">
+              <Button type="button" onClick={handleAddSubtask} variant="outline" size="icon" aria-label="Add subtask" className="h-8 w-8">
                 <PlusCircle className="h-4 w-4" />
               </Button>
             </div>
@@ -407,36 +403,40 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           </div>
         )}
         
-        <div className={cn("flex items-center justify-between pt-4", showSubtasks && fields.length > 0 && "mt-2 border-t")}>
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="text-xs h-8 px-3 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted">
-                            <FolderOpen className="mr-1.5 h-4 w-4" />
-                            {watchCategory || "Category"} 
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[180px] p-1">
-                        <FormControl>
-                          <select
-                            {...field}
-                            className="w-full p-2 text-sm border-0 focus:ring-0 bg-popover text-popover-foreground rounded-md"
-                          >
-                            {taskCategories.map((cat) => (
-                              <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                          </select>
-                        </FormControl>
-                    </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <div className={cn("flex items-center justify-between pt-4", (showSubtasks && fields.length > 0) && "mt-2 border-t")}>
+          <Popover>
+              <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs h-8 px-3 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted">
+                      <FolderOpen className="mr-1.5 h-4 w-4" />
+                      {watchCategory || "Category"}
+                  </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[180px] p-1">
+                  <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormControl>
+                                  <select
+                                      value={field.value}
+                                      onChange={field.onChange}
+                                      onBlur={field.onBlur}
+                                      ref={field.ref}
+                                      name={field.name}
+                                      className="w-full p-2 text-sm border-0 focus:ring-0 bg-popover text-popover-foreground rounded-md"
+                                  >
+                                      {taskCategories.map((cat) => (
+                                          <option key={cat} value={cat}>{cat}</option>
+                                      ))}
+                                  </select>
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+              </PopoverContent>
+          </Popover>
           <div className="flex space-x-2">
             <Button type="button" variant="ghost" onClick={onClose} className="text-sm h-9">
               Cancel
