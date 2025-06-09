@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-// ShadCN Select import is removed as it's no longer directly used for category
 import {
   Popover,
   PopoverContent,
@@ -63,6 +62,7 @@ interface TaskFormProps {
 
 export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   const { toast } = useToast();
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   let initialDueDate: Date | null = null;
   if (editingTask?.dueDate && isValid(parseISO(editingTask.dueDate))) {
@@ -167,7 +167,16 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   const watchPriority = form.watch("priority");
   const watchReminderDate = form.watch("reminderDate");
   const watchReminderTime = form.watch("reminderTime");
-  const watchCategory = form.watch("category"); // Watch category to update button text
+  const watchCategory = form.watch("category"); 
+
+  useEffect(() => {
+    if (descriptionTextareaRef.current) {
+      descriptionTextareaRef.current.style.height = 'auto'; 
+      const scrollHeight = descriptionTextareaRef.current.scrollHeight;
+      const minHeight = 60; // Corresponds to min-h-[60px]
+      descriptionTextareaRef.current.style.height = `${Math.max(scrollHeight, minHeight)}px`;
+    }
+  }, [watchDescription]);
 
 
   return (
@@ -196,9 +205,10 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
             <FormItem>
               <FormControl>
                 <Textarea
+                  ref={descriptionTextareaRef}
                   placeholder="Add a description..."
                   {...field}
-                  className="text-sm border-0 shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-2 min-h-[60px] resize-none placeholder:text-muted-foreground/70"
+                  className="text-sm border-0 shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-2 min-h-[60px] resize-none placeholder:text-muted-foreground/70 overflow-hidden"
                 />
               </FormControl>
               <FormMessage />
@@ -413,7 +423,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                     <PopoverContent className="w-[180px] p-1">
                         <FormControl>
                           <select
-                            {...field} // Spread field props here
+                            {...field}
                             className="w-full p-2 text-sm border-0 focus:ring-0 bg-popover text-popover-foreground rounded-md"
                           >
                             {taskCategories.map((cat) => (
