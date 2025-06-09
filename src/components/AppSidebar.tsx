@@ -2,8 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { usePathname, useRouter }
-from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ListTodo,
@@ -14,13 +13,20 @@ import {
   User,
   Settings as SettingsIcon,
   LogOut,
-  CalendarClock, 
-  Inbox, 
+  CalendarClock,
+  Inbox,
   AlarmClock,
   BarChart3,
+  PlusCircle,
+  Loader2,
+  Edit2, // For editing labels (future)
+  XCircle, // For deleting labels (future)
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -30,6 +36,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -42,7 +57,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton, 
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
@@ -51,13 +66,18 @@ import {
 } from '@/components/ui/sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
-import type { TaskFilter } from '@/types';
+import type { TaskFilter, Label } from '@/types';
 import { cn } from '@/lib/utils';
+import { db } from '@/firebase/config';
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 interface AppSidebarProps {
-  onAddTask: () => void; 
+  onAddTask: () => void;
   currentFilter: TaskFilter;
   onFilterChange: (filter: TaskFilter) => void;
+  selectedLabelId: string | null;
+  onLabelSelect: (labelId: string | null) => void;
 }
 
 interface NavItemConfig {
@@ -69,39 +89,116 @@ interface NavItemConfig {
   disabled?: boolean;
   isPageLink?: boolean;
   isExternal?: boolean;
-  isFilter?: boolean; 
-  filterName?: TaskFilter; 
+  isFilter?: boolean;
+  filterName?: TaskFilter;
+  isLabel?: boolean;
+  labelId?: string;
 }
 
-export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
+export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedLabelId, onLabelSelect }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
   const { state: sidebarState, collapsible, isMobile, open: sidebarOpen, defaultOpen } = useSidebar();
   const router = useRouter();
+  const { toast } = useToast();
   const [clientMounted, setClientMounted] = React.useState(false);
+
+  const [userLabels, setUserLabels] = React.useState<Label[]>([]);
+  const [isLoadingLabels, setIsLoadingLabels] = React.useState(false);
+  const [isLabelDialogOpen, setIsLabelDialogOpen] = React.useState(false);
+  const [newLabelName, setNewLabelName] = React.useState("");
+  const [isSavingLabel, setIsSavingLabel] = React.useState(false);
+  // const [editingLabel, setEditingLabel] = React.useState<Label | null>(null); // For future edit functionality
 
   React.useEffect(() => {
     setClientMounted(true);
   }, []);
 
+  React.useEffect(() => {
+    if (user && clientMounted) {
+      setIsLoadingLabels(true);
+      const labelsCollectionRef = collection(db, `users/${user.uid}/labels`);
+      const q = query(labelsCollectionRef, orderBy("name", "asc"));
+
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const labelsData = querySnapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: data.name,
+            userId: data.userId,
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+          } as Label;
+        });
+        setUserLabels(labelsData);
+        setIsLoadingLabels(false);
+      }, (error) => {
+        console.error("Error fetching labels:", error);
+        toast({ title: "Error Fetching Labels", description: error.message, variant: "destructive" });
+        setIsLoadingLabels(false);
+      });
+      return () => unsubscribe();
+    } else {
+      setUserLabels([]);
+    }
+  }, [user, clientMounted, toast]);
+
+  const handleCreateLabel = async () => {
+    if (!newLabelName.trim() || !user) return;
+    setIsSavingLabel(true);
+    try {
+      const labelsCollectionRef = collection(db, `users/${user.uid}/labels`);
+      // Check if label with same name already exists (case-insensitive for better UX)
+      const existingLabel = userLabels.find(label => label.name.toLowerCase() === newLabelName.trim().toLowerCase());
+      if (existingLabel) {
+        toast({ title: "Label Exists", description: `A label named "${existingLabel.name}" already exists.`, variant: "default" });
+        setIsSavingLabel(false);
+        return;
+      }
+
+      await addDoc(labelsCollectionRef, {
+        name: newLabelName.trim(),
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+      });
+      toast({ title: "Label Created", description: `Label "${newLabelName.trim()}" added.` });
+      setNewLabelName("");
+      setIsLabelDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error creating label:", error);
+      toast({ title: "Error Creating Label", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSavingLabel(false);
+    }
+  };
+
+
   const isIconOnly = clientMounted ? (!isMobile && sidebarState === 'collapsed' && collapsible === 'icon') : (!defaultOpen && collapsible === 'icon');
 
-
-  const mainNavItems: NavItemConfig[] = [
-  ];
+  const mainNavItems: NavItemConfig[] = [];
 
   const filterNavItems: NavItemConfig[] = [
-    { action: () => onFilterChange('general'), label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
-    { action: () => onFilterChange('today'), label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
-    { action: () => onFilterChange('pending'), label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
-    { action: () => onFilterChange('completed'), label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
+    { action: () => { onFilterChange('general'); onLabelSelect(null); }, label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
+    { action: () => { onFilterChange('today'); onLabelSelect(null); }, label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
+    { action: () => { onFilterChange('pending'); onLabelSelect(null); }, label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
+    { action: () => { onFilterChange('completed'); onLabelSelect(null);}, label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
   ];
+  
+  const labelNavItems: NavItemConfig[] = userLabels.map(label => ({
+    action: () => onLabelSelect(label.id),
+    label: label.name,
+    icon: Tag, // Default icon, can be customized later
+    tooltip: `View tasks in "${label.name}"`,
+    isLabel: true,
+    labelId: label.id,
+  }));
+
 
   const categoryNavItems: NavItemConfig[] = [
     { href: '/classes', label: 'Class Section', icon: Users, tooltip: 'Class Section (Coming Soon)', disabled: true, isPageLink: true },
     { href: '/reminders', label: 'Reminders', icon: AlarmClock, tooltip: 'View Reminders', disabled: false, isPageLink: true },
     { href: '/performance', label: 'Performance', icon: BarChart3, tooltip: 'Performance Overview', disabled: false, isPageLink: true },
-    { href: '/labels', label: 'Labels', icon: Tag, tooltip: 'Labels (Coming Soon)', disabled: true, isPageLink: true },
+    // "Labels" as a page link removed, labels are now listed directly
   ];
 
   const managementNavItems: NavItemConfig[] = [
@@ -110,17 +207,24 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   ];
 
   const renderNavItems = (items: NavItemConfig[], sectionTitle?: string) => {
-    if (items.length === 0) return null;
+    if (items.length === 0 && ! (sectionTitle === "Labels" && !isLoadingLabels) ) return null; // Keep Labels section if not loading, even if empty for "Create" button
 
     const sectionContent = (
       <>
+        {sectionTitle && !isIconOnly && (
+          <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground tracking-wider uppercase">
+            {sectionTitle}
+          </div>
+        )}
         <SidebarMenu className={cn(isIconOnly && "w-auto")}>
           {items.map((item, index) => {
             let isActive = false;
             if (item.isPageLink) {
               isActive = pathname === item.href;
             } else if (item.isFilter) {
-              isActive = currentFilter === item.filterName;
+              isActive = currentFilter === item.filterName && !selectedLabelId;
+            } else if (item.isLabel) {
+              isActive = selectedLabelId === item.labelId;
             }
 
             const buttonContent = (
@@ -129,12 +233,12 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                 {!isIconOnly && <span className="truncate">{item.label}</span>}
               </>
             );
-            
+
             const commonButtonProps = {
               variant: "ghost" as const,
               onClick: item.action,
               disabled: item.disabled,
-              isActive: isActive, 
+              isActive: isActive,
               "aria-label": item.tooltip,
               tooltip: item.tooltip,
             };
@@ -186,7 +290,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
         <SidebarContent className="p-0">
           <ScrollArea className="h-full w-full p-2">
             <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
-              {[...Array(5)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)} 
+              {[...Array(5)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
               <SidebarSeparator />
               {[...Array(4)].map((_, i) => <div key={i} className={cn("h-9 bg-muted rounded mt-1", isIconOnly ? "w-9" : "w-full")}></div>)}
               <SidebarSeparator />
@@ -249,17 +353,52 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
       <SidebarContent className="p-0">
         <ScrollArea className="h-full w-full p-2">
           <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
-            
+
             {mainNavItems.length > 0 && <SidebarSeparator/>}
             {renderNavItems(mainNavItems)}
-            
-            {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 && (categoryNavItems.length > 0 || managementNavItems.length > 0)) ? <SidebarSeparator /> : null}
+
+            {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 ) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems)}
             
-            {(filterNavItems.length > 0 && categoryNavItems.length > 0) || (filterNavItems.length === 0 && categoryNavItems.length > 0 && managementNavItems.length > 0) ? <SidebarSeparator /> : null}
+            <SidebarSeparator />
+            {/* Labels Section */}
+            {!isIconOnly && (
+              <div className="px-3 pt-2 pb-1 flex items-center justify-between">
+                 <div className="text-xs font-medium text-muted-foreground tracking-wider uppercase">Labels</div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => setIsLabelDialogOpen(true)}>
+                            <PlusCircle className="h-4 w-4"/>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right"><p>Create new label</p></TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+            {isIconOnly && (
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-primary mt-1" onClick={() => setIsLabelDialogOpen(true)}>
+                            <PlusCircle className="h-5 w-5"/>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right"><p>Create new label</p></TooltipContent>
+                </Tooltip>
+            )}
+            {isLoadingLabels ? (
+              <div className={cn("px-2.5 py-1.5", isIconOnly && "flex justify-center")}>
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              renderNavItems(labelNavItems)
+            )}
+            {/* End Labels Section */}
+
+
+            <SidebarSeparator />
             {renderNavItems(categoryNavItems)}
-            
-            {categoryNavItems.length > 0 && managementNavItems.length > 0 ? <SidebarSeparator /> : null}
+
+            <SidebarSeparator />
             {renderNavItems(managementNavItems)}
           </div>
         </ScrollArea>
@@ -329,7 +468,38 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
           </div>
         </div>
       </SidebarFooter>
+
+      {/* Create Label Dialog */}
+      <Dialog open={isLabelDialogOpen} onOpenChange={setIsLabelDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Label</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new label.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              id="labelName"
+              placeholder="Label name (e.g., Work, Study)"
+              value={newLabelName}
+              onChange={(e) => setNewLabelName(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" onClick={() => setNewLabelName('')}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit" onClick={handleCreateLabel} disabled={isSavingLabel || !newLabelName.trim()}>
+              {isSavingLabel && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Label
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   );
 }
-
