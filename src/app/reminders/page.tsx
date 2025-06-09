@@ -15,8 +15,8 @@ import { useRouter } from 'next/navigation'; // For back button
 import { parseISO, isValid } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm'; // For editing tasks
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle as SrDialogTitle } from '@/components/ui/dialog'; // Renamed to avoid conflict
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader as SrAlertDialogHeader, AlertDialogTitle as SrAlertDialogTitle } from "@/components/ui/alert-dialog"; // Renamed to avoid conflict
 
 const priorityOrder: Record<TaskPriority, number> = {
   "Urgent": 0,
@@ -295,8 +295,12 @@ export default function RemindersPage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card pt-6">
-          {/* DialogHeader removed for a cleaner look */}
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
+          <DialogHeader>
+            <SrDialogTitle className="sr-only">
+              Edit Task
+            </SrDialogTitle>
+          </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
             editingTask={editingTask}
@@ -310,12 +314,12 @@ export default function RemindersPage() {
 
       <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
         <AlertDialogContent className="rounded-lg bg-card">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
+          <SrAlertDialogHeader>
+            <SrAlertDialogTitle>Move Task to Trash?</SrAlertDialogTitle>
             <AlertDialogDesc>
               This will move the task "{(reminders.find(t => t.id === taskToDelete)?.title || reminders.find(t => t.id === taskToDelete)?.description)?.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
             </AlertDialogDesc>
-          </AlertDialogHeader>
+          </SrAlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => taskToDelete && handleDeleteTask(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">

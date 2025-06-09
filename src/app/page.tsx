@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -8,9 +7,9 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import type { Task, TaskFilter, TaskPriority } from '@/types';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay, set, getHours, getMinutes, getSeconds, getMilliseconds } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay, set } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Brain, Plus, Loader2 } from 'lucide-react';
@@ -20,7 +19,6 @@ import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs, FirestoreError } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LandingPage } from '@/components/LandingPage';
-
 
 interface HomePageProps {
   params: Record<string, never>;
@@ -46,7 +44,6 @@ export default function HomePage() {
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [quickAddInput, setQuickAddInput] = useState("");
   const quickAddInputRef = useRef<HTMLInputElement>(null);
-
 
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -97,7 +94,6 @@ export default function HomePage() {
             reminderAt = data.reminderAt;
           }
 
-
           return {
             id: docSnap.id,
             title: data.title || '',
@@ -146,7 +142,6 @@ export default function HomePage() {
     }
   }, [user, toast, isMounted, authLoading]);
 
-
   const handleQuickAddTask = useCallback(async () => {
     if (!user || !quickAddInput.trim()) {
       if (!user) toast({ title: "Not Authenticated", description: "Please log in to add tasks.", variant: "destructive" });
@@ -158,10 +153,10 @@ export default function HomePage() {
 
       const newTaskData = {
         title: quickAddInput.trim(),
-        description: "", // Empty description for quick add
-        dueDate: formatISO(todayEndOfDay), // Default due date to today
-        category: "Personal" as Task["category"], // Default category
-        priority: "None" as Task["priority"], // Default priority
+        description: "",
+        dueDate: formatISO(todayEndOfDay),
+        category: "Personal" as Task["category"],
+        priority: "None" as Task["priority"],
         isCompleted: false,
         createdAt: serverTimestamp(),
         subtasks: [],
@@ -171,7 +166,7 @@ export default function HomePage() {
       };
       await addDoc(tasksCollectionRef, newTaskData);
       toast({ title: "Task Added", description: `"${quickAddInput.trim().substring(0,30)}..." added quickly.` });
-      setQuickAddInput(""); // Clear input after adding
+      setQuickAddInput("");
     } catch (error: any) {
       console.error("Error quick adding task:", error);
       toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
@@ -187,7 +182,7 @@ export default function HomePage() {
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
       const newTaskData = {
         title: data.title,
-        description: data.description || "", // Ensure description is always a string
+        description: data.description || "",
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
@@ -225,7 +220,7 @@ export default function HomePage() {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
       const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = {
         title: data.title,
-        description: data.description || "", // Ensure description is always a string
+        description: data.description || "",
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
@@ -326,7 +321,6 @@ export default function HomePage() {
     }
   }, [user, tasks, toast]);
 
-
   const handleOpenEditForm = useCallback((task: Task) => {
     setEditingTask(task);
     setIsFormOpen(true);
@@ -388,7 +382,6 @@ export default function HomePage() {
 
   const pendingTasksCount = useMemo(() => tasks.filter(t => !t.isCompleted && !t.isTrashed).length, [tasks]);
 
-
   if (authLoading || !isMounted) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -431,8 +424,8 @@ export default function HomePage() {
                 <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
                     <div className="h-4 bg-muted rounded w-1/4"></div>
                     <div className="h-6 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-full mt-1"></div> {/* Description line 1 */}
-                    <div className="h-4 bg-muted rounded w-1/2"></div> {/* Description line 2 */}
+                    <div className="h-4 bg-muted rounded w-full mt-1"></div>
+                    <div className="h-4 bg-muted rounded w-1/2"></div>
                     <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
                 </div>
               ))}
@@ -453,8 +446,12 @@ export default function HomePage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card pt-6">
-          {/* DialogHeader removed for a cleaner look */}
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
+          <DialogHeader>
+            <DialogTitle className="sr-only">
+              {editingTask ? 'Edit Task' : 'Add New Task'}
+            </DialogTitle>
+          </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
             editingTask={editingTask}
@@ -470,9 +467,9 @@ export default function HomePage() {
         <AlertDialogContent className="rounded-lg bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
-            <AlertDialogDesc>
+            <AlertDialogDescription>
               This will move the task "{(tasks.find(t => t.id === taskToDelete)?.title || tasks.find(t => t.id === taskToDelete)?.description)?.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
-            </AlertDialogDesc>
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
@@ -485,4 +482,3 @@ export default function HomePage() {
     </>
   );
 }
-
