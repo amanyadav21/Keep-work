@@ -2,7 +2,8 @@
 "use client";
 
 import * as React from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter }
+from 'next/navigation';
 import Link from 'next/link';
 import {
   ListChecks,
@@ -14,12 +15,11 @@ import {
   LogOut,
   CalendarClock, 
   Inbox, 
-  AlarmClock, // Added AlarmClock icon
+  AlarmClock,
+  BarChart3,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label as UiLabel } from '@/components/ui/label'; // Renamed to avoid conflict
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -29,25 +29,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle as SrAlertDialogTitle, // Aliased to avoid conflict if AlertDialogTitle is used directly
-} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -60,8 +41,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
-  sidebarMenuButtonVariants,
+  SidebarMenuButton, 
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
@@ -71,12 +51,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import type { TaskFilter, Label } from '@/types';
 import { cn } from '@/lib/utils';
-import { db } from '@/firebase/config';
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, updateDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 
 interface AppSidebarProps {
-  currentFilter: TaskFilter | null; // Can be null if determined by labelId
+  onAddTask: () => void; 
+  currentFilter: TaskFilter;
   onFilterChange: (filter: TaskFilter) => void;
   selectedLabelId: string | null;
   onLabelSelect: (labelId: string | null) => void;
@@ -91,39 +69,11 @@ interface NavItemConfig {
   disabled?: boolean;
   isPageLink?: boolean;
   isExternal?: boolean;
-  isFilter?: boolean;
-  filterName?: TaskFilter;
-  isLabel?: boolean;
-  labelId?: string;
-  color?: string;
+  isFilter?: boolean; 
+  filterName?: TaskFilter; 
 }
 
-const labelColorPalette = [
-  "#4285F4", // Google Blue
-  "#DB4437", // Google Red
-  "#F4B400", // Google Yellow
-  "#0F9D58", // Google Green
-  "#AB47BC", // Purple
-  "#00ACC1", // Cyan
-  "#FF7043", // Orange
-  "#78909C", // Blue Grey
-  "#5C6BC0", // Indigo
-  "#EC407A", // Pink
-];
-
-const getDeterministicColorForLabel = (labelName: string): string => {
-  let hash = 0;
-  for (let i = 0; i < labelName.length; i++) {
-    const char = labelName.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0; // Convert to 32bit integer
-  }
-  const index = Math.abs(hash) % labelColorPalette.length;
-  return labelColorPalette[index];
-};
-
-
-export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onLabelSelect }: AppSidebarProps) {
+export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
   const { 
@@ -137,29 +87,9 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
   const { toast } = useToast();
   const [clientMounted, setClientMounted] = React.useState(false);
 
-  const [userLabels, setUserLabels] = React.useState<Label[]>([]);
-  const [isLoadingLabels, setIsLoadingLabels] = React.useState(false);
-  const [isLabelsExpanded, setIsLabelsExpanded] = React.useState(true); // Default to expanded
-
-  const [isCreateLabelDialogOpen, setIsCreateLabelDialogOpen] = React.useState(false);
-  const [newLabelName, setNewLabelName] = React.useState("");
-  const [isSavingLabel, setIsSavingLabel] = React.useState(false);
-
-  const [isEditLabelDialogOpen, setIsEditLabelDialogOpen] = React.useState(false);
-  const [labelToEdit, setLabelToEdit] = React.useState<Label | null>(null);
-  const [editedLabelName, setEditedLabelName] = React.useState("");
-  const [isUpdatingLabel, setIsUpdatingLabel] = React.useState(false);
-
-  const [isDeleteLabelDialogOpen, setIsDeleteLabelDialogOpen] = React.useState(false);
-  const [labelToDelete, setLabelToDelete] = React.useState<Label | null>(null);
-  const [isDeletingLabel, setIsDeletingLabel] = React.useState(false);
-
-
   React.useEffect(() => {
     setClientMounted(true);
   }, []);
-
-  const isIconOnly = clientMounted ? (!isMobile && sidebarState === 'collapsed' && collapsible === 'icon') : (!defaultOpen && collapsible === 'icon');
 
   React.useEffect(() => {
     if (user && clientMounted) {
@@ -175,7 +105,6 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
             name: data.name,
             userId: data.userId,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-            color: data.color || getDeterministicColorForLabel(data.name),
           } as Label;
         });
         setUserLabels(labelsData);
@@ -196,6 +125,7 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
     setIsSavingLabel(true);
     try {
       const labelsCollectionRef = collection(db, `users/${user.uid}/labels`);
+      // Check if label with same name already exists (case-insensitive for better UX)
       const existingLabel = userLabels.find(label => label.name.toLowerCase() === newLabelName.trim().toLowerCase());
       if (existingLabel) {
         toast({ title: "Label Exists", description: `A label named "${existingLabel.name}" already exists.`, variant: "default" });
@@ -207,12 +137,10 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
         name: newLabelName.trim(),
         userId: user.uid,
         createdAt: serverTimestamp(),
-        color: getDeterministicColorForLabel(newLabelName.trim()),
       });
       toast({ title: "Label Created", description: `Label "${newLabelName.trim()}" added.` });
       setNewLabelName("");
-      setIsCreateLabelDialogOpen(false); // Close dialog on success
-      if (!isLabelsExpanded) setIsLabelsExpanded(true); // Expand labels section if it was collapsed
+      setIsLabelDialogOpen(false);
     } catch (error: any) {
       console.error("Error creating label:", error);
       toast({ title: "Error Creating Label", description: error.message, variant: "destructive" });
@@ -221,96 +149,25 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
     }
   };
 
-  const handleOpenEditLabelDialog = (label: Label) => {
-    setLabelToEdit(label);
-    setEditedLabelName(label.name);
-    setIsEditLabelDialogOpen(true);
-  };
 
-  const handleUpdateLabel = async () => {
-    if (!editedLabelName.trim() || !labelToEdit || !user) return;
-    setIsUpdatingLabel(true);
-    try {
-      const existingLabel = userLabels.find(
-        (l) => l.name.toLowerCase() === editedLabelName.trim().toLowerCase() && l.id !== labelToEdit.id
-      );
-      if (existingLabel) {
-        toast({ title: "Label Name Exists", description: `Another label named "${existingLabel.name}" already exists.`, variant: "default" });
-        setIsUpdatingLabel(false);
-        return;
-      }
+  const isIconOnly = clientMounted ? (!isMobile && sidebarState === 'collapsed' && collapsible === 'icon') : (!defaultOpen && collapsible === 'icon');
 
-      const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToEdit.id);
-      await updateDoc(labelDocRef, { name: editedLabelName.trim() }); // Color is not updated here, only name
-      toast({ title: "Label Updated", description: `Label renamed to "${editedLabelName.trim()}".` });
-      setIsEditLabelDialogOpen(false); // Close dialog on success
-      setLabelToEdit(null);
-    } catch (error: any) {
-      console.error("Error updating label:", error);
-      toast({ title: "Error Updating Label", description: error.message, variant: "destructive" });
-    } finally {
-      setIsUpdatingLabel(false);
-    }
-  };
 
-  const handleOpenDeleteLabelDialog = (label: Label) => {
-    setLabelToDelete(label);
-    setIsDeleteLabelDialogOpen(true);
-  };
-
-  const handleDeleteLabel = async () => {
-    if (!labelToDelete || !user) return;
-    setIsDeletingLabel(true);
-    try {
-      const batch = writeBatch(db);
-      const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToDelete.id);
-      batch.delete(labelDocRef);
-
-      const tasksQuery = query(collection(db, `users/${user.uid}/tasks`), where("labelId", "==", labelToDelete.id));
-      const tasksSnapshot = await getDocs(tasksQuery);
-      tasksSnapshot.forEach((taskDoc) => {
-        batch.update(taskDoc.ref, { labelId: null });
-      });
-
-      await batch.commit();
-      toast({ title: "Label Deleted", description: `Label "${labelToDelete.name}" deleted and removed from tasks.` });
-
-      if (selectedLabelId === labelToDelete.id) {
-        onLabelSelect(null); // Clear filter if the deleted label was selected
-      }
-      setIsDeleteLabelDialogOpen(false);
-      setLabelToDelete(null);
-    } catch (error: any) {
-      console.error("Error deleting label:", error);
-      toast({ title: "Error Deleting Label", description: error.message, variant: "destructive" });
-    } finally {
-      setIsDeletingLabel(false);
-    }
-  };
+  const mainNavItems: NavItemConfig[] = [
+  ];
 
   const filterNavItems: NavItemConfig[] = [
-    { action: () => onFilterChange('all'), label: 'All Tasks', icon: ListFilter, tooltip: 'All Tasks', isFilter: true, filterName: 'all' },
     { action: () => onFilterChange('general'), label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
     { action: () => onFilterChange('today'), label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
     { action: () => onFilterChange('pending'), label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
     { action: () => onFilterChange('completed'), label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
   ];
 
-  const labelNavItems: NavItemConfig[] = userLabels.map(label => ({
-    action: () => onLabelSelect(label.id),
-    label: label.name,
-    icon: Tag, // Icon is Tag for all labels
-    tooltip: `View tasks in "${label.name}"`,
-    isLabel: true,
-    labelId: label.id,
-    color: label.color || getDeterministicColorForLabel(label.name),
-  }));
-
-
   const categoryNavItems: NavItemConfig[] = [
     { href: '/classes', label: 'Class Section', icon: Users, tooltip: 'Class Section (Coming Soon)', disabled: true, isPageLink: true },
     { href: '/reminders', label: 'Reminders', icon: AlarmClock, tooltip: 'View Reminders', disabled: false, isPageLink: true },
     { href: '/performance', label: 'Performance', icon: BarChart3, tooltip: 'Performance Overview', disabled: false, isPageLink: true },
+    { href: '/labels', label: 'Labels', icon: Tag, tooltip: 'Labels (Coming Soon)', disabled: true, isPageLink: true },
   ];
 
   const managementNavItems: NavItemConfig[] = [
@@ -318,136 +175,37 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
     { href: '/settings', label: 'Settings', icon: SettingsIcon, tooltip: 'Settings', isPageLink: true },
   ];
 
-  const renderNavItems = (items: NavItemConfig[]) => {
-    if (items.length === 0 && !isLoadingLabels && items !== labelNavItems) return null;
-    if (items === labelNavItems && isLoadingLabels && !isIconOnly) { // Show loader only for expanded labels list
-        return <div className={cn("px-2.5 py-1.5 flex", isIconOnly ? "justify-center" : "")}> <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> </div>;
-    }
-    if (items === labelNavItems && !isLoadingLabels && userLabels.length === 0 && !isIconOnly) { // Show "no labels" only for expanded
-        return <p className="px-3 py-1 text-xs text-muted-foreground italic">No labels created.</p>;
-    }
+  const renderNavItems = (items: NavItemConfig[], sectionTitle?: string) => {
+    if (items.length === 0) return null;
 
+    const sectionContent = (
+      <>
+        <SidebarMenu className={cn(isIconOnly && "w-auto")}>
+          {items.map((item, index) => {
+            let isActive = false;
+            if (item.isPageLink) {
+              isActive = pathname === item.href;
+            } else if (item.isFilter) {
+              isActive = currentFilter === item.filterName;
+            }
 
-    return (
-      <SidebarMenu className={cn(isIconOnly && "w-auto")}>
-        {items.map((item, index) => {
-          let isActive = false;
-          if (item.isPageLink) {
-            isActive = pathname === item.href;
-          } else if (item.isFilter) {
-            isActive = currentFilter === item.filterName && !selectedLabelId;
-          } else if (item.isLabel) {
-            isActive = selectedLabelId === item.labelId;
-          }
-
-          const commonButtonProps = {
-            variant: "ghost" as const,
-            onClick: item.action,
-            disabled: item.disabled,
-            isActive: isActive,
-            "aria-label": item.tooltip,
-            tooltip: item.tooltip,
-            className: "", 
-          };
-          
-          const labelDisplayContent = (
-            <>
-              {item.isLabel && !isIconOnly && item.color && (
-                <span
-                  className="mr-2 h-3 w-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                  aria-hidden="true"
-                />
-              )}
-              <item.icon className={cn(
-                  "shrink-0",
-                  (item.isLabel && !isIconOnly) ? "h-4 w-4" : "h-5 w-5",
-                  isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground"
-                )}
-              />
-              {!isIconOnly && (
-                <span className="truncate ml-2">{item.label}</span> 
-              )}
-            </>
-          );
-
-          const dropdownMenuContentForLabel = item.isLabel && !isIconOnly && userLabels.find(l => l.id === item.labelId) && (
-            <div className="pl-1 flex-shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover/menu-item:opacity-100 focus-visible:opacity-100 transition-opacity"
-                    aria-label={`Options for label ${item.label}`}
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent sideOffset={5} align="start">
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        const labelToActOn = userLabels.find(l => l.id === item.labelId);
-                        if (labelToActOn) handleOpenEditLabelDialog(labelToActOn);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <Edit2 className="mr-2 h-4 w-4" /> Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        const labelToActOn = userLabels.find(l => l.id === item.labelId);
-                        if (labelToActOn) handleOpenDeleteLabelDialog(labelToActOn);
-                    }}
-                    className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
-                  >
-                    <XCircle className="mr-2 h-4 w-4" /> Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-          
-          let menuElement;
-
-          if (item.isLabel && !isIconOnly) {
-            menuElement = (
-              <div
-                role="button"
-                tabIndex={commonButtonProps.disabled ? -1 : 0}
-                onClick={commonButtonProps.disabled ? undefined : commonButtonProps.onClick}
-                onKeyDown={commonButtonProps.disabled ? undefined : (e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    commonButtonProps.onClick?.();
-                  }
-                }}
-                aria-label={commonButtonProps['aria-label']}
-                aria-disabled={commonButtonProps.disabled}
-                className={cn(
-                  sidebarMenuButtonVariants({ variant: commonButtonProps.variant, size: 'default' }),
-                  "flex items-center justify-between w-full", 
-                  commonButtonProps.className, 
-                  isActive && "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]"
-                )}
-              >
-                <span className="flex items-center flex-grow overflow-hidden mr-1">
-                  {labelDisplayContent}
-                </span>
-                {dropdownMenuContentForLabel}
-              </div>
-            );
-          } else {
             const buttonContent = (
               <>
-                <span className="flex items-center flex-grow overflow-hidden mr-1">
-                  {labelDisplayContent}
-                </span>
+                <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
+                {!isIconOnly && <span className="truncate">{item.label}</span>}
               </>
             );
-            menuElement = (
+            
+            const commonButtonProps = {
+              variant: "ghost" as const,
+              onClick: item.action,
+              disabled: item.disabled,
+              isActive: isActive, 
+              "aria-label": item.tooltip,
+              tooltip: item.tooltip,
+            };
+
+            const menuButton = (
               <SidebarMenuButton {...commonButtonProps}>
                 {buttonContent}
               </SidebarMenuButton>
@@ -547,60 +305,14 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
       <SidebarContent className="p-0">
         <ScrollArea className="h-full w-full p-2">
           <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
-            {renderNavItems(filterNavItems)}
-            <SidebarSeparator />
-
-            {!isIconOnly && (
-              <div className="px-1.5 pt-2 pb-1 flex items-center justify-between group/labels-header">
-                 <button
-                  className="group flex items-center gap-1.5 w-full rounded-md px-2 py-1.5 text-left text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring transition-colors hover:bg-muted text-muted-foreground hover:text-foreground"
-                  onClick={() => setIsLabelsExpanded(!isLabelsExpanded)}
-                  aria-expanded={isLabelsExpanded}
-                  aria-controls="sidebar-labels-list"
-                >
-                  {isLabelsExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />}
-                  <Tags className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
-                  <span className="font-medium text-muted-foreground group-hover:text-foreground flex-1">Labels</span>
-                </button>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary shrink-0" onClick={() => setIsCreateLabelDialogOpen(true)}>
-                            <PlusCircle className="h-4 w-4"/>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right"><p>Create new label</p></TooltipContent>
-                </Tooltip>
-              </div>
-            )}
-
-            {isIconOnly && (
-                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-primary mt-1" onClick={() => setIsCreateLabelDialogOpen(true)}>
-                            <PlusCircle className="h-5 w-5"/>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right"><p>Create new label</p></TooltipContent>
-                </Tooltip>
-            )}
-
-            {!isIconOnly && (
-              <div
-                id="sidebar-labels-list"
-                className={cn(
-                  "overflow-hidden transition-all duration-300 ease-in-out",
-                  isLabelsExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-              )}>
-                {renderNavItems(labelNavItems)}
-              </div>
-            )}
             
-            {isIconOnly && (
-              renderNavItems(labelNavItems)
-            )}
-
-
-            <SidebarSeparator />
+            {mainNavItems.length > 0 && <SidebarSeparator/>}
+            {renderNavItems(mainNavItems)}
+            
+            {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 && (categoryNavItems.length > 0 || managementNavItems.length > 0)) ? <SidebarSeparator /> : null}
+            {renderNavItems(filterNavItems)}
+            
+            {(filterNavItems.length > 0 && categoryNavItems.length > 0) || (filterNavItems.length === 0 && categoryNavItems.length > 0 && managementNavItems.length > 0) ? <SidebarSeparator /> : null}
             {renderNavItems(categoryNavItems)}
 
             <SidebarSeparator />
@@ -673,92 +385,6 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
           </div>
         </div>
       </SidebarFooter>
-
-      {/* Create Label Dialog */}
-      <Dialog open={isCreateLabelDialogOpen} onOpenChange={setIsCreateLabelDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Label</DialogTitle>
-            <DialogDescription>
-              Enter a name for your new label.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <UiLabel htmlFor="newLabelName" className="sr-only">Label Name</UiLabel>
-            <Input
-              id="newLabelName"
-              placeholder="Label name (e.g., Work, Study)"
-              value={newLabelName}
-              onChange={(e) => setNewLabelName(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" onClick={() => setNewLabelName('')}>
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button type="submit" onClick={handleCreateLabel} disabled={isSavingLabel || !newLabelName.trim()}>
-              {isSavingLabel && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Label
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Label Dialog */}
-      <Dialog open={isEditLabelDialogOpen} onOpenChange={setIsEditLabelDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Label</DialogTitle>
-            <DialogDescription>
-              Update the name for your label "{labelToEdit?.name}".
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <UiLabel htmlFor="editedLabelName" className="sr-only">New Label Name</UiLabel>
-            <Input
-              id="editedLabelName"
-              placeholder="New label name"
-              value={editedLabelName}
-              onChange={(e) => setEditedLabelName(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button type="submit" onClick={handleUpdateLabel} disabled={isUpdatingLabel || !editedLabelName.trim()}>
-              {isUpdatingLabel && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Label Dialog */}
-      {labelToDelete && (
-        <AlertDialog open={isDeleteLabelDialogOpen} onOpenChange={setIsDeleteLabelDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <SrAlertDialogTitle>Delete Label "{labelToDelete.name}"?</SrAlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete the label "{labelToDelete.name}".
-                Tasks currently using this label will have it removed (they won't be deleted). This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteLabel} disabled={isDeletingLabel} className="bg-destructive hover:bg-destructive/90">
-                {isDeletingLabel && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Delete Label
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
     </Sidebar>
   );
 }

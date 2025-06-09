@@ -22,8 +22,8 @@ export interface Label {
 export interface Task {
   id: string;
   title: string;
-  description: string;
-  dueDate: string; // ISO string date
+  description?: string; // Made optional
+  dueDate: string | null; // Can be null
   category: TaskCategory;
   priority?: TaskPriority;
   isCompleted: boolean;
