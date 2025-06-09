@@ -61,10 +61,39 @@ export default function HomePage() {
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const tasksData = querySnapshot.docs.map(docSnap => {
           const data = docSnap.data();
-          let dueDate = data.dueDate instanceof Timestamp ? data.dueDate.toDate().toISOString() : (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) ? data.dueDate : null;
-          let createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) ? data.createdAt : new Date().toISOString();
-          let trashedAt = data.trashedAt instanceof Timestamp ? data.trashedAt.toDate().toISOString() : (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) ? data.trashedAt : null;
-          let reminderAt = data.reminderAt instanceof Timestamp ? data.reminderAt.toDate().toISOString() : (typeof data.reminderAt === 'string' && isValid(parseISO(data.reminderAt))) ? data.reminderAt : null;
+
+          let dueDate;
+          if (data.dueDate instanceof Timestamp) {
+            dueDate = data.dueDate.toDate().toISOString();
+          } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
+            dueDate = data.dueDate;
+          } else {
+            dueDate = new Date().toISOString();
+          }
+
+          let createdAt;
+          if (data.createdAt instanceof Timestamp) {
+            createdAt = data.createdAt.toDate().toISOString();
+          } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
+            createdAt = data.createdAt;
+          } else {
+            createdAt = new Date().toISOString();
+          }
+
+          let trashedAt = null;
+          if (data.trashedAt instanceof Timestamp) {
+            trashedAt = data.trashedAt.toDate().toISOString();
+          } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
+            trashedAt = data.trashedAt;
+          }
+          
+          let reminderAt = null;
+          if (data.reminderAt instanceof Timestamp) {
+            reminderAt = data.reminderAt.toDate().toISOString();
+          } else if (typeof data.reminderAt === 'string' && isValid(parseISO(data.reminderAt))) {
+            reminderAt = data.reminderAt;
+          }
+
 
           return {
             id: docSnap.id,
@@ -111,7 +140,7 @@ export default function HomePage() {
       const newTaskData = {
         title: data.title,
         description: data.description,
-        dueDate: formatISO(data.dueDate),
+        dueDate: data.dueDate ? formatISO(data.dueDate) : null, // Handle potentially null dueDate
         category: data.category,
         priority: data.priority || "None",
         isCompleted: false, // New tasks are not completed
@@ -143,7 +172,7 @@ export default function HomePage() {
       const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = {
         title: data.title,
         description: data.description,
-        dueDate: formatISO(data.dueDate),
+        dueDate: data.dueDate ? formatISO(data.dueDate) : null, // Handle potentially null dueDate
         category: data.category,
         priority: data.priority || "None",
         reminderAt: data.reminderAt ? data.reminderAt : null, // Already formatted ISO string
@@ -212,8 +241,11 @@ export default function HomePage() {
     if (!task) return;
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, id);
-      await updateDoc(taskDocRef, { isTrashed: true, trashedAt: serverTimestamp() });
-      toast({ title: "Task Moved to Trash", description: `"${(task.title || task.description)?.substring(0,25)}..." moved.` });
+      await updateDoc(taskDocRef, {
+        isTrashed: true,
+        trashedAt: serverTimestamp()
+      });
+      toast({ title: "Task Moved to Trash", description: `"${(task.title || task.description).substring(0,25)}..." moved to trash.` });
       setTaskToDelete(null);
     } catch (error: any) {
       console.error("Error moving task to trash:", error);
@@ -334,11 +366,9 @@ export default function HomePage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
-          <DialogHeader>
-            <SrDialogTitle className="sr-only">
-              {editingTask ? 'Edit Task' : 'Add New Task'}
-            </SrDialogTitle>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
+          <DialogHeader className="sr-only">
+            <SrDialogTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</SrDialogTitle>
           </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
