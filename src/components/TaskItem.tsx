@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { format, parseISO, isValid, isPast, isToday, isTomorrow, isYesterday, differenceInCalendarDays, formatDistanceToNowStrict } from 'date-fns';
-import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, ListChecks, BookOpen, Inbox, Bell, BellPlus } from 'lucide-react';
+import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, ListChecks, BookOpen, Inbox, Bell, BellPlus, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -20,6 +20,14 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 
 interface TaskItemProps {
   task: Task;
@@ -47,12 +55,11 @@ function formatDynamicDueDate(isoDateString: string): string {
   const today = new Date();
   const diffDays = differenceInCalendarDays(date, today);
 
-  if (diffDays > 0 && diffDays <= 6) return format(date, "'Next' EEEE"); // e.g., Next Monday
-  if (diffDays < 0 && diffDays >= -6) return format(date, "'Last' EEEE"); // e.g., Last Monday
+  if (diffDays > 0 && diffDays <= 6) return format(date, "'Next' EEEE"); 
+  if (diffDays < 0 && diffDays >= -6) return format(date, "'Last' EEEE"); 
 
-  // For dates further out, or in a different year, show more detail
-  if (date.getFullYear() === today.getFullYear()) return format(date, "MMM d"); // e.g., Oct 15
-  return format(date, "MMM d, yyyy"); // e.g., Oct 15, 2023
+  if (date.getFullYear() === today.getFullYear()) return format(date, "MMM d"); 
+  return format(date, "MMM d, yyyy"); 
 }
 
 function formatReminderDateTime(isoDateTimeString: string | null | undefined): string | null {
@@ -145,7 +152,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
   const cardClickHandler = (e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
     let target = e.target as HTMLElement;
     while (target && target !== e.currentTarget) {
-      if (target.matches('input[type="checkbox"], button, a, [data-nocardclick="true"]') || target.closest('[data-nocardclick="true"]')) {
+      if (target.matches('input[type="checkbox"], button, a, [data-nocardclick="true"], [role="menuitem"], [role="menu"]') || target.closest('[data-nocardclick="true"], [role="menuitem"], [role="menu"]')) {
         return;
       }
       target = target.parentElement as HTMLElement;
@@ -167,7 +174,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
         tabIndex={0}
         aria-label={`Edit task: ${task.title || task.description}`}
       >
-        <div className="p-4 flex flex-col gap-3"> {/* Increased gap */}
+        <div className="p-4 flex flex-col gap-3"> 
           <div className="flex items-start gap-3">
             <Checkbox
               id={`task-complete-${task.id}`}
@@ -192,7 +199,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 <CardTitle
                   id={`task-title-${task.id}`}
                   className={cn(
-                    "text-base font-semibold text-foreground break-words line-clamp-2", // Removed leading-snug
+                    "text-base font-semibold text-foreground break-words line-clamp-2", 
                     task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
                   )}
                 >
@@ -201,7 +208,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </div>
               {task.title && task.description && task.title !== task.description && (
                 <CardDescription className={cn(
-                  "text-xs text-muted-foreground line-clamp-3 mt-2", // Increased mt-1 to mt-2, removed leading-normal
+                  "text-xs text-muted-foreground line-clamp-3 mt-2", 
                   task.isCompleted && "line-through"
                 )}>
                   {task.description}
@@ -211,7 +218,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           </div>
 
           {(task.subtasks && task.subtasks.length > 0) && (
-            <div className={cn("mt-3 space-y-1.5 pl-[calc(1.25rem+0.75rem)]", // Increased mt-2 to mt-3
+            <div className={cn("mt-3 space-y-1.5 pl-[calc(1.25rem+0.75rem)]", 
               (task.title && task.description && task.title !== task.description) && "pt-1")}>
               {(task.title && task.description && task.title !== task.description || (task.subtasks && task.subtasks.length > 0)) && <Separator className="mb-2" />}
               {totalSubtasks > 0 && (
@@ -224,7 +231,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 </div>
               )}
               <ScrollArea className="max-h-24 pr-1 -mr-1">
-                <div className="space-y-2 py-0.5"> {/* Increased space-y-1 to space-y-2 */}
+                <div className="space-y-2 py-0.5"> 
                 {task.subtasks.map((subtask) => (
                   <div key={subtask.id} className="flex items-center space-x-1.5 group/subtask p-0.5 rounded hover:bg-muted/50 transition-colors" data-nocardclick="true">
                     <Checkbox
@@ -240,7 +247,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                       htmlFor={`subtask-${task.id}-${subtask.id}`}
                       id={`subtask-text-${task.id}-${subtask.id}`}
                       className={cn(
-                        "text-xs break-words cursor-pointer flex-1", // Removed leading-tight
+                        "text-xs break-words cursor-pointer flex-1", 
                         subtask.isCompleted ? "line-through text-muted-foreground/70" : "text-foreground/90",
                         "group-hover/subtask:text-foreground"
                       )}
@@ -256,8 +263,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           )}
         </div>
 
-        <CardFooter className="p-3 mt-auto border-t flex items-center justify-between gap-4"> {/* Removed bg-muted/20, increased gap */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground overflow-hidden"> {/* Increased gap */}
+        <CardFooter className="p-3 mt-auto border-t flex items-center justify-between gap-4"> 
+          <div className="flex items-center gap-3 text-xs text-muted-foreground overflow-hidden"> 
             <Tooltip>
               <TooltipTrigger asChild data-nocardclick="true">
                 <Badge variant="outline" className="text-xs py-0.5 px-1.5 font-normal shrink-0 border-border bg-background hover:bg-muted/80">
@@ -310,35 +317,35 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             )}
           </div>
            <div
-            className="flex items-center space-x-1 flex-shrink-0" // Increased space-x
+            className="flex items-center space-x-1 flex-shrink-0" 
             onClick={(e) => e.stopPropagation()} 
             onKeyDown={(e) => e.stopPropagation()}
             data-nocardclick="true"
           >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(task)} aria-label="Set or edit reminder" className="h-7 w-7 text-muted-foreground hover:text-accent hover:bg-accent/10">
-                    <BellPlus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Set/Edit Reminder</p></TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(task)} aria-label="Edit task" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted">
-                    <Pencil className="h-4 w-4" /> {/* Icon size slightly increased for clarity */}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Edit Task</p></TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                   <Button variant="ghost" size="icon" onClick={() => onDelete(task.id)} aria-label="Delete task" className="text-destructive/70 hover:text-destructive hover:bg-destructive/10 h-7 w-7">
-                    <Trash2 className="h-4 w-4" /> {/* Icon size slightly increased for clarity */}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Move to Trash</p></TooltipContent>
-              </Tooltip>
+            <DropdownMenu>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted" data-nocardclick="true">
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Task Options</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent><p>More options</p></TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent side="bottom" align="end" onClick={(e) => e.stopPropagation()} data-nocardclick="true">
+                    <DropdownMenuItem onClick={() => onEdit(task)} className="cursor-pointer">
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Edit / Set Reminder</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Move to Trash</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardFooter>
       </Card>
@@ -347,4 +354,3 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
 }
 
 export const TaskItem = memo(TaskItemComponent);
-
