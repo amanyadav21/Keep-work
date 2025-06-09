@@ -10,7 +10,6 @@ import {
   ListChecks,
   Users,
   Tag,
-  Archive,
   Trash2,
   User,
   Settings as SettingsIcon,
@@ -101,7 +100,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     { href: '/classes', label: 'Class Section', icon: Users, tooltip: 'Class Section (Coming Soon)', disabled: true, isPageLink: true },
     { href: '/reminders', label: 'Reminders', icon: AlarmClock, tooltip: 'View Reminders', disabled: false, isPageLink: true },
     { href: '/labels', label: 'Labels', icon: Tag, tooltip: 'Labels (Coming Soon)', disabled: true, isPageLink: true },
-    { href: '/archive', label: 'Archive', icon: Archive, tooltip: 'Archive (Coming Soon)', disabled: true, isPageLink: true },
   ];
 
   const managementNavItems: NavItemConfig[] = [
@@ -114,11 +112,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
 
     const sectionContent = (
       <>
-        {sectionTitle && !isIconOnly && (
-          <div className="px-3 pt-4 pb-1.5 text-xs font-semibold uppercase text-muted-foreground/90 tracking-wider">
-            {sectionTitle}
-          </div>
-        )}
+        {/* Section title rendering removed */}
         <SidebarMenu className={cn(isIconOnly && "w-auto")}>
           {items.map((item, index) => {
             let isActive = false;
@@ -256,16 +250,16 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
           <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
             
             {mainNavItems.length > 0 && <SidebarSeparator/>}
-            {renderNavItems(mainNavItems, isIconOnly ? undefined : 'Main')}
+            {renderNavItems(mainNavItems)}
             
             {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 && (categoryNavItems.length > 0 || managementNavItems.length > 0)) ? <SidebarSeparator /> : null}
-            {renderNavItems(filterNavItems, isIconOnly ? undefined : 'Filters')}
+            {renderNavItems(filterNavItems)}
             
             {(filterNavItems.length > 0 && categoryNavItems.length > 0) || (filterNavItems.length === 0 && categoryNavItems.length > 0 && managementNavItems.length > 0) ? <SidebarSeparator /> : null}
-            {renderNavItems(categoryNavItems, isIconOnly ? undefined : 'Categories')}
+            {renderNavItems(categoryNavItems)}
             
             {categoryNavItems.length > 0 && managementNavItems.length > 0 ? <SidebarSeparator /> : null}
-            {renderNavItems(managementNavItems, isIconOnly ? undefined : 'Management')}
+            {renderNavItems(managementNavItems)}
           </div>
         </ScrollArea>
       </SidebarContent>
