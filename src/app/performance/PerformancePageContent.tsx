@@ -10,7 +10,7 @@ import { ArrowLeft, BarChart3, CheckCircle, TrendingUp, CalendarDays, Loader2, A
 import { AppSidebar } from '@/components/AppSidebar';
 import { Header } from '@/components/Header';
 import type { TaskFilter } from '@/types';
-import { cn } from '@/lib/utils'; // Added missing import
+import { cn } from '@/lib/utils';
 
 
 export default function PerformancePageContent() {
@@ -89,9 +89,14 @@ export default function PerformancePageContent() {
 
   return (
     <>
-    {/* AppSidebar needs onAddTask, currentFilter, onFilterChange. Provide dummy ones if not interactive here. */}
-    <AppSidebar onAddTask={() => { /* No new tasks from here */ }} currentFilter={currentFilter} onFilterChange={() => {}} />
-    <Header /> {/* Header does not need onAddTask from this page */}
+    <AppSidebar 
+      onAddTask={() => { /* No new tasks from here */ }} 
+      currentFilter={currentFilter} 
+      onFilterChange={() => {}} 
+      selectedLabelId={null}
+      onLabelSelect={() => {}}
+    />
+    <Header />
     <div className="flex flex-col min-h-screen bg-muted/40 dark:bg-background">
       <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-30">
         <div className="max-w-6xl mx-auto w-full flex items-center gap-3">
@@ -164,3 +169,4 @@ export default function PerformancePageContent() {
     </>
   );
 }
+
