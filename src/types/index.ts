@@ -10,11 +10,20 @@ export interface Subtask {
   isCompleted: boolean;
 }
 
+export interface Label {
+  id: string;
+  name: string;
+  userId: string;
+  createdAt: string; // ISO string date
+  // color?: string; // Future enhancement
+  // icon?: string; // Future enhancement
+}
+
 export interface Task {
   id: string;
   title: string;
-  description?: string; // Made optional
-  dueDate: string | null; // Can be null
+  description?: string;
+  dueDate: string | null;
   category: TaskCategory;
   priority?: TaskPriority;
   isCompleted: boolean;
@@ -24,6 +33,7 @@ export interface Task {
   isTrashed?: boolean;
   trashedAt?: string | null; // ISO string date or null
   reminderAt?: string | null; // ISO string date-time or null for reminders
+  labelId?: string | null; // ID of the assigned label
 }
 
 export type TaskFilter = "all" | "pending" | "completed" | "today" | "general";
@@ -36,4 +46,3 @@ export interface ChatMessage {
 }
 
 export type FirebaseUser = FirebaseUserType;
-

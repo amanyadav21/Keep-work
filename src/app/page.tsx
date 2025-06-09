@@ -7,7 +7,7 @@ import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
-import type { Task, TaskFilter, TaskPriority } from '@/types';
+import type { Task, TaskFilter, TaskPriority, Label } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as SrDialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader as SrAlertDialogHeader, AlertDialogTitle as SrAlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay } from 'date-fns';
@@ -36,6 +36,7 @@ export default function HomePage() {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<TaskFilter>('general');
+  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
@@ -51,6 +52,8 @@ export default function HomePage() {
     if (user && isMounted) {
       setIsLoadingTasks(true);
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
+      // Base query filters for non-trashed tasks and orders by creation time.
+      // Label filtering will be applied client-side after fetching, or could be added here if complex.
       const q = query(tasksCollectionRef, where("isTrashed", "==", false), orderBy("createdAt", "desc"));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -63,7 +66,7 @@ export default function HomePage() {
           } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
             dueDate = data.dueDate;
           } else {
-            dueDate = null; // Updated to allow null
+            dueDate = null;
           }
 
           let createdAt;
@@ -81,14 +84,13 @@ export default function HomePage() {
           } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
             trashedAt = data.trashedAt;
           }
-          
+
           let reminderAt = null;
           if (data.reminderAt instanceof Timestamp) {
             reminderAt = data.reminderAt.toDate().toISOString();
           } else if (typeof data.reminderAt === 'string' && isValid(parseISO(data.reminderAt))) {
             reminderAt = data.reminderAt;
           }
-
 
           return {
             id: docSnap.id,
@@ -103,6 +105,7 @@ export default function HomePage() {
             trashedAt,
             reminderAt,
             subtasks: data.subtasks || [],
+            labelId: data.labelId || null, // Add labelId
           } as Task;
         });
         setTasks(tasksData);
@@ -114,13 +117,13 @@ export default function HomePage() {
 
         if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
           title = "You are Offline";
-          description = "Tasks could not be loaded from the server. Displaying cached data if available. Some functionality may be limited.";
+          description = "Tasks could not be loaded. Displaying cached data if available.";
         } else if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
           title = "Permissions Error";
-          description = "You don't have permission to access these tasks. Check Firestore rules.";
+          description = "You don't have permission to access these tasks.";
         } else if (error.message && (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("index needed"))) {
            title = "Database Index Required";
-           description = "A Firestore index is needed for fetching tasks. Please create an index for 'tasks' with: isTrashed (ASC), createdAt (DESC). Check server console for a link if provided by Firebase.";
+           description = "A Firestore index is needed for tasks. Common: isTrashed (ASC), createdAt (DESC). If filtering by label, labelId (ASC) might also be needed.";
         }
         toast({
             title: title,
@@ -128,7 +131,7 @@ export default function HomePage() {
             variant: "destructive",
             duration: error.code === 'unavailable' ? 8000 : 15000,
         });
-        setIsLoadingTasks(false); 
+        setIsLoadingTasks(false);
       });
 
       return () => unsubscribe();
@@ -163,13 +166,14 @@ export default function HomePage() {
         isTrashed: false,
         trashedAt: null,
         reminderAt: data.reminderAt || null,
+        labelId: data.labelId || null, // Save labelId
       };
       await addDoc(tasksCollectionRef, newTaskData);
     } catch (error: any) {
       console.error("Error adding task:", error);
       let description = `Could not add task: ${error.message}`;
       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The task will be saved locally and synced when you're back online.";
+        description = "Offline. Task saved locally, will sync when online.";
          toast({ title: "Offline Mode", description, variant: "default" });
       } else {
         toast({ title: "Error Adding Task", description, variant: "destructive" });
@@ -196,6 +200,7 @@ export default function HomePage() {
           text: st.text,
           isCompleted: st.isCompleted || false,
         })) || [],
+        labelId: data.labelId || null, // Save labelId
       };
       await updateDoc(taskDocRef, updatedTaskData);
       setEditingTask(null);
@@ -203,7 +208,7 @@ export default function HomePage() {
       console.error("Error updating task:", error);
       let description = `Could not update task: ${error.message}`;
       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The task update will be saved locally and synced when you're back online.";
+        description = "Offline. Update saved locally, will sync when online.";
         toast({ title: "Offline Mode", description, variant: "default" });
       } else {
         toast({ title: "Error Updating Task", description, variant: "destructive" });
@@ -230,8 +235,8 @@ export default function HomePage() {
     } catch (error: any) {
       console.error("Error toggling task complete:", error);
       let description = `Could not update task status: ${error.message}`;
-      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The change will be synced when you're back online.";
+      if (error.code === 'unavailable') {
+        description = "Offline. Change will sync when online.";
         toast({ title: "Offline Mode", description, variant: "default" });
       } else {
         toast({ title: "Error", description, variant: "destructive" });
@@ -254,8 +259,8 @@ export default function HomePage() {
      {
       console.error("Error toggling subtask complete:", error);
       let description = `Could not update subtask status: ${error.message}`;
-       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The change will be synced when you're back online.";
+       if (error.code === 'unavailable') {
+        description = "Offline. Change will sync when online.";
         toast({ title: "Offline Mode", description, variant: "default" });
       } else {
         toast({ title: "Error", description, variant: "destructive" });
@@ -278,8 +283,8 @@ export default function HomePage() {
     } catch (error: any) {
       console.error("Error moving task to trash:", error);
        let description = `Could not move task to trash: ${error.message}`;
-       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The change will be synced when you're back online.";
+       if (error.code === 'unavailable') {
+        description = "Offline. Change will sync when online.";
         toast({ title: "Offline Mode", description, variant: "default" });
       } else {
         toast({ title: "Error", description, variant: "destructive" });
@@ -302,6 +307,17 @@ export default function HomePage() {
     setEditingTask(null);
     setIsFormOpen(true);
   }, [user, toast]);
+  
+  const handleLabelSelect = useCallback((labelId: string | null) => {
+    setSelectedLabelId(labelId);
+    // If a label is selected, reset the main filter to 'general' to show all tasks of that label.
+    // Or, you might want the filter (pending/completed) to apply WITHIN the label.
+    // For now, let's say selecting a label overrides the other filter for simplicity of view.
+    if (labelId) {
+        setFilter('general'); // Or a new filter type like 'label_tasks'
+    }
+  }, []);
+
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
@@ -327,24 +343,36 @@ export default function HomePage() {
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
-    const nonTrashedTasks = sortedTasks.filter(task => !task.isTrashed);
+    let tasksToFilter = sortedTasks.filter(task => !task.isTrashed);
+
+    // First, filter by selected label if any
+    if (selectedLabelId) {
+      tasksToFilter = tasksToFilter.filter(task => task.labelId === selectedLabelId);
+    }
+    // Then, apply the main filter (today, pending, completed)
+    // If a label is selected, 'general' and 'all' within that label are the same.
+    if (selectedLabelId && (filter === 'general' || filter === 'all')) {
+        return tasksToFilter; // Show all tasks for the selected label
+    }
+
+
     switch (filter) {
       case 'pending':
-        return nonTrashedTasks.filter(task => !task.isCompleted);
+        return tasksToFilter.filter(task => !task.isCompleted);
       case 'completed':
-        return nonTrashedTasks.filter(task => task.isCompleted);
+        return tasksToFilter.filter(task => task.isCompleted);
       case 'today':
-        return nonTrashedTasks.filter(task => {
+        return tasksToFilter.filter(task => {
           if (!task.dueDate) return false;
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
-      case 'general': 
-        return nonTrashedTasks;
-      default: 
-        return nonTrashedTasks;
+      case 'general': // 'general' or 'all' when no label is selected shows all non-trashed tasks
+      case 'all':
+      default:
+        return tasksToFilter;
     }
-  }, [sortedTasks, filter]);
+  }, [sortedTasks, filter, selectedLabelId]);
 
   const pendingTasksCount = useMemo(() => tasks.filter(t => !t.isCompleted && !t.isTrashed).length, [tasks]);
 
@@ -363,7 +391,13 @@ export default function HomePage() {
 
   return (
     <>
-      <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />
+      <AppSidebar
+        onAddTask={handleOpenAddForm}
+        currentFilter={filter}
+        onFilterChange={setFilter}
+        selectedLabelId={selectedLabelId}
+        onLabelSelect={handleLabelSelect}
+      />
       <Header />
 
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
@@ -406,7 +440,7 @@ export default function HomePage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
           <DialogHeader>
             <SrDialogTitle className="sr-only">
               {editingTask ? 'Edit Task' : 'Add New Task'}
@@ -442,4 +476,3 @@ export default function HomePage() {
     </>
   );
 }
-
