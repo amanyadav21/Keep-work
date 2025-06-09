@@ -12,20 +12,9 @@ import {
   User,
   Settings as SettingsIcon,
   LogOut,
-  CalendarClock,
-  Inbox,
-  AlarmClock,
-  BarChart3,
-  PlusCircle,
-  Loader2,
-  Edit2,
-  XCircle,
-  ChevronDown,
-  ChevronRight,
-  MoreVertical,
-  Tags, 
-  ListTodo,
-  GraduationCap,
+  CalendarClock, 
+  Inbox, 
+  AlarmClock, // Added AlarmClock icon
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -300,10 +289,11 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
   };
 
   const filterNavItems: NavItemConfig[] = [
-    { action: () => { onFilterChange('general'); onLabelSelect(null); }, label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
-    { action: () => { onFilterChange('today'); onLabelSelect(null); }, label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
-    { action: () => { onFilterChange('pending'); onLabelSelect(null); }, label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
-    { action: () => { onFilterChange('completed'); onLabelSelect(null);}, label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
+    { action: () => onFilterChange('all'), label: 'All Tasks', icon: ListFilter, tooltip: 'All Tasks', isFilter: true, filterName: 'all' },
+    { action: () => onFilterChange('general'), label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
+    { action: () => onFilterChange('today'), label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
+    { action: () => onFilterChange('pending'), label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
+    { action: () => onFilterChange('completed'), label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
   ];
 
   const labelNavItems: NavItemConfig[] = userLabels.map(label => ({
@@ -546,17 +536,12 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
   );
 
   return (
-    <Sidebar side="left" className="shadow-sm">
-      <SidebarHeader className="flex items-center min-w-0">
-        {!isIconOnly && (
-          <Link href="/" className="flex items-center gap-2 group mr-auto overflow-hidden pr-2 flex-shrink-0">
-            <GraduationCap className="h-6 w-6 text-primary group-hover:text-primary/90 transition-colors flex-shrink-0" />
-            <h1 className="text-lg font-semibold text-foreground tracking-tight group-hover:text-foreground/90 transition-colors truncate">
-              Upnext
-            </h1>
-          </Link>
-        )}
-        <SidebarTrigger className={cn("shrink-0", isIconOnly && "mx-auto")}/>
+    <Sidebar
+      side="left"
+      className="shadow-sm"
+    >
+      <SidebarHeader className="flex items-center">
+        <SidebarTrigger className="shrink-0" tooltip="Toggle Sidebar" />
       </SidebarHeader>
 
       <SidebarContent className="p-0">
