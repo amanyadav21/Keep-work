@@ -17,6 +17,7 @@ import {
   CalendarClock, 
   Inbox, 
   AlarmClock,
+  BarChart3,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -99,6 +100,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   const categoryNavItems: NavItemConfig[] = [
     { href: '/classes', label: 'Class Section', icon: Users, tooltip: 'Class Section (Coming Soon)', disabled: true, isPageLink: true },
     { href: '/reminders', label: 'Reminders', icon: AlarmClock, tooltip: 'View Reminders', disabled: false, isPageLink: true },
+    { href: '/performance', label: 'Performance', icon: BarChart3, tooltip: 'Performance Overview', disabled: false, isPageLink: true },
     { href: '/labels', label: 'Labels', icon: Tag, tooltip: 'Labels (Coming Soon)', disabled: true, isPageLink: true },
   ];
 
@@ -112,7 +114,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
 
     const sectionContent = (
       <>
-        {/* Section title rendering removed */}
         <SidebarMenu className={cn(isIconOnly && "w-auto")}>
           {items.map((item, index) => {
             let isActive = false;
