@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { TaskList } from '@/components/TaskList';
-import type { Task, TaskFilter, TaskPriority, Label } from '@/types';
-import { InteractiveTaskCard, type InteractiveTaskCardValues } from '@/components/InteractiveTaskCard'; // Updated import
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader as SrAlertDialogHeader, AlertDialogTitle as SrAlertDialogTitle } from "@/components/ui/alert-dialog";
+import type { Task, TaskFilter, TaskPriority } from '@/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -326,32 +326,27 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Centered InteractiveTaskCard for viewing/editing tasks */}
-      {isExpandedTaskVisible && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 dark:bg-black/40 backdrop-blur-sm transition-opacity duration-300 ease-in-out animate-in fade-in-0"
-          onClick={() => { // Click on backdrop closes the card
-            setIsExpandedTaskVisible(false);
-            setExpandedTask(null);
-          }}
-        >
-          <div 
-            className="transition-all duration-300 ease-in-out transform animate-in fade-in-0 zoom-in-95 data-[state=open]:scale-100 data-[state=open]:opacity-100"
-            data-state={isExpandedTaskVisible ? "open" : "closed"}
-            onClick={(e) => e.stopPropagation()} // Prevent backdrop click if click is on card itself
-            >
-            <InteractiveTaskCard
-              mode={expandedTask ? "edit" : "add"} // if no task, it's an "add detailed"
-              task={expandedTask}
-              onSubmit={handleSubmitTask}
-              onClose={() => {
-                setIsExpandedTaskVisible(false);
-                setExpandedTask(null);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <Dialog open={isFormOpen} onOpenChange={(open) => {
+        setIsFormOpen(open);
+        if (!open) setEditingTask(null);
+      }}>
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-xl">{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+            <DialogDescription>
+              {editingTask ? 'Update the details of your existing task.' : 'Fill in the details below to add a new task to your list.'}
+            </DialogDescription>
+          </DialogHeader>
+          <TaskForm
+            onSubmit={handleSubmitTask}
+            editingTask={editingTask}
+            onClose={() => {
+              setIsFormOpen(false);
+              setEditingTask(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
         <AlertDialogContent className="rounded-xl bg-card sm:max-w-xl">
