@@ -7,7 +7,7 @@ import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { TaskList } from '@/components/TaskList';
 import type { Task, TaskFilter, TaskPriority } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -197,7 +197,8 @@ export default function HomePage() {
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
       await updateDoc(taskDocRef, { subtasks: updatedSubtasks });
-    } catch (error: any) {
+    } catch (error: any)
+     {
       console.error("Error toggling subtask complete:", error);
       let description = `Could not update subtask: ${error.message}`;
        if (error.code === 'unavailable') { description = "Offline. Change syncs when online."; toast({ title: "Offline Mode", description, variant: "default" }); }
@@ -330,13 +331,8 @@ export default function HomePage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="text-xl">{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
-            <DialogDescription>
-              {editingTask ? 'Update the details of your existing task.' : 'Fill in the details below to add a new task to your list.'}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card pt-6">
+          {/* DialogHeader removed for a cleaner look */}
           <TaskForm
             onSubmit={handleSubmitTask}
             editingTask={editingTask}
@@ -349,9 +345,9 @@ export default function HomePage() {
       </Dialog>
 
       <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
-        <AlertDialogContent className="rounded-xl bg-card sm:max-w-xl">
-          <SrAlertDialogHeader>
-            <SrAlertDialogTitle>Move Task to Trash?</SrAlertDialogTitle>
+        <AlertDialogContent className="rounded-lg bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
             <AlertDialogDesc>
               This will move the task "{(tasks.find(t => t.id === taskToDelete)?.title || tasks.find(t => t.id === taskToDelete)?.description)?.substring(0, 50)}..." to trash.
             </AlertDialogDesc>
