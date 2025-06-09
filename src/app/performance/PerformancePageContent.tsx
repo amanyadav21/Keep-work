@@ -10,6 +10,7 @@ import { ArrowLeft, BarChart3, CheckCircle, TrendingUp, CalendarDays, Loader2, A
 import { AppSidebar } from '@/components/AppSidebar';
 import { Header } from '@/components/Header';
 import type { TaskFilter } from '@/types';
+import { cn } from '@/lib/utils'; // Added missing import
 
 
 export default function PerformancePageContent() {
