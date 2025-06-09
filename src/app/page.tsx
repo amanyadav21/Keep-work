@@ -63,7 +63,7 @@ export default function HomePage() {
           } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
             dueDate = data.dueDate;
           } else {
-            dueDate = new Date().toISOString();
+            dueDate = null; // Updated to allow null
           }
 
           let createdAt;
@@ -149,7 +149,7 @@ export default function HomePage() {
       const newTaskData = {
         title: data.title,
         description: data.description,
-        dueDate: data.dueDate ? formatISO(data.dueDate) : null, // Handle potentially null dueDate
+        dueDate: data.dueDate ? formatISO(data.dueDate) : null,
         category: data.category,
         priority: data.priority || "None",
         isCompleted: false,
@@ -187,7 +187,7 @@ export default function HomePage() {
       const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = {
         title: data.title,
         description: data.description,
-        dueDate: data.dueDate ? formatISO(data.dueDate) : null, // Handle potentially null dueDate
+        dueDate: data.dueDate ? formatISO(data.dueDate) : null,
         category: data.category,
         priority: data.priority || "None",
         reminderAt: data.reminderAt || null,
@@ -273,7 +273,7 @@ export default function HomePage() {
         isTrashed: true,
         trashedAt: serverTimestamp()
       });
-      toast({ title: "Task Moved to Trash", description: `"${(task.title || task.description).substring(0,25)}..." moved to trash.` });
+      toast({ title: "Task Moved to Trash", description: `"${(task.title || task.description)?.substring(0,25)}..." moved to trash.` });
       setTaskToDelete(null);
     } catch (error: any) {
       console.error("Error moving task to trash:", error);
@@ -406,9 +406,11 @@ export default function HomePage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
-          <DialogHeader className="sr-only">
-            <SrDialogTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</SrDialogTitle>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
+          <DialogHeader>
+            <SrDialogTitle className="sr-only">
+              {editingTask ? 'Edit Task' : 'Add New Task'}
+            </SrDialogTitle>
           </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
