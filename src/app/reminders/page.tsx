@@ -12,7 +12,7 @@ import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDo
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, BellRing, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation'; // For back button
-import { parseISO, isValid } from 'date-fns';
+import { parseISO, isValid, formatISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm'; // For editing tasks
 import { Dialog, DialogContent, DialogHeader, DialogTitle as SrDialogTitle } from '@/components/ui/dialog'; // Renamed to avoid conflict
@@ -74,7 +74,7 @@ export default function RemindersPage() {
       const tasksData = querySnapshot.docs.map(docSnap => {
         const data = docSnap.data();
         // Consistent date parsing as in HomePage
-        let dueDate = data.dueDate instanceof Timestamp ? data.dueDate.toDate().toISOString() : (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) ? data.dueDate : new Date().toISOString();
+        let dueDate = data.dueDate instanceof Timestamp ? data.dueDate.toDate().toISOString() : (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) ? data.dueDate : null; // Allow null
         let createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) ? data.createdAt : new Date().toISOString();
         let trashedAt = data.trashedAt instanceof Timestamp ? data.trashedAt.toDate().toISOString() : (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) ? data.trashedAt : null;
         let reminderAt = data.reminderAt instanceof Timestamp ? data.reminderAt.toDate().toISOString() : (typeof data.reminderAt === 'string' && isValid(parseISO(data.reminderAt))) ? data.reminderAt : null;
@@ -131,7 +131,7 @@ export default function RemindersPage() {
       await updateDoc(taskDocRef, {
         title: data.title,
         description: data.description,
-        dueDate: data.dueDate.toISOString(),
+        dueDate: data.dueDate ? data.dueDate.toISOString() : null, // Handle null dueDate
         category: data.category,
         priority: data.priority || "None",
         reminderAt: data.reminderAt || null,
@@ -295,11 +295,9 @@ export default function RemindersPage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
-          <DialogHeader>
-            <SrDialogTitle className="sr-only">
-              Edit Task
-            </SrDialogTitle>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
+          <DialogHeader className="sr-only">
+            <SrDialogTitle>Edit Task</SrDialogTitle>
           </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}

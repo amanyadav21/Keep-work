@@ -182,7 +182,7 @@ export default function HomePage() {
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
       const newTaskData = {
         title: data.title,
-        description: data.description || "",
+        description: data.description,
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
@@ -220,7 +220,7 @@ export default function HomePage() {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
       const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = {
         title: data.title,
-        description: data.description || "",
+        description: data.description,
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
@@ -371,7 +371,7 @@ export default function HomePage() {
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
-      case 'general': // Now shows all non-trashed tasks
+      case 'general': 
         return nonTrashedTasks;
       default: 
         return nonTrashedTasks;
@@ -446,9 +446,9 @@ export default function HomePage() {
       }}>
         <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
           <DialogHeader>
-            <DialogTitle className="sr-only">
+            <SrDialogTitle className="sr-only">
               {editingTask ? 'Edit Task' : 'Add New Task'}
-            </DialogTitle>
+            </SrDialogTitle>
           </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
