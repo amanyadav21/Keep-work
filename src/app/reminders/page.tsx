@@ -92,6 +92,7 @@ export default function RemindersPage() {
           isTrashed: data.isTrashed || false,
           trashedAt,
           subtasks: data.subtasks || [],
+          labelId: data.labelId || null,
         } as Task;
       });
       setReminders(tasksData);
@@ -136,6 +137,7 @@ export default function RemindersPage() {
         priority: data.priority || "None",
         reminderAt: data.reminderAt || null,
         subtasks: data.subtasks?.map(st => ({ id: st.id || crypto.randomUUID(), text: st.text, isCompleted: st.isCompleted || false })) || [],
+        labelId: data.labelId || null,
       });
       setEditingTask(null);
       setIsFormOpen(false);
@@ -244,9 +246,14 @@ export default function RemindersPage() {
 
   return (
     <>
-      {/* AppSidebar needs onAddTask, currentFilter, onFilterChange. Provide dummy ones if not interactive here. */}
-      <AppSidebar onAddTask={() => { /* No new tasks from here */ }} currentFilter={currentFilter} onFilterChange={() => {}} />
-      <Header /> {/* Header does not need onAddTask from this page */}
+      <AppSidebar 
+        onAddTask={() => { /* No new tasks from here */ }} 
+        currentFilter={currentFilter} 
+        onFilterChange={() => {}} 
+        selectedLabelId={null} 
+        onLabelSelect={() => {}} 
+      />
+      <Header />
 
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
         <div className="w-full max-w-6xl mx-auto">
@@ -295,7 +302,7 @@ export default function RemindersPage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
+        <DialogContent className="p-0 sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg bg-card">
           <DialogHeader>
             <SrDialogTitle className="sr-only">Edit Task</SrDialogTitle>
           </DialogHeader>

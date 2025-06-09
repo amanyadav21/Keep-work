@@ -99,6 +99,7 @@ export default function TrashPage() {
           isTrashed: data.isTrashed,
           trashedAt,
           subtasks: data.subtasks || [],
+          labelId: data.labelId || null,
         } as Task;
       });
       setTrashedTasks(tasksData);
@@ -210,7 +211,13 @@ export default function TrashPage() {
 
   return (
     <>
-      <AppSidebar onAddTask={() => {}} currentFilter={currentFilter} onFilterChange={() => {}} />
+      <AppSidebar 
+        onAddTask={() => {}} 
+        currentFilter={currentFilter} 
+        onFilterChange={() => {}} 
+        selectedLabelId={null}
+        onLabelSelect={() => {}}
+      />
       <Header />
       <div className="flex flex-col min-h-screen bg-muted/30">
         <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
