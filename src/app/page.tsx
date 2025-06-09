@@ -109,10 +109,10 @@ export default function HomePage() {
     try {
       const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
       const newTaskData = {
-        title: data.title || "", // Ensure title is at least an empty string
-        description: data.description || "",
-        dueDate: data.dueDate ? formatISO(data.dueDate) : null,
-        category: data.category || "General",
+        title: data.title,
+        description: data.description,
+        dueDate: formatISO(data.dueDate),
+        category: data.category,
         priority: data.priority || "None",
         isCompleted: false, // New tasks are not completed
         createdAt: serverTimestamp(),
@@ -141,10 +141,10 @@ export default function HomePage() {
     try {
       const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
       const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = {
-        title: data.title || "",
-        description: data.description || "",
-        dueDate: data.dueDate ? formatISO(data.dueDate) : null,
-        category: data.category || "General",
+        title: data.title,
+        description: data.description,
+        dueDate: formatISO(data.dueDate),
+        category: data.category,
         priority: data.priority || "None",
         reminderAt: data.reminderAt ? data.reminderAt : null, // Already formatted ISO string
         subtasks: data.subtasks?.map(st => ({ id: st.id || crypto.randomUUID(), text: st.text, isCompleted: st.isCompleted || false })) || [],
@@ -276,9 +276,7 @@ export default function HomePage() {
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
-      case 'general':
-        return nonTrashedTasks.filter(task => task.category === 'General');
-      case 'all':
+      case 'general': // Now shows all non-trashed tasks
         return nonTrashedTasks;
       default: 
         return nonTrashedTasks;
@@ -336,8 +334,12 @@ export default function HomePage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card pt-6">
-          {/* DialogHeader removed for a cleaner look */}
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto rounded-lg bg-card">
+          <DialogHeader>
+            <SrDialogTitle className="sr-only">
+              {editingTask ? 'Edit Task' : 'Add New Task'}
+            </SrDialogTitle>
+          </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
             editingTask={editingTask}
