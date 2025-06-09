@@ -60,15 +60,29 @@ function formatReminderDateTime(isoDateTimeString: string | null | undefined): s
   const date = parseISO(isoDateTimeString);
   if (!isValid(date)) return null;
   
-  // Example: "Tomorrow, 9:00 AM" or "Oct 25, 2:30 PM" or "Today, 5:00 PM"
   let datePart;
   if (isToday(date)) datePart = "Today";
   else if (isTomorrow(date)) datePart = "Tomorrow";
   else if (isYesterday(date)) datePart = "Yesterday";
   else datePart = format(date, "MMM d");
 
-  return `${datePart}, ${format(date, "p")}`; // 'p' for localized time, e.g., 9:00 AM
+  return `${datePart}, ${format(date, "p")}`; 
 }
+
+const getPriorityDotClass = (priority?: TaskPriority) => {
+    switch (priority) {
+      case "Urgent":
+        return "bg-[hsl(var(--priority-urgent))]";
+      case "High":
+        return "bg-[hsl(var(--priority-high))]";
+      case "Medium":
+        return "bg-[hsl(var(--priority-medium))]";
+      case "Low":
+        return "bg-[hsl(var(--priority-low))]";
+      default:
+        return "bg-transparent"; 
+    }
+  };
 
 
 function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskItemProps) {
@@ -109,7 +123,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     };
 
     calculateTimeLeft();
-    const intervalId = setInterval(calculateTimeLeft, 60000); // Update every minute
+    const intervalId = setInterval(calculateTimeLeft, 60000); 
 
     return () => clearInterval(intervalId);
   }, [task.dueDate, task.isCompleted, isMounted]);
@@ -129,7 +143,6 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
   const CategoryIcon = categoryIcons[task.category] || User;
 
   const cardClickHandler = (e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
-    // Prevent card click from triggering if a button, checkbox, or link inside was clicked
     let target = e.target as HTMLElement;
     while (target && target !== e.currentTarget) {
       if (target.matches('input[type="checkbox"], button, a, [data-nocardclick="true"]') || target.closest('[data-nocardclick="true"]')) {
@@ -137,31 +150,15 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
       }
       target = target.parentElement as HTMLElement;
     }
-    onEdit(task); // Open edit modal
+    onEdit(task); 
   };
-
- const getPriorityDotClass = (priority?: TaskPriority) => {
-    switch (priority) {
-      case "Urgent":
-        return "bg-[hsl(var(--priority-urgent))]";
-      case "High":
-        return "bg-[hsl(var(--priority-high))]";
-      case "Medium":
-        return "bg-[hsl(var(--priority-medium))]";
-      case "Low":
-        return "bg-[hsl(var(--priority-low))]";
-      default:
-        return "bg-transparent"; // No dot if no priority or "None"
-    }
-  };
-
 
   return (
     <TooltipProvider delayDuration={150}>
       <Card
         className={cn(
           "group flex flex-col justify-between rounded-lg border text-card-foreground shadow-sm hover:shadow-md focus-within:ring-1 focus-within:ring-primary focus-within:ring-offset-1 transition-shadow duration-150",
-          task.isCompleted ? "bg-muted/40 dark:bg-muted/30" : "bg-card",
+          task.isCompleted ? "bg-muted/50 dark:bg-muted/40" : "bg-card",
           isOverdue && !task.isCompleted ? "border-destructive/40 shadow-destructive/5" : "border-border"
         )}
         onClick={cardClickHandler}
@@ -170,7 +167,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
         tabIndex={0}
         aria-label={`Edit task: ${task.title || task.description}`}
       >
-        <div className="p-4 flex flex-col gap-2">
+        <div className="p-4 flex flex-col gap-3"> {/* Increased gap */}
           <div className="flex items-start gap-3">
             <Checkbox
               id={`task-complete-${task.id}`}
@@ -195,7 +192,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 <CardTitle
                   id={`task-title-${task.id}`}
                   className={cn(
-                    "text-base font-semibold text-foreground break-words line-clamp-2 leading-snug",
+                    "text-base font-semibold text-foreground break-words line-clamp-2", // Removed leading-snug
                     task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
                   )}
                 >
@@ -204,8 +201,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </div>
               {task.title && task.description && task.title !== task.description && (
                 <CardDescription className={cn(
-                  "text-xs text-muted-foreground line-clamp-3 mt-1 leading-normal",
-                  task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "", // 0.625rem for dot, 0.5rem for gap
+                  "text-xs text-muted-foreground line-clamp-3 mt-2", // Increased mt-1 to mt-2, removed leading-normal
                   task.isCompleted && "line-through"
                 )}>
                   {task.description}
@@ -215,7 +211,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           </div>
 
           {(task.subtasks && task.subtasks.length > 0) && (
-            <div className={cn("mt-2 space-y-1.5 pl-[calc(1.25rem+0.75rem)]", task.title && task.description && task.title !== task.description && "pt-1")}>
+            <div className={cn("mt-3 space-y-1.5 pl-[calc(1.25rem+0.75rem)]", // Increased mt-2 to mt-3
+              (task.title && task.description && task.title !== task.description) && "pt-1")}>
               {(task.title && task.description && task.title !== task.description || (task.subtasks && task.subtasks.length > 0)) && <Separator className="mb-2" />}
               {totalSubtasks > 0 && (
                  <div className="mb-1.5 px-0.5">
@@ -227,7 +224,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 </div>
               )}
               <ScrollArea className="max-h-24 pr-1 -mr-1">
-                <div className="space-y-1 py-0.5">
+                <div className="space-y-2 py-0.5"> {/* Increased space-y-1 to space-y-2 */}
                 {task.subtasks.map((subtask) => (
                   <div key={subtask.id} className="flex items-center space-x-1.5 group/subtask p-0.5 rounded hover:bg-muted/50 transition-colors" data-nocardclick="true">
                     <Checkbox
@@ -243,7 +240,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                       htmlFor={`subtask-${task.id}-${subtask.id}`}
                       id={`subtask-text-${task.id}-${subtask.id}`}
                       className={cn(
-                        "text-xs break-words cursor-pointer flex-1 leading-tight",
+                        "text-xs break-words cursor-pointer flex-1", // Removed leading-tight
                         subtask.isCompleted ? "line-through text-muted-foreground/70" : "text-foreground/90",
                         "group-hover/subtask:text-foreground"
                       )}
@@ -259,8 +256,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           )}
         </div>
 
-        <CardFooter className="p-3 mt-auto border-t bg-muted/20 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 text-xs text-muted-foreground overflow-hidden">
+        <CardFooter className="p-3 mt-auto border-t flex items-center justify-between gap-4"> {/* Removed bg-muted/20, increased gap */}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground overflow-hidden"> {/* Increased gap */}
             <Tooltip>
               <TooltipTrigger asChild data-nocardclick="true">
                 <Badge variant="outline" className="text-xs py-0.5 px-1.5 font-normal shrink-0 border-border bg-background hover:bg-muted/80">
@@ -282,7 +279,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 <TooltipContent side="bottom" align="start"><p>Due: {format(parseISO(task.dueDate), "PPPp")}</p></TooltipContent>
               </Tooltip>
             )}
-             {(isMounted && timeLeft && (!isOverdue || task.isCompleted)) && ( // Show timeLeft if not already shown as overdue
+             {(isMounted && timeLeft && (!isOverdue || task.isCompleted)) && ( 
               <Tooltip>
                 <TooltipTrigger asChild data-nocardclick="true">
                   <p className={cn(
@@ -305,7 +302,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 <TooltipTrigger asChild data-nocardclick="true">
                   <div className="flex items-center text-accent shrink-0">
                     <Bell className="h-3.5 w-3.5 mr-1" />
-                    <span className="truncate">{reminderDateTimeFormatted.split(',')[0]}</span> {/* Show only date part for brevity */}
+                    <span className="truncate">{reminderDateTimeFormatted.split(',')[0]}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" align="start"><p>Reminder: {reminderDateTimeFormatted}</p></TooltipContent>
@@ -313,8 +310,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             )}
           </div>
            <div
-            className="flex items-center space-x-0.5 flex-shrink-0"
-            onClick={(e) => e.stopPropagation()} // Prevent card click from firing
+            className="flex items-center space-x-1 flex-shrink-0" // Increased space-x
+            onClick={(e) => e.stopPropagation()} 
             onKeyDown={(e) => e.stopPropagation()}
             data-nocardclick="true"
           >
@@ -329,7 +326,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={() => onEdit(task)} aria-label="Edit task" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted">
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil className="h-4 w-4" /> {/* Icon size slightly increased for clarity */}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent><p>Edit Task</p></TooltipContent>
@@ -337,7 +334,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               <Tooltip>
                 <TooltipTrigger asChild>
                    <Button variant="ghost" size="icon" onClick={() => onDelete(task.id)} aria-label="Delete task" className="text-destructive/70 hover:text-destructive hover:bg-destructive/10 h-7 w-7">
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-4 w-4" /> {/* Icon size slightly increased for clarity */}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent><p>Move to Trash</p></TooltipContent>
