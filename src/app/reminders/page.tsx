@@ -74,7 +74,7 @@ export default function RemindersPage() {
       const tasksData = querySnapshot.docs.map(docSnap => {
         const data = docSnap.data();
         // Consistent date parsing as in HomePage
-        let dueDate = data.dueDate instanceof Timestamp ? data.dueDate.toDate().toISOString() : (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) ? data.dueDate : null; // Allow null
+        let dueDate = data.dueDate instanceof Timestamp ? data.dueDate.toDate().toISOString() : (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) ? data.dueDate : null;
         let createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) ? data.createdAt : new Date().toISOString();
         let trashedAt = data.trashedAt instanceof Timestamp ? data.trashedAt.toDate().toISOString() : (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) ? data.trashedAt : null;
         let reminderAt = data.reminderAt instanceof Timestamp ? data.reminderAt.toDate().toISOString() : (typeof data.reminderAt === 'string' && isValid(parseISO(data.reminderAt))) ? data.reminderAt : null;
@@ -131,7 +131,7 @@ export default function RemindersPage() {
       await updateDoc(taskDocRef, {
         title: data.title,
         description: data.description,
-        dueDate: data.dueDate ? data.dueDate.toISOString() : null, // Handle null dueDate
+        dueDate: data.dueDate ? formatISO(data.dueDate) : null, 
         category: data.category,
         priority: data.priority || "None",
         reminderAt: data.reminderAt || null,
@@ -295,9 +295,9 @@ export default function RemindersPage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
-          <DialogHeader className="sr-only">
-            <SrDialogTitle>Edit Task</SrDialogTitle>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
+          <DialogHeader>
+            <SrDialogTitle className="sr-only">Edit Task</SrDialogTitle>
           </DialogHeader>
           <TaskForm
             onSubmit={handleSubmitTask}
