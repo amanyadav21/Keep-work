@@ -4,6 +4,9 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   :root {
     /* Updated Theme - New Primary (#4300FF equivalent), Orange/Amber Accent */
     --background: 220 25% 98%; /* Off-white with a hint of blue */
@@ -104,7 +107,7 @@
   }
   /* Improved link styling */
   a {
-    @apply text-primary hover:text-primary/80 transition-colors duration-150;
+    @apply text-primary hover:text-primary/80 transition-colors duration-150 ease-in-out;
   }
   /* Ensure headings have good contrast and appropriate margins */
   h1, h2, h3, h4, h5, h6 {
