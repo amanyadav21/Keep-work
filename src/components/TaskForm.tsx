@@ -14,13 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// ShadCN Select import is removed as it's no longer directly used for category
 import {
   Popover,
   PopoverContent,
@@ -29,7 +23,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarDays, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag, BellRing, MoreHorizontal, X, AlarmClock, FolderOpen, Tag, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isValid, startOfDay } from "date-fns";
+import { format, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isValid, startOfDay, formatISO } from "date-fns";
 import type { Task, TaskCategory, Subtask, TaskPriority } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
@@ -51,7 +45,7 @@ const subtaskSchema = z.object({
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required.").max(150, "Title must be at most 150 characters"),
   description: z.string().max(5000, "Description is too long").optional(),
-  dueDate: z.date().nullable().optional(), // Made optional, can be null
+  dueDate: z.date().nullable().optional(),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
   priority: z.enum(taskPriorities).optional().default("None"),
   subtasks: z.array(subtaskSchema).optional(),
@@ -101,8 +95,8 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
       : {
           title: "",
           description: "",
-          dueDate: null, // Default to null
-          category: "General",
+          dueDate: null,
+          category: "General", // Default category
           priority: "None",
           subtasks: [],
           reminderDate: null,
@@ -147,10 +141,8 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
       }
     }
     
-    // Ensure dueDate is either a valid date or null before formatting
-    const dueDateISO = data.dueDate instanceof Date && isValid(data.dueDate) ? formatISO(data.dueDate) : null;
-
-    const submissionData = { ...data, dueDate: data.dueDate, reminderAt: reminderAtISO }; // Pass Date object for dueDate
+    // Pass Date object for dueDate to onSubmit, it will be formatted there
+    const submissionData = { ...data, dueDate: data.dueDate, reminderAt: reminderAtISO };
     onSubmit(submissionData, editingTask?.id);
     
     toast({
@@ -162,17 +154,20 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   
   const clearReminder = () => {
     form.setValue("reminderDate", null);
-    form.setValue("reminderTime", "09:00");
+    form.setValue("reminderTime", "09:00"); // Reset time to default or null if preferred
   };
 
   const clearDueDate = () => {
     form.setValue("dueDate", null);
   };
   
+  const watchTitle = form.watch("title");
+  const watchDescription = form.watch("description");
   const watchDueDate = form.watch("dueDate");
   const watchPriority = form.watch("priority");
   const watchReminderDate = form.watch("reminderDate");
   const watchReminderTime = form.watch("reminderTime");
+  const watchCategory = form.watch("category"); // Watch category to update button text
 
 
   return (
@@ -221,7 +216,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
               </Button>
             </PopoverTrigger>
             {watchDueDate && (
-                <Button variant="ghost" size="icon" onClick={clearDueDate} className="h-6 w-6 rounded-full -ml-2 mr-1 text-muted-foreground hover:text-destructive">
+                <Button variant="ghost" size="icon" onClick={clearDueDate} className="h-6 w-6 rounded-full -ml-2 mr-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                     <X className="h-3.5 w-3.5"/>
                 </Button>
             )}
@@ -255,19 +250,17 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                   control={form.control}
                   name="priority"
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value || "None"}>
                       <FormControl>
-                          <select // Using native select inside popover for simplicity
-                            value={field.value}
+                          <select
+                            value={field.value || "None"} // Ensure value is controlled
                             onChange={(e) => field.onChange(e.target.value as TaskPriority)}
-                            className="w-full p-2 text-sm border-0 focus:ring-0"
+                            className="w-full p-2 text-sm border-0 focus:ring-0 bg-popover text-popover-foreground rounded-md"
                           >
                             {taskPriorities.map((p) => (
                               <option key={p} value={p}>{p === "None" ? "No Priority" : p}</option>
                             ))}
                           </select>
                       </FormControl>
-                    </Select>
                   )}
                 />
             </PopoverContent>
@@ -282,7 +275,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
               </Button>
             </PopoverTrigger>
              {watchReminderDate && (
-                <Button variant="ghost" size="icon" onClick={clearReminder} className="h-6 w-6 rounded-full -ml-2 mr-1 text-muted-foreground hover:text-destructive">
+                <Button variant="ghost" size="icon" onClick={clearReminder} className="h-6 w-6 rounded-full -ml-2 mr-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                     <X className="h-3.5 w-3.5"/>
                 </Button>
             )}
@@ -306,7 +299,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                   <Input 
                     type="time" 
                     {...field} 
-                    value={field.value || ""}
+                    value={field.value || ""} // Ensure value is controlled
                     className="h-8 text-sm"
                     disabled={!watchReminderDate}
                   />
@@ -315,21 +308,21 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
             </PopoverContent>
           </Popover>
           
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowSubtasks(!showSubtasks)} aria-label="Toggle Subtasks">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => setShowSubtasks(!showSubtasks)} aria-label="Toggle Subtasks">
             <ListChecks className="h-4 w-4" />
           </Button>
-           {/* Placeholder for future actions like labels, color */}
+          
           <Popover>
             <PopoverTrigger asChild>
-                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label="More options">
+                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted" aria-label="More options">
                     <MoreHorizontal className="h-4 w-4" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-1">
-                <Button variant="ghost" className="w-full justify-start text-sm h-8" disabled>
+                <Button variant="ghost" className="w-full justify-start text-sm h-8 text-muted-foreground cursor-not-allowed" disabled>
                     <Tag className="mr-2 h-4 w-4"/> Add label
                 </Button>
-                <Button variant="ghost" className="w-full justify-start text-sm h-8" disabled>
+                <Button variant="ghost" className="w-full justify-start text-sm h-8 text-muted-foreground cursor-not-allowed" disabled>
                     <Palette className="mr-2 h-4 w-4"/> Change color
                 </Button>
             </PopoverContent>
@@ -391,7 +384,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                         variant="ghost"
                         size="icon"
                         onClick={() => remove(index)}
-                        className="text-destructive hover:text-destructive/80 h-6 w-6"
+                        className="text-destructive hover:text-destructive/80 h-6 w-6 hover:bg-destructive/10"
                         aria-label={`Remove subtask ${field.text}`}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -404,35 +397,32 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           </div>
         )}
         
-        <div className={cn("flex items-center justify-between pt-4", showSubtasks && "mt-2 border-t")}>
+        <div className={cn("flex items-center justify-between pt-4", showSubtasks && fields.length > 0 && "mt-2 border-t")}>
           <FormField
             control={form.control}
             name="category"
             render={({ field }) => (
               <FormItem>
-                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                  <FormControl>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="text-xs h-8 px-3 rounded-md text-muted-foreground hover:text-foreground">
-                                <FolderOpen className="mr-1.5 h-4 w-4" />
-                                {field.value || "Category"}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[180px] p-1">
-                             <select // Using native select inside popover for simplicity
-                                value={field.value}
-                                onChange={(e) => field.onChange(e.target.value as TaskCategory)}
-                                className="w-full p-2 text-sm border-0 focus:ring-0"
-                              >
-                                {taskCategories.map((cat) => (
-                                  <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                              </select>
-                        </PopoverContent>
-                    </Popover>
-                  </FormControl>
-                </Select>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-xs h-8 px-3 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted">
+                            <FolderOpen className="mr-1.5 h-4 w-4" />
+                            {watchCategory || "Category"} 
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[180px] p-1">
+                        <FormControl>
+                          <select
+                            {...field} // Spread field props here
+                            className="w-full p-2 text-sm border-0 focus:ring-0 bg-popover text-popover-foreground rounded-md"
+                          >
+                            {taskCategories.map((cat) => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                        </FormControl>
+                    </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
