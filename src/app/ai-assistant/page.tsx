@@ -8,11 +8,13 @@ interface AIAssistantPageProps {
 }
 
 export default function AIAssistantPage({ searchParams }: AIAssistantPageProps) {
-  const taskDescriptionParam = searchParams?.taskDescription;
-  const initialTaskDescription = Array.isArray(taskDescriptionParam) 
-    ? taskDescriptionParam[0] 
-    : typeof taskDescriptionParam === 'string' 
-    ? taskDescriptionParam 
+  // Destructure only the taskDescription from searchParams
+  const { taskDescription: taskDescriptionParam } = searchParams;
+
+  const initialTaskDescription = Array.isArray(taskDescriptionParam)
+    ? taskDescriptionParam[0]
+    : typeof taskDescriptionParam === 'string'
+    ? taskDescriptionParam
     : null;
 
   return (
