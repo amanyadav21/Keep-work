@@ -7,9 +7,9 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import type { Task, TaskFilter, TaskPriority } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay, set } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as SrDialogTitle } from '@/components/ui/dialog'; // Renamed to avoid conflict if DialogTitle is used elsewhere
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader as SrAlertDialogHeader, AlertDialogTitle as SrAlertDialogTitle } from "@/components/ui/alert-dialog"; // Renamed to avoid conflict
+import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Brain, Plus, Loader2 } from 'lucide-react';
@@ -371,9 +371,7 @@ export default function HomePage() {
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
-      case 'general':
-        return nonTrashedTasks.filter(task => task.category === 'General');
-      case 'all':
+      case 'general': // Now shows all non-trashed tasks
         return nonTrashedTasks;
       default: 
         return nonTrashedTasks;

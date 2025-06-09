@@ -8,7 +8,6 @@ import Link from 'next/link';
 import {
   ListTodo,
   ListChecks,
-  ListFilter, 
   Users,
   Tag,
   Archive,
@@ -18,7 +17,7 @@ import {
   LogOut,
   CalendarClock, 
   Inbox, 
-  AlarmClock, // Added AlarmClock icon
+  AlarmClock,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -92,7 +91,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   ];
 
   const filterNavItems: NavItemConfig[] = [
-    { action: () => onFilterChange('all'), label: 'All Tasks', icon: ListFilter, tooltip: 'All Tasks', isFilter: true, filterName: 'all' },
     { action: () => onFilterChange('general'), label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
     { action: () => onFilterChange('today'), label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
     { action: () => onFilterChange('pending'), label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
@@ -249,7 +247,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
       side="left"
       className="shadow-sm"
     >
-      <SidebarHeader className="flex items-center">
+      <SidebarHeader className="flex items-center min-w-0">
         <SidebarTrigger className="shrink-0" tooltip="Toggle Sidebar" />
       </SidebarHeader>
 
@@ -321,7 +319,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
           </DropdownMenu>
 
           <div className={isIconOnly ? 'mt-0' : ''}>
-            {isIconOnly ? (
+             {isIconOnly ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <ThemeToggle />
