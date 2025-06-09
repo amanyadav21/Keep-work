@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -27,31 +27,35 @@ async function getOpenRouterAssistance(
   currentInquiry: string,
   conversationHistory: Omit<ChatMessage, 'timestamp'>[] = []
 ): Promise<AIOutputType> {
-  console.log("AI Assistant: Attempting to call OpenRouter with inquiry:", currentInquiry);
+  if (process.env.NODE_ENV === 'development') {
+    console.log("AI Assistant: Attempting to call OpenRouter with inquiry:", currentInquiry);
+  }
   
   const apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
   const siteUrl = process.env.NEXT_PUBLIC_YOUR_SITE_URL || "http://localhost:3000"; 
   const siteName = process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Upnext Student Assistant"; 
 
   // --- Enhanced Diagnostic Logging ---
-  console.log("--- AI Assistant Environment Variable Check ---");
-  if (typeof apiKey === 'undefined') {
-    console.error("CRITICAL: NEXT_PUBLIC_OPENROUTER_API_KEY is UNDEFINED in process.env.");
-    console.log("Ensure it's set in your .env.local file and you've RESTARTED your Next.js server.");
-    return { assistantResponse: "AI Service Configuration Error: The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is completely missing from the application's environment. Please set it in your .env.local file and restart your Next.js server." };
-  } else if (apiKey === "") {
-    console.warn("WARNING: NEXT_PUBLIC_OPENROUTER_API_KEY is an EMPTY STRING in process.env.");
-    console.log("Please ensure your .env.local file has a valid key for NEXT_PUBLIC_OPENROUTER_API_KEY and RESTART your server.");
-     return { assistantResponse: "AI Service Configuration Error: The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is an empty string. Please provide a valid key in your .env.local file and restart your Next.js server." };
-  } else {
-    console.log(`NEXT_PUBLIC_OPENROUTER_API_KEY: Found (length: ${apiKey.length}, first 5 chars: ${apiKey.substring(0,5)}...)`);
-    if (apiKey.length < 20) { 
-        console.warn("The retrieved OpenRouter API key seems unusually short. Please double-check it in your .env.local file:", apiKey);
+  if (process.env.NODE_ENV === 'development') {
+    console.log("--- AI Assistant Environment Variable Check ---");
+    if (typeof apiKey === 'undefined') {
+      console.error("CRITICAL: NEXT_PUBLIC_OPENROUTER_API_KEY is UNDEFINED in process.env.");
+      console.log("Ensure it's set in your .env.local file and you've RESTARTED your Next.js server.");
+      return { assistantResponse: "AI Service Configuration Error: The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is completely missing from the application's environment. Please set it in your .env.local file and restart your Next.js server." };
+    } else if (apiKey === "") {
+      console.warn("WARNING: NEXT_PUBLIC_OPENROUTER_API_KEY is an EMPTY STRING in process.env.");
+      console.log("Please ensure your .env.local file has a valid key for NEXT_PUBLIC_OPENROUTER_API_KEY and RESTART your server.");
+       return { assistantResponse: "AI Service Configuration Error: The API Key (NEXT_PUBLIC_OPENROUTER_API_KEY) is an empty string. Please provide a valid key in your .env.local file and restart your Next.js server." };
+    } else {
+      console.log(`NEXT_PUBLIC_OPENROUTER_API_KEY: Found (length: ${apiKey.length}, first 5 chars: ${apiKey.substring(0,5)}...)`);
+      if (apiKey.length < 20) { 
+          console.warn("The retrieved OpenRouter API key seems unusually short. Please double-check it in your .env.local file:", apiKey);
+      }
     }
+    console.log(`NEXT_PUBLIC_YOUR_SITE_URL: ${process.env.NEXT_PUBLIC_YOUR_SITE_URL || "Not Set (using default)"}`);
+    console.log(`NEXT_PUBLIC_YOUR_SITE_NAME: ${process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Not Set (using default)"}`);
+    console.log("--- End AI Assistant Environment Variable Check ---");
   }
-  console.log(`NEXT_PUBLIC_YOUR_SITE_URL: ${process.env.NEXT_PUBLIC_YOUR_SITE_URL || "Not Set (using default)"}`);
-  console.log(`NEXT_PUBLIC_YOUR_SITE_NAME: ${process.env.NEXT_PUBLIC_YOUR_SITE_NAME || "Not Set (using default)"}`);
-  console.log("--- End AI Assistant Environment Variable Check ---");
   // --- End Enhanced Diagnostic Logging ---
 
 
@@ -78,7 +82,9 @@ async function getOpenRouterAssistance(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: response.statusText, error: { message: response.statusText } }));
-      console.error("OpenRouter API Error (raw response):", response.status, response.statusText, errorData); 
+      if (process.env.NODE_ENV === 'development') {
+        console.error("OpenRouter API Error (raw response):", response.status, response.statusText, errorData); 
+      }
       const apiErrorMessage = errorData.error?.message || errorData.message || response.statusText;
       throw new Error(`API request failed with status ${response.status}: ${apiErrorMessage}`);
     }
@@ -87,13 +93,17 @@ async function getOpenRouterAssistance(
     const assistantMessage = data.choices?.[0]?.message?.content;
 
     if (!assistantMessage) {
-      console.error("OpenRouter Error: No message content in response", data);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("OpenRouter Error: No message content in response", data);
+      }
       return { assistantResponse: "Sorry, I couldn't generate a response at this time (empty content from AI)." };
     }
     return { assistantResponse: assistantMessage.trim() };
 
   } catch (error: any) {
-    console.error("Error calling OpenRouter AI (catch block):", error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error("Error calling OpenRouter AI (catch block):", error);
+    }
     let errorMessage = "Sorry, I couldn't connect to the AI assistant. Please try again later."; 
 
     // --- More Specific Error Handling ---
@@ -149,7 +159,7 @@ const suggestedQueries = [
 
 function AIAssistantPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = React.use(useSearchParams()); // Use React.use() to unwrap searchParams
   const { toast } = useToast();
 
   const [mounted, setMounted] = useState(false);
@@ -175,6 +185,9 @@ function AIAssistantPageContent() {
     }, 0);
   }, []);
 
+  // Extract taskDescriptionFromUrl to use as a dependency
+  const taskDescriptionFromUrl = searchParams.get('taskDescription');
+
   useEffect(() => {
     if (!mounted) return;
 
@@ -197,9 +210,9 @@ function AIAssistantPageContent() {
 
   useEffect(() => {
     if (!mounted) return;
-
-    const initialTaskDescFromUrl = searchParams.get('taskDescription');
-    const intendedContext = initialTaskDescFromUrl || GENERAL_INQUIRY_PLACEHOLDER;
+    
+    // Use the memoized taskDescriptionFromUrl here
+    const intendedContext = taskDescriptionFromUrl || GENERAL_INQUIRY_PLACEHOLDER;
     
     let needsChatReset = false;
     
@@ -213,7 +226,9 @@ function AIAssistantPageContent() {
 
 
     if (needsChatReset) {
-      console.log("AI Assistant: Context change detected or empty chat for intended context. Resetting chat.");
+      if (process.env.NODE_ENV === 'development') {
+        console.log("AI Assistant: Context change detected or empty chat for intended context. Resetting chat.");
+      }
       setCurrentOriginalTaskContext(intendedContext);
       const firstUserMessage: ChatMessage = { role: 'user', content: intendedContext, timestamp: Date.now() };
       setChatMessages([firstUserMessage]);
@@ -228,8 +243,8 @@ function AIAssistantPageContent() {
     } else {
        setIsLoadingInitial(false);
     }
-
-  }, [mounted, searchParams, currentOriginalTaskContext, setCurrentOriginalTaskContext, chatMessages, setChatMessages]);
+  // Update dependency array to use taskDescriptionFromUrl
+  }, [mounted, taskDescriptionFromUrl, currentOriginalTaskContext, setCurrentOriginalTaskContext, chatMessages, setChatMessages]);
 
 
   useEffect(() => {
@@ -239,27 +254,34 @@ function AIAssistantPageContent() {
     }
     
     if (chatMessages[0].content !== currentOriginalTaskContext) {
-        console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed. Aborting AI call.");
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("AI Assistant: Mismatch between first message and currentOriginalTaskContext during initial AI call attempt. Context may have changed. Aborting AI call.");
+        }
         setIsLoadingInitial(false); 
         return;
     }
 
     const userFirstMessage = chatMessages[0].content;
     setCurrentUserInput(""); 
-
-    console.log("AI Assistant: Making initial AI call for:", userFirstMessage);
+    if (process.env.NODE_ENV === 'development') {
+      console.log("AI Assistant: Making initial AI call for:", userFirstMessage);
+    }
     getOpenRouterAssistance(userFirstMessage)
       .then(result => {
         setChatMessages(prev => {
           if (prev.length === 1 && prev[0].role === 'user' && prev[0].content === userFirstMessage) {
             return [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }];
           }
-          console.warn("AI Assistant: Initial chat context changed before AI response arrived. Not updating messages.");
+          if (process.env.NODE_ENV === 'development') {
+            console.warn("AI Assistant: Initial chat context changed before AI response arrived. Not updating messages.");
+          }
           return prev;
         });
       })
       .catch(error => { 
-        console.error("Initial AI assistance error (unexpected path, should be caught by getOpenRouterAssistance):", error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error("Initial AI assistance error (unexpected path, should be caught by getOpenRouterAssistance):", error);
+        }
         toast({
           title: "AI Assistance Failed",
           description: error.message || AI_UNAVAILABLE_MESSAGE,
@@ -312,7 +334,9 @@ function AIAssistantPageContent() {
       const result = await getOpenRouterAssistance(newUserMessage.content, historyForAI.slice(0, -1));
       setChatMessages(prev => [...prev, { role: 'assistant', content: result.assistantResponse, timestamp: Date.now() }]);
     } catch (error: any) { 
-      console.error("AI follow-up assistance error (unexpected path, should be caught by getOpenRouterAssistance):", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("AI follow-up assistance error (unexpected path, should be caught by getOpenRouterAssistance):", error);
+      }
       toast({
         title: "AI Follow-up Failed",
         description: error.message || AI_UNAVAILABLE_MESSAGE,
