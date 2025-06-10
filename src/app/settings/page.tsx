@@ -11,27 +11,24 @@ import { ArrowLeft, Bell, Globe, Trash2, UserCog, Moon, Sun, Eye, EyeOff, Palett
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { AppSidebar } from '@/components/AppSidebar'; // Added import
-import { Header } from '@/components/Header'; // Added import
-import type { TaskFilter } from '@/types'; // Added import
+import { AppSidebar } from '@/components/AppSidebar';
+import { Header } from '@/components/Header';
+import type { TaskFilter } from '@/types';
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [profileVisible, setProfileVisible] = useState(true); // Placeholder state
-  const [emailNotifications, setEmailNotifications] = useState(false); // Placeholder state
+  const [profileVisible, setProfileVisible] = useState(true); 
+  const [emailNotifications, setEmailNotifications] = useState(false); 
 
-  // Props for AppSidebar
   const [currentFilter, setCurrentFilter] = useState<TaskFilter>('all');
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
   const handleLabelSelect = (labelId: string | null) => {
     setSelectedLabelId(labelId);
-    // Optional: reset other filters if a label is selected, or handle complex filtering
   };
    const handleOpenAddTaskForm = () => {
-    // Placeholder or actual implementation if settings page could trigger task add
     console.log("Add task form triggered from settings - placeholder");
   };
 
@@ -41,7 +38,6 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    // Only redirect if component is mounted, auth is not loading, and there's no user
     if (mounted && !authLoading && !user) {
       router.push('/login');
     }
@@ -50,7 +46,6 @@ export default function SettingsPage() {
   const currentTheme = mounted ? (theme === "system" ? systemTheme : theme) : undefined;
 
   if (authLoading || !mounted) {
-    // Initial loading state (auth check or component not yet mounted)
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -59,8 +54,6 @@ export default function SettingsPage() {
   }
 
   if (!user) {
-    // If no user (and auth is done loading, component is mounted),
-    // useEffect is handling the redirect. Show a "Redirecting..." message.
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -69,7 +62,6 @@ export default function SettingsPage() {
     );
   }
   
-  // If we reach here, user exists, auth is not loading, and component is mounted.
   return (
     <>
       <AppSidebar
@@ -80,8 +72,9 @@ export default function SettingsPage() {
         onLabelSelect={handleLabelSelect}
       />
       <Header />
-      <div className="flex flex-col min-h-screen bg-muted/40 dark:bg-background">
-        <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-30">
+      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto bg-muted/40 dark:bg-background">
+        {/* Page-specific header, no longer sticky */}
+        <div className="py-4 px-4 md:px-6 border-b bg-background">
           <div className="max-w-6xl mx-auto w-full flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
               <ArrowLeft className="h-5 w-5" />
@@ -90,7 +83,7 @@ export default function SettingsPage() {
               Application Settings
             </h1>
           </div>
-        </header>
+        </div>
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-3xl mx-auto space-y-8">
             
@@ -242,4 +235,3 @@ export default function SettingsPage() {
     </>
   );
 }
-

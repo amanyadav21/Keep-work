@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Task, TaskFilter } from '@/types'; // Added TaskFilter
+import type { Task, TaskFilter } from '@/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,8 +14,8 @@ import { formatDistanceToNow, parseISO, isValid } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AppSidebar } from '@/components/AppSidebar'; // Added AppSidebar import
-import { Header } from '@/components/Header'; // Added Header import
+import { AppSidebar } from '@/components/AppSidebar';
+import { Header } from '@/components/Header';
 
 export default function TrashPage() {
   const { user, loading: authLoading } = useAuth();
@@ -24,8 +24,11 @@ export default function TrashPage() {
   const [trashedTasks, setTrashedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  // Add a dummy filter state for AppSidebar prop
-  const [currentFilter, setCurrentFilter] = useState<TaskFilter>('all');
+  
+  const [currentFilter, setCurrentFilter] = useState<TaskFilter>('all'); // Dummy for AppSidebar
+  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null); // Dummy for AppSidebar
+  const handleLabelSelect = (labelId: string | null) => setSelectedLabelId(labelId); // Dummy
+  const handleOpenAddTaskForm = () => console.log("Add task from trash - placeholder"); // Dummy
 
 
   useEffect(() => {
@@ -42,8 +45,7 @@ export default function TrashPage() {
   useEffect(() => {
     if (!isMounted || authLoading || !user) {
       if (!user && !authLoading && isMounted) {
-        // This case is handled by the redirect useEffect above
-        setIsLoading(false); // Prevent further processing if redirecting
+        setIsLoading(false); 
       } else if (authLoading) {
         setIsLoading(true);
       }
@@ -64,8 +66,7 @@ export default function TrashPage() {
         } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
           dueDate = data.dueDate;
         } else {
-          // Fallback or handle as appropriate for your app, e.g., set to null or a default date
-          dueDate = new Date().toISOString(); // Example fallback
+          dueDate = new Date().toISOString(); 
         }
 
         let createdAt;
@@ -74,7 +75,7 @@ export default function TrashPage() {
         } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
           createdAt = data.createdAt;
         } else {
-          createdAt = new Date().toISOString(); // Example fallback
+          createdAt = new Date().toISOString(); 
         }
 
         let trashedAt;
@@ -83,7 +84,7 @@ export default function TrashPage() {
         } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
           trashedAt = data.trashedAt;
         } else {
-           trashedAt = new Date().toISOString(); // Fallback if not a valid ISO string or Timestamp
+           trashedAt = new Date().toISOString(); 
         }
 
 
@@ -212,15 +213,16 @@ export default function TrashPage() {
   return (
     <>
       <AppSidebar 
-        onAddTask={() => {}} 
+        onAddTask={handleOpenAddTaskForm}
         currentFilter={currentFilter} 
-        onFilterChange={() => {}} 
-        selectedLabelId={null}
-        onLabelSelect={() => {}}
+        onFilterChange={setCurrentFilter}
+        selectedLabelId={selectedLabelId}
+        onLabelSelect={handleLabelSelect}
       />
       <Header />
-      <div className="flex flex-col min-h-screen bg-muted/30">
-        <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto bg-muted/30 dark:bg-background">
+        {/* Page-specific header, no longer sticky */}
+        <div className="py-4 px-4 md:px-6 border-b bg-background">
           <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
@@ -251,7 +253,7 @@ export default function TrashPage() {
               </AlertDialog>
             )}
           </div>
-        </header>
+        </div>
 
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-3xl mx-auto">
@@ -344,6 +346,3 @@ export default function TrashPage() {
     </>
   );
 }
-
-
-    

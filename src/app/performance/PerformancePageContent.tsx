@@ -17,8 +17,11 @@ export default function PerformancePageContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  // Dummy filter state for AppSidebar prop - this page doesn't actively filter tasks shown here
+  
   const [currentFilter, setCurrentFilter] = useState<TaskFilter>('all');
+  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
+  const handleLabelSelect = (labelId: string | null) => setSelectedLabelId(labelId);
+  const handleOpenAddTaskForm = () => console.log("Add task from performance - placeholder");
 
 
   useEffect(() => {
@@ -90,15 +93,16 @@ export default function PerformancePageContent() {
   return (
     <>
     <AppSidebar 
-      onAddTask={() => { /* No new tasks from here */ }} 
+      onAddTask={handleOpenAddTaskForm} 
       currentFilter={currentFilter} 
-      onFilterChange={() => {}} 
-      selectedLabelId={null}
-      onLabelSelect={() => {}}
+      onFilterChange={setCurrentFilter} 
+      selectedLabelId={selectedLabelId}
+      onLabelSelect={handleLabelSelect}
     />
     <Header />
-    <div className="flex flex-col min-h-screen bg-muted/40 dark:bg-background">
-      <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-30">
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto bg-muted/40 dark:bg-background">
+      {/* Page-specific header, no longer sticky */}
+      <div className="py-4 px-4 md:px-6 border-b bg-background">
         <div className="max-w-6xl mx-auto w-full flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
             <ArrowLeft className="h-5 w-5" />
@@ -108,7 +112,7 @@ export default function PerformancePageContent() {
             Performance Overview
           </h1>
         </div>
-      </header>
+      </div>
       <main className="flex-1 p-4 md:p-6">
         <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
           <Card className="shadow-lg">
@@ -169,4 +173,3 @@ export default function PerformancePageContent() {
     </>
   );
 }
-
