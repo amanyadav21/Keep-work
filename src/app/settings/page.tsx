@@ -11,27 +11,14 @@ import { ArrowLeft, Bell, Globe, Trash2, UserCog, Moon, Sun, Eye, EyeOff, Palett
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { AppSidebar } from '@/components/AppSidebar';
-import { Header } from '@/components/Header';
-import type { TaskFilter } from '@/types';
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [profileVisible, setProfileVisible] = useState(true); 
-  const [emailNotifications, setEmailNotifications] = useState(false); 
-
-  const [currentFilter, setCurrentFilter] = useState<TaskFilter>('all');
-  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
-  const handleLabelSelect = (labelId: string | null) => {
-    setSelectedLabelId(labelId);
-  };
-   const handleOpenAddTaskForm = () => {
-    console.log("Add task form triggered from settings - placeholder");
-  };
-
+  const [profileVisible, setProfileVisible] = useState(true); // Placeholder state
+  const [emailNotifications, setEmailNotifications] = useState(false); // Placeholder state
 
   useEffect(() => {
     setMounted(true);
@@ -63,71 +50,61 @@ export default function SettingsPage() {
   }
   
   return (
-    <>
-      <AppSidebar
-        onAddTask={handleOpenAddTaskForm}
-        currentFilter={currentFilter}
-        onFilterChange={setCurrentFilter}
-        selectedLabelId={selectedLabelId}
-        onLabelSelect={handleLabelSelect}
-      />
-      <Header />
-      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto bg-muted/40 dark:bg-background">
-        {/* Page-specific header, no longer sticky */}
-        <div className="py-4 px-4 md:px-6 border-b bg-background">
-          <div className="max-w-6xl mx-auto w-full flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">
-              Application Settings
-            </h1>
-          </div>
+    <div className="flex flex-col min-h-screen bg-muted/40 dark:bg-background">
+      <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50">
+        <div className="max-w-6xl mx-auto w-full flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">
+            Application Settings
+          </h1>
         </div>
-        <main className="flex-1 p-4 md:p-6">
-          <div className="max-w-3xl mx-auto space-y-8">
-            
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center"><Palette className="h-5 w-5 mr-2 text-primary"/>Appearance</CardTitle>
-                <CardDescription>Customize the look and feel of the application.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center">
-                    {currentTheme === 'dark' ? <Moon className="h-5 w-5 mr-3 text-primary" /> : <Sun className="h-5 w-5 mr-3 text-primary" />}
-                    <Label htmlFor="dark-mode-toggle" className="font-medium cursor-pointer">
-                      Dark Mode
-                    </Label>
-                  </div>
-                  <Switch
-                    id="dark-mode-toggle"
-                    checked={currentTheme === 'dark'}
-                    onCheckedChange={() => setTheme(currentTheme === 'dark' ? 'light' : 'dark')}
-                    aria-label="Toggle dark mode"
-                  />
+      </header>
+      <main className="flex-1 p-4 md:p-6">
+        <div className="max-w-3xl mx-auto space-y-8">
+          
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center"><Palette className="h-5 w-5 mr-2 text-primary"/>Appearance</CardTitle>
+              <CardDescription>Customize the look and feel of the application.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
+                <div className="flex items-center">
+                  {currentTheme === 'dark' ? <Moon className="h-5 w-5 mr-3 text-primary" /> : <Sun className="h-5 w-5 mr-3 text-primary" />}
+                  <Label htmlFor="dark-mode-toggle" className="font-medium cursor-pointer">
+                    Dark Mode
+                  </Label>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center">
-                    <Brush className="h-5 w-5 mr-3 text-primary" />
-                    <Label htmlFor="theme-select" className="font-medium">
-                      Theme Preference
-                    </Label>
-                  </div>
-                  <select 
-                      id="theme-select"
-                      value={theme}
-                      onChange={(e) => setTheme(e.target.value)}
-                      className="text-sm p-2 border border-input rounded-md bg-background focus:ring-ring focus:outline-none focus:ring-2"
-                      aria-label="Select theme preference"
-                  >
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                      <option value="system">System</option>
-                  </select>
+                <Switch
+                  id="dark-mode-toggle"
+                  checked={currentTheme === 'dark'}
+                  onCheckedChange={() => setTheme(currentTheme === 'dark' ? 'light' : 'dark')}
+                  aria-label="Toggle dark mode"
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
+                <div className="flex items-center">
+                  <Brush className="h-5 w-5 mr-3 text-primary" />
+                  <Label htmlFor="theme-select" className="font-medium">
+                    Theme Preference
+                  </Label>
                 </div>
-              </CardContent>
-            </Card>
+                <select 
+                    id="theme-select"
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value)}
+                    className="text-sm p-2 border border-input rounded-md bg-background focus:ring-ring focus:outline-none focus:ring-2"
+                    aria-label="Select theme preference"
+                >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
 
             <Card className="shadow-lg">
               <CardHeader>
@@ -235,3 +212,4 @@ export default function SettingsPage() {
     </>
   );
 }
+
