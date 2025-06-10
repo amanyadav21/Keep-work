@@ -15,11 +15,12 @@ interface TaskListProps {
 }
 
 const breakpointColumnsObj = {
-  default: 4, // 4 columns for large screens
-  1280: 3,    // 3 columns for typical desktop
-  1024: 3,    // 3 columns for smaller desktops/large tablets
-  768: 2,     // 2 columns for tablets
-  640: 1      // 1 column for mobile
+  default: 4, 
+  1440: 4, // XL screens
+  1280: 3, // Large desktops
+  1024: 3, // Desktops/Large tablets
+  768: 2,  // Tablets
+  640: 1   // Mobile (sm)
 };
 
 
@@ -37,7 +38,7 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSu
   return (
     <Masonry
       breakpointCols={breakpointColumnsObj}
-      className="flex w-full -ml-4 py-4" // Negative margin to counteract item padding, if item has padding
+      className="flex w-auto -ml-4" // Adjusted w-full to w-auto, still use negative margin for item padding
       columnClassName="pl-4 bg-clip-padding" // Add padding to column, children will fill it
     >
       {tasks.map((task) => (
@@ -55,3 +56,5 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSu
   );
 }
 
+
+    

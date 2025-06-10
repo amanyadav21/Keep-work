@@ -6,10 +6,11 @@ import type { Task, TaskCategory, TaskPriority } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+// Card components are no longer used for the main structure, but CardDescription might be useful for styling
+import { CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { format, parseISO, isValid, isPast, isToday, isTomorrow, isYesterday, differenceInCalendarDays, formatDistanceToNowStrict } from 'date-fns';
-import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, ListChecks, BookOpen, Inbox, Bell, BellPlus, MoreVertical } from 'lucide-react';
+import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, ListChecks, BookOpen, Inbox, Bell, MoreVertical, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -27,7 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 
 interface TaskItemProps {
   task: Task;
@@ -91,7 +91,6 @@ const getPriorityDotClass = (priority?: TaskPriority) => {
     }
   };
 
-
 function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskItemProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
@@ -114,7 +113,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     }
 
     const calculateTimeLeft = () => {
-      const dueDateObj = parseISO(task.dueDate);
+      const dueDateObj = parseISO(task.dueDate as string);
       if (!isValid(dueDateObj)) {
         setTimeLeft("Invalid date format");
         return;
@@ -135,13 +134,10 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     return () => clearInterval(intervalId);
   }, [task.dueDate, task.isCompleted, isMounted]);
 
-
   const dueDateObj = task.dueDate ? parseISO(task.dueDate) : null;
-  const formattedDynamicDueDate = task.dueDate ? formatDynamicDueDate(task.dueDate) : "No due date";
+  const formattedDynamicDueDate = task.dueDate ? formatDynamicDueDate(task.dueDate) : null; // Null if no due date
   const isOverdue = !task.isCompleted && dueDateObj && isValid(dueDateObj) && isPast(dueDateObj) && !isToday(dueDateObj);
-
   const reminderDateTimeFormatted = formatReminderDateTime(task.reminderAt);
-
 
   const completedSubtasks = task.subtasks?.filter(st => st.isCompleted).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
@@ -159,14 +155,18 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     }
     onEdit(task); 
   };
+  
+  const hasVisibleTitle = task.title && task.title.trim() !== '';
+  const hasVisibleDescription = task.description && task.description.trim() !== '';
 
   return (
     <TooltipProvider delayDuration={150}>
-      <Card
+      <div // Changed from Card to div
         className={cn(
-          "group flex flex-col justify-between rounded-lg border text-card-foreground shadow-sm hover:shadow-md focus-within:ring-1 focus-within:ring-primary focus-within:ring-offset-1 transition-shadow duration-150",
-          task.isCompleted ? "bg-muted/50 dark:bg-muted/40" : "bg-card",
-          isOverdue && !task.isCompleted ? "border-destructive/40 shadow-destructive/5" : "border-border"
+          "group flex flex-col justify-between rounded-lg border text-card-foreground shadow-md hover:shadow-lg focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-background transition-all duration-150 ease-in-out",
+          "px-4 py-3", // Google Keep-like padding
+          task.isCompleted ? "bg-muted/60 dark:bg-muted/50" : "bg-card",
+          isOverdue && !task.isCompleted ? "border-destructive/50 shadow-destructive/10" : "border-border"
         )}
         onClick={cardClickHandler}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cardClickHandler(e); } }}
@@ -174,8 +174,44 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
         tabIndex={0}
         aria-label={`Edit task: ${task.title || task.description}`}
       >
-        <div className="p-4 flex flex-col gap-3"> 
+        {/* Main content area */}
+        <div className="flex-grow mb-3 min-h-[2.5rem]"> {/* Min height to ensure card has some body even if empty */}
           <div className="flex items-start gap-3">
+             {/* Priority Dot - Placed before checkbox, aligned with title more */}
+             {task.priority && task.priority !== "None" && (
+              <Tooltip>
+                <TooltipTrigger asChild data-nocardclick="true">
+                  <div className={cn("h-3 w-3 rounded-full shrink-0 mt-1.5", getPriorityDotClass(task.priority))} />
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start"><p>{task.priority} Priority</p></TooltipContent>
+              </Tooltip>
+            )}
+            <div className="flex-1 min-w-0">
+              {hasVisibleTitle && (
+                <h3
+                  id={`task-title-${task.id}`}
+                  className={cn(
+                    "text-base font-medium text-foreground break-words", 
+                    task.isCompleted && "line-through text-muted-foreground"
+                  )}
+                >
+                  {task.title}
+                </h3>
+              )}
+              {hasVisibleDescription && (
+                <p className={cn(
+                  "text-sm text-foreground/80 dark:text-foreground/70 whitespace-pre-wrap break-words mt-1.5", 
+                  task.isCompleted && "line-through text-muted-foreground/70",
+                  !hasVisibleTitle && "text-base font-medium" // If no title, make desc look like title
+                )}>
+                  {task.description}
+                </p>
+              )}
+              {/* If both title and description are empty, show a placeholder or give some minimal content indication */}
+              {!hasVisibleTitle && !hasVisibleDescription && (
+                <p className="text-sm text-muted-foreground italic">(Empty task)</p>
+              )}
+            </div>
             <Checkbox
               id={`task-complete-${task.id}`}
               checked={task.isCompleted}
@@ -184,43 +220,13 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();}}
               aria-labelledby={`task-title-${task.id}`}
               data-nocardclick="true"
-              className="mt-1 h-5 w-5 shrink-0 rounded-sm border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+              className="mt-0.5 h-5 w-5 shrink-0 rounded-sm border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
             />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                {task.priority && task.priority !== "None" && (
-                  <Tooltip>
-                    <TooltipTrigger asChild data-nocardclick="true">
-                      <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", getPriorityDotClass(task.priority))} />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" align="start"><p>{task.priority} Priority</p></TooltipContent>
-                  </Tooltip>
-                )}
-                <CardTitle
-                  id={`task-title-${task.id}`}
-                  className={cn(
-                    "text-base font-semibold text-foreground break-words line-clamp-2", 
-                    task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
-                  )}
-                >
-                  {task.title || task.description }
-                </CardTitle>
-              </div>
-              {task.title && task.description && task.title !== task.description && (
-                <CardDescription className={cn(
-                  "text-xs text-muted-foreground line-clamp-3 mt-2", 
-                  task.isCompleted && "line-through"
-                )}>
-                  {task.description}
-                </CardDescription>
-              )}
-            </div>
           </div>
 
           {(task.subtasks && task.subtasks.length > 0) && (
-            <div className={cn("mt-3 space-y-1.5 pl-[calc(1.25rem+0.75rem)]", 
-              (task.title && task.description && task.title !== task.description) && "pt-1")}>
-              {(task.title && task.description && task.title !== task.description || (task.subtasks && task.subtasks.length > 0)) && <Separator className="mb-2" />}
+            <div className={cn("mt-3 space-y-1.5", task.isCompleted ? "opacity-70" : "")}>
+              <Separator className="mb-2" />
               {totalSubtasks > 0 && (
                  <div className="mb-1.5 px-0.5">
                   <div className="flex justify-between items-center text-xs text-muted-foreground mb-0.5">
@@ -231,7 +237,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 </div>
               )}
               <ScrollArea className="max-h-24 pr-1 -mr-1">
-                <div className="space-y-2 py-0.5"> 
+                <div className="space-y-1.5 py-0.5"> 
                 {task.subtasks.map((subtask) => (
                   <div key={subtask.id} className="flex items-center space-x-1.5 group/subtask p-0.5 rounded hover:bg-muted/50 transition-colors" data-nocardclick="true">
                     <Checkbox
@@ -263,11 +269,12 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           )}
         </div>
 
-        <CardFooter className="p-3 mt-auto border-t flex items-center justify-between gap-4"> 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground overflow-hidden"> 
+        {/* Footer - keep it minimal and always visible */}
+        <div className="mt-auto pt-2 flex items-center justify-between gap-2 border-t border-border/30 -mx-4 -mb-3 px-3 pb-2 rounded-b-lg bg-card/30 dark:bg-background/10 group-hover:bg-card/50 dark:group-hover:bg-background/20 transition-colors"> 
+          <div className="flex items-center gap-2 text-xs text-muted-foreground overflow-hidden"> 
             <Tooltip>
               <TooltipTrigger asChild data-nocardclick="true">
-                <Badge variant="outline" className="text-xs py-0.5 px-1.5 font-normal shrink-0 border-border bg-background hover:bg-muted/80">
+                <Badge variant="outline" className="text-[11px] py-0.5 px-1.5 font-normal shrink-0 border-border bg-transparent hover:bg-muted/80 cursor-default">
                   <CategoryIcon className={cn("h-3 w-3 mr-1", task.isCompleted ? "text-muted-foreground/70" : "text-primary/80")} />
                   {task.category}
                 </Badge>
@@ -275,58 +282,62 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               <TooltipContent side="bottom" align="start"><p>Category: {task.category}</p></TooltipContent>
             </Tooltip>
 
-            {task.dueDate && (
+            {formattedDynamicDueDate && (
               <Tooltip>
                 <TooltipTrigger asChild data-nocardclick="true">
-                  <div className={cn("flex items-center shrink-0", isOverdue ? "text-destructive font-medium" : "")}>
+                  <div className={cn("flex items-center shrink-0 cursor-default", isOverdue ? "text-destructive font-medium" : "")}>
                       <CalendarDays className="h-3.5 w-3.5 mr-1" />
-                      <span className="truncate">{formattedDynamicDueDate}</span>
+                      <span className="truncate text-[11px]">{formattedDynamicDueDate}</span>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" align="start"><p>Due: {format(parseISO(task.dueDate), "PPPp")}</p></TooltipContent>
-              </Tooltip>
-            )}
-             {(isMounted && timeLeft && (!isOverdue || task.isCompleted)) && ( 
-              <Tooltip>
-                <TooltipTrigger asChild data-nocardclick="true">
-                  <p className={cn(
-                    "font-normal text-xs flex items-center truncate",
-                    task.isCompleted ? "text-[hsl(var(--status-green))]" :
-                    (task.dueDate && isToday(parseISO(task.dueDate))) ? "text-[hsl(var(--priority-medium))]" :
-                    "text-primary/90"
-                  )}>
-                    {isOverdue && <AlertTriangle className="inline h-3 w-3 mr-1" />}
-                    {timeLeft}
-                  </p>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" align="start">
-                  <p>{task.isCompleted ? "Completed" : timeLeft}</p>
-                </TooltipContent>
+                <TooltipContent side="bottom" align="start"><p>Due: {dueDateObj ? format(dueDateObj, "PPPp") : 'N/A'}</p></TooltipContent>
               </Tooltip>
             )}
             {reminderDateTimeFormatted && (
               <Tooltip>
                 <TooltipTrigger asChild data-nocardclick="true">
-                  <div className="flex items-center text-accent shrink-0">
+                  <div className="flex items-center text-accent shrink-0 cursor-default">
                     <Bell className="h-3.5 w-3.5 mr-1" />
-                    <span className="truncate">{reminderDateTimeFormatted.split(',')[0]}</span>
+                    <span className="truncate text-[11px]">{reminderDateTimeFormatted.split(',')[0]}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" align="start"><p>Reminder: {reminderDateTimeFormatted}</p></TooltipContent>
               </Tooltip>
             )}
+             {(isMounted && timeLeft && !isOverdue && !task.isCompleted && !formattedDynamicDueDate && !reminderDateTimeFormatted) && ( 
+              <Tooltip>
+                <TooltipTrigger asChild data-nocardclick="true">
+                   <p className={cn("font-normal text-[11px] flex items-center truncate cursor-default", task.isCompleted ? "text-[hsl(var(--status-green))]" : "text-muted-foreground")}>
+                    {timeLeft === "No due date" ? "" : timeLeft}
+                  </p>
+                </TooltipTrigger>
+                 <TooltipContent side="bottom" align="start">
+                  <p>{task.isCompleted ? "Completed" : timeLeft}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
            <div
-            className="flex items-center space-x-1 flex-shrink-0" 
+            className="flex items-center space-x-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150" 
             onClick={(e) => e.stopPropagation()} 
             onKeyDown={(e) => e.stopPropagation()}
             data-nocardclick="true"
           >
-            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); router.push(`/ai-assistant?taskDescription=${encodeURIComponent(task.title || task.description || '')}`);}} data-nocardclick="true">
+                    <Brain className="h-4 w-4" />
+                    <span className="sr-only">AI Assistant for this task</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>AI Assistant</p></TooltipContent>
+              </Tooltip>
+
+             <DropdownMenu>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted" data-nocardclick="true">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" data-nocardclick="true">
                                 <MoreVertical className="h-4 w-4" />
                                 <span className="sr-only">Task Options</span>
                             </Button>
@@ -337,7 +348,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 <DropdownMenuContent side="bottom" align="end" onClick={(e) => e.stopPropagation()} data-nocardclick="true">
                     <DropdownMenuItem onClick={() => onEdit(task)} className="cursor-pointer">
                         <Pencil className="mr-2 h-4 w-4" />
-                        <span>Edit / Set Reminder</span>
+                        <span>Edit / Details</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer">
@@ -347,10 +358,13 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </TooltipProvider>
   );
 }
 
 export const TaskItem = memo(TaskItemComponent);
+
+
+    
