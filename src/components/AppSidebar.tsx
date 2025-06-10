@@ -23,12 +23,13 @@ import {
   XCircle,
   ChevronDown,
   ChevronRight,
-  MoreVertical, 
+  MoreVertical,
+  Tags, // Added Tags icon
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label as UiLabel } from '@/components/ui/label'; 
+import { Label as UiLabel } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -109,16 +110,16 @@ interface NavItemConfig {
 }
 
 const labelColorPalette = [
-  "#4285F4", 
-  "#DB4437", 
-  "#F4B400", 
-  "#0F9D58", 
-  "#AB47BC", 
-  "#00ACC1", 
-  "#FF7043", 
-  "#78909C", 
-  "#5C6BC0", 
-  "#EC407A", 
+  "#4285F4",
+  "#DB4437",
+  "#F4B400",
+  "#0F9D58",
+  "#AB47BC",
+  "#00ACC1",
+  "#FF7043",
+  "#78909C",
+  "#5C6BC0",
+  "#EC407A",
 ];
 
 const getDeterministicColorForLabel = (labelName: string): string => {
@@ -126,7 +127,7 @@ const getDeterministicColorForLabel = (labelName: string): string => {
   for (let i = 0; i < labelName.length; i++) {
     const char = labelName.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash |= 0; 
+    hash |= 0;
   }
   const index = Math.abs(hash) % labelColorPalette.length;
   return labelColorPalette[index];
@@ -144,7 +145,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
   const [userLabels, setUserLabels] = React.useState<Label[]>([]);
   const [isLoadingLabels, setIsLoadingLabels] = React.useState(false);
   const [isLabelsExpanded, setIsLabelsExpanded] = React.useState(false);
-  
+
   const [isCreateLabelDialogOpen, setIsCreateLabelDialogOpen] = React.useState(false);
   const [newLabelName, setNewLabelName] = React.useState("");
   const [isSavingLabel, setIsSavingLabel] = React.useState(false);
@@ -177,7 +178,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
             name: data.name,
             userId: data.userId,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-            color: data.color || getDeterministicColorForLabel(data.name), 
+            color: data.color || getDeterministicColorForLabel(data.name),
           } as Label;
         });
         setUserLabels(labelsData);
@@ -214,6 +215,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       toast({ title: "Label Created", description: `Label "${newLabelName.trim()}" added.` });
       setNewLabelName("");
       setIsCreateLabelDialogOpen(false);
+      if (!isLabelsExpanded) setIsLabelsExpanded(true); // Auto-expand if a new label is added
     } catch (error: any) {
       console.error("Error creating label:", error);
       toast({ title: "Error Creating Label", description: error.message, variant: "destructive" });
@@ -221,7 +223,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       setIsSavingLabel(false);
     }
   };
-  
+
   const handleOpenEditLabelDialog = (label: Label) => {
     setLabelToEdit(label);
     setEditedLabelName(label.name);
@@ -242,7 +244,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       }
 
       const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToEdit.id);
-      await updateDoc(labelDocRef, { name: editedLabelName.trim() }); 
+      await updateDoc(labelDocRef, { name: editedLabelName.trim() });
       toast({ title: "Label Updated", description: `Label renamed to "${editedLabelName.trim()}".` });
       setIsEditLabelDialogOpen(false);
       setLabelToEdit(null);
@@ -275,9 +277,9 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
 
       await batch.commit();
       toast({ title: "Label Deleted", description: `Label "${labelToDelete.name}" deleted and removed from tasks.` });
-      
+
       if (selectedLabelId === labelToDelete.id) {
-        onLabelSelect(null); 
+        onLabelSelect(null);
       }
       setIsDeleteLabelDialogOpen(false);
       setLabelToDelete(null);
@@ -298,13 +300,13 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
     { action: () => { onFilterChange('general'); onLabelSelect(null); }, label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
     { action: () => { onFilterChange('today'); onLabelSelect(null); }, label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
     { action: () => { onFilterChange('pending'); onLabelSelect(null); }, label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
-    { action: () => { onFilterChange('completed'); onLabelSelect(null);}, label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
+    { action: () => { onFilterChange('completed'); onLabelSelect(null); }, label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
   ];
-  
+
   const labelNavItems: NavItemConfig[] = userLabels.map(label => ({
     action: () => onLabelSelect(label.id),
     label: label.name,
-    icon: Tag, 
+    icon: Tag,
     tooltip: `View tasks in "${label.name}"`,
     isLabel: true,
     labelId: label.id,
@@ -323,8 +325,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
     { href: '/settings', label: 'Settings', icon: SettingsIcon, tooltip: 'Settings', isPageLink: true },
   ];
 
-  const renderNavItems = (items: NavItemConfig[], sectionTitle?: string) => {
-    if (items.length === 0 && ! (sectionTitle === "Labels" && !isLoadingLabels) ) return null;
+  const renderNavItems = (items: NavItemConfig[]) => {
+    if (items.length === 0) return null;
 
     const sectionContent = (
       <>
@@ -346,9 +348,9 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
               isActive: isActive,
               "aria-label": item.tooltip,
               tooltip: item.tooltip,
-              className: "", // Base className, active styles handled below
+              className: "",
             };
-            
+
             const labelDisplayContent = (
               <>
                  {item.isLabel && !isIconOnly && item.color ? (
@@ -378,22 +380,22 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent sideOffset={5} align="start">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={(e) => {
                           e.stopPropagation();
                           const labelToActOn = userLabels.find(l => l.id === item.labelId);
                           if (labelToActOn) handleOpenEditLabelDialog(labelToActOn);
-                      }} 
+                      }}
                       className="cursor-pointer"
                     >
                       <Edit2 className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={(e) => {
                           e.stopPropagation();
                           const labelToActOn = userLabels.find(l => l.id === item.labelId);
                           if (labelToActOn) handleOpenDeleteLabelDialog(labelToActOn);
-                      }} 
+                      }}
                       className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
                     >
                       <XCircle className="mr-2 h-4 w-4" /> Delete
@@ -402,7 +404,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                 </DropdownMenu>
               </div>
             );
-            
+
             const buttonContent = (
               <>
                 <span className="flex items-center flex-grow overflow-hidden mr-1">
@@ -411,25 +413,25 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                 {dropdownMenuContent}
               </>
             );
-            
-            const isLabelInExpandedView = item.isLabel && !isIconOnly;
+
+            const isLabelInExpandedViewWithDropdown = item.isLabel && !isIconOnly;
 
             const menuButtonElement = (
               <SidebarMenuButton
                 {...commonButtonProps}
-                asChild={isLabelInExpandedView} 
+                asChild={isLabelInExpandedViewWithDropdown}
               >
-                {isLabelInExpandedView ? (
-                  <div 
+                {isLabelInExpandedViewWithDropdown ? (
+                  <div
                     className={cn(
-                      "flex items-center justify-between w-full", 
-                      isActive && "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]" // Active styles for the div
+                      "flex items-center justify-between w-full",
+                      isActive && "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]"
                     )}
                   >
                     {buttonContent}
                   </div>
                 ) : (
-                  buttonContent 
+                  buttonContent
                 )}
               </SidebarMenuButton>
             );
@@ -546,23 +548,24 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
 
             {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 ) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems)}
-            
+
             <SidebarSeparator />
-            
+
             {!isIconOnly && (
-              <div className="px-3 pt-2 pb-1 flex items-center justify-between">
+              <div className="px-1.5 pt-2 pb-1 flex items-center justify-between">
                  <button
-                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground tracking-wider uppercase hover:text-foreground transition-colors"
+                  className="group flex items-center gap-1.5 w-full rounded-md px-2 py-1.5 text-left text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring transition-colors hover:bg-muted hover:text-foreground text-muted-foreground"
                   onClick={() => setIsLabelsExpanded(!isLabelsExpanded)}
                   aria-expanded={isLabelsExpanded}
                   aria-controls="sidebar-labels-list"
                 >
-                  {isLabelsExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                  <span>Labels</span>
+                  {isLabelsExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />}
+                  <Tags className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                  <span className="font-medium text-muted-foreground group-hover:text-foreground flex-1">Labels</span>
                 </button>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => setIsCreateLabelDialogOpen(true)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary shrink-0" onClick={() => setIsCreateLabelDialogOpen(true)}>
                             <PlusCircle className="h-4 w-4"/>
                         </Button>
                     </TooltipTrigger>
@@ -570,8 +573,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                 </Tooltip>
               </div>
             )}
-            
-            {isIconOnly && ( // "Add Label" button for icon-only mode
+
+            {isIconOnly && (
                  <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-primary mt-1" onClick={() => setIsCreateLabelDialogOpen(true)}>
@@ -582,9 +585,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                 </Tooltip>
             )}
 
-            {/* Expanded View Label List (collapsible) */}
             {!isIconOnly && (
-              <div 
+              <div
                 id="sidebar-labels-list"
                 className={cn(
                   "overflow-hidden transition-all duration-300 ease-in-out",
@@ -602,14 +604,13 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
               </div>
             )}
 
-            {/* Icon-Only View Label List (always visible if labels exist) */}
             {isIconOnly && (
               isLoadingLabels ? (
                 <div className={cn("px-2.5 py-1.5 flex justify-center")}>
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                renderNavItems(labelNavItems) 
+                renderNavItems(labelNavItems)
               )
             )}
 
@@ -756,7 +757,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Label "{labelToDelete.name}"?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete the label "{labelToDelete.name}". 
+                This will permanently delete the label "{labelToDelete.name}".
                 Tasks currently using this label will have it removed (they won't be deleted). This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -773,5 +774,3 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
     </Sidebar>
   );
 }
-
-    
