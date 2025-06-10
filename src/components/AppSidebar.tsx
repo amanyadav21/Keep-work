@@ -2,10 +2,9 @@
 "use client";
 
 import * as React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ListTodo,
   ListChecks,
   Users,
   Tag,
@@ -25,6 +24,7 @@ import {
   ChevronRight,
   MoreVertical,
   Tags, 
+  ListTodo,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -87,7 +87,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AppSidebarProps {
   onAddTask: () => void;
-  currentFilter: TaskFilter;
+  currentFilter: TaskFilter | null; // Can be null if determined by labelId
   onFilterChange: (filter: TaskFilter) => void;
   selectedLabelId: string | null;
   onLabelSelect: (labelId: string | null) => void;
@@ -144,7 +144,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
 
   const [userLabels, setUserLabels] = React.useState<Label[]>([]);
   const [isLoadingLabels, setIsLoadingLabels] = React.useState(false);
-  const [isLabelsExpanded, setIsLabelsExpanded] = React.useState(false);
+  const [isLabelsExpanded, setIsLabelsExpanded] = React.useState(true); // Default to expanded
 
   const [isCreateLabelDialogOpen, setIsCreateLabelDialogOpen] = React.useState(false);
   const [newLabelName, setNewLabelName] = React.useState("");
@@ -294,7 +294,9 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
 
   const isIconOnly = clientMounted ? (!isMobile && sidebarState === 'collapsed' && collapsible === 'icon') : (!defaultOpen && collapsible === 'icon');
 
-  const mainNavItems: NavItemConfig[] = [];
+  const mainNavItems: NavItemConfig[] = [
+     { action: onAddTask, label: 'Add Task', icon: PlusCircle, tooltip: 'Add New Task' },
+  ];
 
   const filterNavItems: NavItemConfig[] = [
     { action: () => { onFilterChange('general'); onLabelSelect(null); }, label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
@@ -306,7 +308,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
   const labelNavItems: NavItemConfig[] = userLabels.map(label => ({
     action: () => onLabelSelect(label.id),
     label: label.name,
-    icon: Tag, 
+    icon: Tag, // Icon is Tag for all labels
     tooltip: `View tasks in "${label.name}"`,
     isLabel: true,
     labelId: label.id,
@@ -326,7 +328,14 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
   ];
 
   const renderNavItems = (items: NavItemConfig[]) => {
-    if (items.length === 0 && !isLoadingLabels) return null; // Show nothing if no items unless labels are loading
+    if (items.length === 0 && !isLoadingLabels && items !== labelNavItems) return null;
+    if (items === labelNavItems && isLoadingLabels && !isIconOnly) { // Show loader only for expanded labels list
+        return <div className={cn("px-2.5 py-1.5 flex", isIconOnly ? "justify-center" : "")}> <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> </div>;
+    }
+    if (items === labelNavItems && !isLoadingLabels && userLabels.length === 0 && !isIconOnly) { // Show "no labels" only for expanded
+        return <p className="px-3 py-1 text-xs text-muted-foreground italic">No labels created.</p>;
+    }
+
 
     return (
       <SidebarMenu className={cn(isIconOnly && "w-auto")}>
@@ -352,16 +361,28 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
           
           const labelDisplayContent = (
             <>
-              {(item.isLabel && item.color && !isIconOnly) ? (
+              {/* For expanded labels, show color dot */}
+              {item.isLabel && !isIconOnly && item.color && (
                 <span
-                  className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full"
+                  className="mr-1.5 h-2.5 w-2.5 shrink-0 rounded-full" // Dot
                   style={{ backgroundColor: item.color }}
                   aria-hidden="true"
                 />
-              ) : (
-                 <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
               )}
-              {!isIconOnly && <span className="truncate">{item.label}</span>}
+          
+              {/* Icon: Tag for labels, specific icon for others */}
+              <item.icon className={cn(
+                  "shrink-0",
+                  // If it's an expanded label (which now includes its own Tag icon), use h-4, otherwise h-5 for the icon
+                  (item.isLabel && !isIconOnly) ? "h-4 w-4" : "h-5 w-5",
+                  isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground"
+                )}
+              />
+          
+              {/* Text for expanded items */}
+              {!isIconOnly && (
+                <span className="truncate ml-1.5">{item.label}</span> // Adjusted margin for text after icon
+              )}
             </>
           );
 
@@ -407,7 +428,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
           let menuElement;
 
           if (item.isLabel && !isIconOnly) {
-            // Special handling for label items in expanded view to avoid button-in-button
             menuElement = (
               <div
                 role="button"
@@ -422,10 +442,10 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                 aria-label={commonButtonProps['aria-label']}
                 aria-disabled={commonButtonProps.disabled}
                 className={cn(
-                  sidebarMenuButtonVariants({ variant: commonButtonProps.variant, size: 'default' }), // Apply base button styles
-                  "flex items-center justify-between w-full", // Layout for text and dropdown
-                  commonButtonProps.className, // Allow additional classes
-                  isActive && "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]" // Active state
+                  sidebarMenuButtonVariants({ variant: commonButtonProps.variant, size: 'default' }),
+                  "flex items-center justify-between w-full", 
+                  commonButtonProps.className, 
+                  isActive && "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]"
                 )}
               >
                 <span className="flex items-center flex-grow overflow-hidden mr-1">
@@ -435,13 +455,11 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
               </div>
             );
           } else {
-             // For other items (filters, page links, icon-only labels)
             const buttonContent = (
               <>
                 <span className="flex items-center flex-grow overflow-hidden mr-1">
                   {labelDisplayContent}
                 </span>
-                 {/* Dropdown is only for expanded labels, so not here */}
               </>
             );
             menuElement = (
@@ -542,7 +560,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
         <ScrollArea className="h-full w-full p-2">
           <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
 
-            {mainNavItems.length > 0 && <SidebarSeparator/>}
             {renderNavItems(mainNavItems)}
 
             {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 ) ? <SidebarSeparator /> : null}
@@ -591,22 +608,12 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                   "overflow-hidden transition-all duration-300 ease-in-out",
                   isLabelsExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
               )}>
-                {isLoadingLabels ? (
-                  <div className={cn("px-2.5 py-1.5")}> <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> </div>
-                ) : userLabels.length > 0 ? (
-                   renderNavItems(labelNavItems)
-                ) : (
-                  <p className="px-3 py-1 text-xs text-muted-foreground italic">No labels created.</p>
-                )}
+                {renderNavItems(labelNavItems)}
               </div>
             )}
             
             {isIconOnly && (
-              isLoadingLabels ? (
-                <div className={cn("px-2.5 py-1.5 flex justify-center")}> <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> </div>
-              ) : (
-                renderNavItems(labelNavItems)
-              )
+              renderNavItems(labelNavItems)
             )}
 
 
@@ -772,4 +779,3 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
     </Sidebar>
   );
 }
-
