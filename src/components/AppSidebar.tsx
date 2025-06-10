@@ -139,7 +139,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
 
   const [userLabels, setUserLabels] = React.useState<Label[]>([]);
   const [isLoadingLabels, setIsLoadingLabels] = React.useState(false);
-  const [isLabelDialogOpen, setIsLabelDialogOpen] = React.useState(false);
+  
+  const [isCreateLabelDialogOpen, setIsCreateLabelDialogOpen] = React.useState(false);
   const [newLabelName, setNewLabelName] = React.useState("");
   const [isSavingLabel, setIsSavingLabel] = React.useState(false);
   // const [editingLabel, setEditingLabel] = React.useState<Label | null>(null); // For future edit functionality
@@ -331,84 +332,103 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
               isActive: isActive,
               "aria-label": item.tooltip,
               tooltip: item.tooltip,
-              className: isActive ? ( (item.isFilter || item.isLabel) ? "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]" : "bg-muted text-primary font-semibold" ) : "",
+              className: "", // Base className, active styles handled below
             };
+            
+            const labelDisplayContent = (
+              <>
+                 {item.isLabel && !isIconOnly && item.color ? (
+                  <span
+                    className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
+                )}
+                {!isIconOnly && <span className="truncate">{item.label}</span>}
+              </>
+            );
+
+            const dropdownMenuContent = item.isLabel && !isIconOnly && userLabels.find(l => l.id === item.labelId) && (
+              <div className="pl-1 flex-shrink-0" onClick={(e) => {e.preventDefault(); e.stopPropagation();}} data-nocardclick="true">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover/menu-item:opacity-100 focus-visible:opacity-100 transition-opacity"
+                      aria-label={`Options for label ${item.label}`}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent sideOffset={5} align="start">
+                    <DropdownMenuItem 
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          const labelToActOn = userLabels.find(l => l.id === item.labelId);
+                          if (labelToActOn) handleOpenEditLabelDialog(labelToActOn);
+                      }} 
+                      className="cursor-pointer"
+                    >
+                      <Edit2 className="mr-2 h-4 w-4" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          const labelToActOn = userLabels.find(l => l.id === item.labelId);
+                          if (labelToActOn) handleOpenDeleteLabelDialog(labelToActOn);
+                      }} 
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                    >
+                      <XCircle className="mr-2 h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            );
             
             const buttonContent = (
               <>
                 <span className="flex items-center flex-grow overflow-hidden mr-1">
-                  {item.isLabel && !isIconOnly && item.color ? (
-                    <span
-                      className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
-                  )}
-                  {!isIconOnly && <span className="truncate">{item.label}</span>}
+                  {labelDisplayContent}
                 </span>
-                
-                {item.isLabel && !isIconOnly && userLabels.find(l => l.id === item.labelId) && (
-                  <div className="pl-1 flex-shrink-0" onClick={(e) => {e.preventDefault(); e.stopPropagation();}} data-nocardclick="true">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 opacity-0 group-hover/menu-item:opacity-100 focus-visible:opacity-100 transition-opacity"
-                          aria-label={`Options for label ${item.label}`}
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent sideOffset={5} align="start">
-                        <DropdownMenuItem 
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              const labelToActOn = userLabels.find(l => l.id === item.labelId);
-                              if (labelToActOn) handleOpenEditLabelDialog(labelToActOn);
-                          }} 
-                          className="cursor-pointer"
-                        >
-                          <Edit2 className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              const labelToActOn = userLabels.find(l => l.id === item.labelId);
-                              if (labelToActOn) handleOpenDeleteLabelDialog(labelToActOn);
-                          }} 
-                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
-                        >
-                          <XCircle className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
+                {dropdownMenuContent}
               </>
             );
 
-            const commonButtonProps = {
-              variant: "ghost" as const,
-              onClick: item.action,
-              disabled: item.disabled,
-              isActive: isActive,
-              "aria-label": item.tooltip,
-              tooltip: item.tooltip,
-            };
+            const isLabelInExpandedView = item.isLabel && !isIconOnly;
 
-            const menuButton = (
-              <SidebarMenuButton {...commonButtonProps} className={cn(item.isLabel && !isIconOnly && "flex items-center w-full")}>
-                {buttonContent}
+            const menuButtonElement = (
+              <SidebarMenuButton
+                {...commonButtonProps}
+                asChild={isLabelInExpandedView} 
+              >
+                {isLabelInExpandedView ? (
+                  <div 
+                    className={cn(
+                      "flex items-center justify-between w-full", 
+                       // active styles for the div need to be applied here if SidebarMenuButton's internal active style doesn't propagate correctly with asChild
+                      isActive && "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]"
+                    )}
+                    // onClick, onKeyDown, aria-label are passed by SidebarMenuButton when asChild
+                  >
+                    {buttonContent}
+                  </div>
+                ) : (
+                  buttonContent 
+                )}
               </SidebarMenuButton>
             );
           }
 
 
             return (
-              <SidebarMenuItem key={`${item.label}-${index}`} className={cn(isIconOnly ? 'flex justify-center' : 'group/menu-item', item.isLabel && !isIconOnly && "flex items-center justify-between")}>
+              <SidebarMenuItem key={`${item.label}-${index}`} className={cn(
+                isIconOnly ? 'flex justify-center' : 'group/menu-item',
+                 // No longer need 'flex items-center justify-between' here if the inner div handles it
+              )}>
                 {item.href || item.action ? (
                   item.href ? (
                     <Link href={linkPath} className="block w-full h-full" target={item.isExternal ? "_blank" : "_self"} passHref>
@@ -512,10 +532,17 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
             {renderNavItems(filterNavItems)}
             
             <SidebarSeparator />
-            {/* Labels Section */}
             {!isIconOnly && (
               <div className="px-3 pt-2 pb-1 flex items-center justify-between">
-                 <div className="text-xs font-medium text-muted-foreground tracking-wider uppercase">Labels</div>
+                 <button
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground tracking-wider uppercase hover:text-foreground transition-colors"
+                  onClick={() => setIsLabelsExpanded(!isLabelsExpanded)}
+                  aria-expanded={isLabelsExpanded}
+                  aria-controls="sidebar-labels-list"
+                >
+                  {isLabelsExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  <span>Labels</span>
+                </button>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => setIsLabelDialogOpen(true)}>
@@ -526,7 +553,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                 </Tooltip>
               </div>
             )}
-            {isIconOnly && (
+            
+            {isIconOnly && ( // "Add Label" button for icon-only mode
                  <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-primary mt-1" onClick={() => setIsLabelDialogOpen(true)}>
@@ -536,12 +564,36 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                     <TooltipContent side="right"><p>Create new label</p></TooltipContent>
                 </Tooltip>
             )}
-            {isLoadingLabels ? (
-              <div className={cn("px-2.5 py-1.5", isIconOnly && "flex justify-center")}>
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+
+            {/* Expanded View Label List (collapsible) */}
+            {!isIconOnly && (
+              <div 
+                id="sidebar-labels-list"
+                className={cn(
+                  "overflow-hidden transition-all duration-300 ease-in-out",
+                  isLabelsExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {isLoadingLabels ? (
+                  <div className={cn("px-2.5 py-1.5")}>
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : userLabels.length > 0 ? (
+                   renderNavItems(labelNavItems)
+                ) : (
+                  <p className="px-3 py-1 text-xs text-muted-foreground italic">No labels created.</p>
+                )}
               </div>
-            ) : (
-              renderNavItems(labelNavItems)
+            )}
+
+            {/* Icon-Only View Label List (always visible if labels exist) */}
+            {isIconOnly && (
+              isLoadingLabels ? (
+                <div className={cn("px-2.5 py-1.5 flex justify-center")}>
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                renderNavItems(labelNavItems) 
+              )
             )}
             {/* End Labels Section */}
 
