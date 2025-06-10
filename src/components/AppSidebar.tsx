@@ -23,10 +23,12 @@ import {
   XCircle, // For deleting labels (future)
   ChevronDown,
   ChevronRight,
+  MoreVertical, // Added for the three-dot menu
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label as UiLabel } from '@/components/ui/label'; // Aliased to avoid conflict
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -57,7 +59,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton, 
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
@@ -94,7 +96,34 @@ interface NavItemConfig {
   labelId?: string;
 }
 
-export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
+// Function to generate a color from a predefined palette based on string hash
+// This provides some visual variety for labels without user color pickers yet
+const labelColorPalette = [
+  "#4285F4", // Google Blue
+  "#DB4437", // Google Red
+  "#F4B400", // Google Yellow
+  "#0F9D58", // Google Green
+  "#AB47BC", // Purple
+  "#00ACC1", // Cyan
+  "#FF7043", // Orange
+  "#78909C", // Blue Grey
+  "#5C6BC0", // Indigo
+  "#EC407A", // Pink
+];
+
+const getDeterministicColorForLabel = (labelName: string): string => {
+  let hash = 0;
+  for (let i = 0; i < labelName.length; i++) {
+    const char = labelName.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Convert to 32bit integer
+  }
+  const index = Math.abs(hash) % labelColorPalette.length;
+  return labelColorPalette[index];
+};
+
+
+export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedLabelId, onLabelSelect }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
   const { 
@@ -133,7 +162,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             name: data.name,
             userId: data.userId,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-            color: data.color || getDeterministicColorForLabel(data.name), // Ensure color exists
+            color: data.color || getDeterministicColorForLabel(data.name), 
           } as Label;
         });
         setUserLabels(labelsData);
@@ -188,7 +217,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     if (!editedLabelName.trim() || !labelToEdit || !user) return;
     setIsUpdatingLabel(true);
     try {
-      // Check for duplicate name (excluding the current label being edited if name hasn't changed)
       const existingLabel = userLabels.find(
         (l) => l.name.toLowerCase() === editedLabelName.trim().toLowerCase() && l.id !== labelToEdit.id
       );
@@ -199,7 +227,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
       }
 
       const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToEdit.id);
-      await updateDoc(labelDocRef, { name: editedLabelName.trim() }); // Color is not updated here, only name
+      await updateDoc(labelDocRef, { name: editedLabelName.trim() }); 
       toast({ title: "Label Updated", description: `Label renamed to "${editedLabelName.trim()}".` });
       setIsEditLabelDialogOpen(false);
       setLabelToEdit(null);
@@ -224,7 +252,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
       const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToDelete.id);
       batch.delete(labelDocRef);
 
-      // Find tasks with this label and set their labelId to null
       const tasksQuery = query(collection(db, `users/${user.uid}/tasks`), where("labelId", "==", labelToDelete.id));
       const tasksSnapshot = await getDocs(tasksQuery);
       tasksSnapshot.forEach((taskDoc) => {
@@ -235,7 +262,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
       toast({ title: "Label Deleted", description: `Label "${labelToDelete.name}" deleted and removed from tasks.` });
       
       if (selectedLabelId === labelToDelete.id) {
-        onLabelSelect(null); // Clear filter if the deleted label was selected
+        onLabelSelect(null); 
       }
       setIsDeleteLabelDialogOpen(false);
       setLabelToDelete(null);
@@ -264,7 +291,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   const labelNavItems: NavItemConfig[] = userLabels.map(label => ({
     action: () => onLabelSelect(label.id),
     label: label.name,
-    icon: Tag, // Default icon, can be customized later
+    icon: Tag, // Fallback icon for icon-only mode
     tooltip: `View tasks in "${label.name}"`,
     isLabel: true,
     labelId: label.id,
@@ -297,21 +324,33 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
               isActive = currentFilter === item.filterName;
             }
 
+            const commonButtonProps = {
+              variant: "ghost" as const,
+              onClick: item.action,
+              disabled: item.disabled,
+              isActive: isActive,
+              "aria-label": item.tooltip,
+              tooltip: item.tooltip,
+              className: isActive ? ( (item.isFilter || item.isLabel) ? "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]" : "bg-muted text-primary font-semibold" ) : "",
+            };
+            
             const buttonContent = (
               <>
-                {item.isLabel && !isIconOnly && item.color ? (
-                  <span
-                    className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
-                )}
-                {!isIconOnly && <span className="truncate">{item.label}</span>}
+                <span className="flex items-center flex-grow overflow-hidden mr-1">
+                  {item.isLabel && !isIconOnly && item.color ? (
+                    <span
+                      className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
+                  )}
+                  {!isIconOnly && <span className="truncate">{item.label}</span>}
+                </span>
                 
                 {item.isLabel && !isIconOnly && userLabels.find(l => l.id === item.labelId) && (
-                  <div className="ml-auto pl-1" onClick={(e) => {e.preventDefault(); e.stopPropagation();}} data-nocardclick="true">
+                  <div className="pl-1 flex-shrink-0" onClick={(e) => {e.preventDefault(); e.stopPropagation();}} data-nocardclick="true">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -350,12 +389,12 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
                 )}
               </>
             );
-            
+
             const commonButtonProps = {
               variant: "ghost" as const,
               onClick: item.action,
               disabled: item.disabled,
-              isActive: isActive, 
+              isActive: isActive,
               "aria-label": item.tooltip,
               tooltip: item.tooltip,
             };
@@ -369,14 +408,14 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
 
 
             return (
-              <SidebarMenuItem key={`${item.label}-${index}`} className={isIconOnly ? 'flex justify-center' : ''}>
+              <SidebarMenuItem key={`${item.label}-${index}`} className={cn(isIconOnly ? 'flex justify-center' : 'group/menu-item', item.isLabel && !isIconOnly && "flex items-center justify-between")}>
                 {item.href || item.action ? (
                   item.href ? (
                     <Link href={linkPath} className="block w-full h-full" target={item.isExternal ? "_blank" : "_self"} passHref>
-                      {menuButton}
+                      {menuButtonElement}
                     </Link>
                   ) : (
-                    menuButton
+                    menuButtonElement
                   )
                 ) : (
                    <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
@@ -582,7 +621,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
       </SidebarFooter>
 
       {/* Create Label Dialog */}
-      <Dialog open={isLabelDialogOpen} onOpenChange={setIsLabelDialogOpen}>
+      <Dialog open={isCreateLabelDialogOpen} onOpenChange={setIsCreateLabelDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create New Label</DialogTitle>
@@ -612,6 +651,59 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Label Dialog */}
+      <Dialog open={isEditLabelDialogOpen} onOpenChange={setIsEditLabelDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Label</DialogTitle>
+            <DialogDescription>
+              Update the name for your label "{labelToEdit?.name}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <UiLabel htmlFor="editedLabelName" className="sr-only">New Label Name</UiLabel>
+            <Input
+              id="editedLabelName"
+              placeholder="New label name"
+              value={editedLabelName}
+              onChange={(e) => setEditedLabelName(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button type="submit" onClick={handleUpdateLabel} disabled={isUpdatingLabel || !editedLabelName.trim()}>
+              {isUpdatingLabel && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Label Confirmation Dialog */}
+      {labelToDelete && (
+        <AlertDialog open={isDeleteLabelDialogOpen} onOpenChange={setIsDeleteLabelDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Label "{labelToDelete.name}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the label "{labelToDelete.name}". 
+                Tasks currently using this label will have it removed (they won't be deleted). This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteLabel} disabled={isDeletingLabel} className="bg-destructive hover:bg-destructive/90">
+                {isDeletingLabel && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete Label
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Sidebar>
   );
 }
