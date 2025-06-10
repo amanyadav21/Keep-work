@@ -17,9 +17,16 @@ import {
   Inbox, 
   AlarmClock,
   BarChart3,
+  PlusCircle,
+  Loader2,
+  Edit2, // For editing labels (future)
+  XCircle, // For deleting labels (future)
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -29,6 +36,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -51,6 +67,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import type { TaskFilter, Label } from '@/types';
 import { cn } from '@/lib/utils';
+import { db } from '@/firebase/config';
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, Timestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 interface AppSidebarProps {
   onAddTask: () => void; 
@@ -69,8 +88,10 @@ interface NavItemConfig {
   disabled?: boolean;
   isPageLink?: boolean;
   isExternal?: boolean;
-  isFilter?: boolean; 
-  filterName?: TaskFilter; 
+  isFilter?: boolean;
+  filterName?: TaskFilter;
+  isLabel?: boolean;
+  labelId?: string;
 }
 
 export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSidebarProps) {
@@ -86,6 +107,13 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   const router = useRouter();
   const { toast } = useToast();
   const [clientMounted, setClientMounted] = React.useState(false);
+
+  const [userLabels, setUserLabels] = React.useState<Label[]>([]);
+  const [isLoadingLabels, setIsLoadingLabels] = React.useState(false);
+  const [isLabelDialogOpen, setIsLabelDialogOpen] = React.useState(false);
+  const [newLabelName, setNewLabelName] = React.useState("");
+  const [isSavingLabel, setIsSavingLabel] = React.useState(false);
+  // const [editingLabel, setEditingLabel] = React.useState<Label | null>(null); // For future edit functionality
 
   React.useEffect(() => {
     setClientMounted(true);
@@ -105,6 +133,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             name: data.name,
             userId: data.userId,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+            color: data.color || getDeterministicColorForLabel(data.name), // Ensure color exists
           } as Label;
         });
         setUserLabels(labelsData);
@@ -125,7 +154,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     setIsSavingLabel(true);
     try {
       const labelsCollectionRef = collection(db, `users/${user.uid}/labels`);
-      // Check if label with same name already exists (case-insensitive for better UX)
       const existingLabel = userLabels.find(label => label.name.toLowerCase() === newLabelName.trim().toLowerCase());
       if (existingLabel) {
         toast({ title: "Label Exists", description: `A label named "${existingLabel.name}" already exists.`, variant: "default" });
@@ -137,15 +165,85 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
         name: newLabelName.trim(),
         userId: user.uid,
         createdAt: serverTimestamp(),
+        color: getDeterministicColorForLabel(newLabelName.trim()),
       });
       toast({ title: "Label Created", description: `Label "${newLabelName.trim()}" added.` });
       setNewLabelName("");
-      setIsLabelDialogOpen(false);
+      setIsCreateLabelDialogOpen(false);
     } catch (error: any) {
       console.error("Error creating label:", error);
       toast({ title: "Error Creating Label", description: error.message, variant: "destructive" });
     } finally {
       setIsSavingLabel(false);
+    }
+  };
+  
+  const handleOpenEditLabelDialog = (label: Label) => {
+    setLabelToEdit(label);
+    setEditedLabelName(label.name);
+    setIsEditLabelDialogOpen(true);
+  };
+
+  const handleUpdateLabel = async () => {
+    if (!editedLabelName.trim() || !labelToEdit || !user) return;
+    setIsUpdatingLabel(true);
+    try {
+      // Check for duplicate name (excluding the current label being edited if name hasn't changed)
+      const existingLabel = userLabels.find(
+        (l) => l.name.toLowerCase() === editedLabelName.trim().toLowerCase() && l.id !== labelToEdit.id
+      );
+      if (existingLabel) {
+        toast({ title: "Label Name Exists", description: `Another label named "${existingLabel.name}" already exists.`, variant: "default" });
+        setIsUpdatingLabel(false);
+        return;
+      }
+
+      const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToEdit.id);
+      await updateDoc(labelDocRef, { name: editedLabelName.trim() }); // Color is not updated here, only name
+      toast({ title: "Label Updated", description: `Label renamed to "${editedLabelName.trim()}".` });
+      setIsEditLabelDialogOpen(false);
+      setLabelToEdit(null);
+    } catch (error: any) {
+      console.error("Error updating label:", error);
+      toast({ title: "Error Updating Label", description: error.message, variant: "destructive" });
+    } finally {
+      setIsUpdatingLabel(false);
+    }
+  };
+
+  const handleOpenDeleteLabelDialog = (label: Label) => {
+    setLabelToDelete(label);
+    setIsDeleteLabelDialogOpen(true);
+  };
+
+  const handleDeleteLabel = async () => {
+    if (!labelToDelete || !user) return;
+    setIsDeletingLabel(true);
+    try {
+      const batch = writeBatch(db);
+      const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToDelete.id);
+      batch.delete(labelDocRef);
+
+      // Find tasks with this label and set their labelId to null
+      const tasksQuery = query(collection(db, `users/${user.uid}/tasks`), where("labelId", "==", labelToDelete.id));
+      const tasksSnapshot = await getDocs(tasksQuery);
+      tasksSnapshot.forEach((taskDoc) => {
+        batch.update(taskDoc.ref, { labelId: null });
+      });
+
+      await batch.commit();
+      toast({ title: "Label Deleted", description: `Label "${labelToDelete.name}" deleted and removed from tasks.` });
+      
+      if (selectedLabelId === labelToDelete.id) {
+        onLabelSelect(null); // Clear filter if the deleted label was selected
+      }
+      setIsDeleteLabelDialogOpen(false);
+      setLabelToDelete(null);
+    } catch (error: any) {
+      console.error("Error deleting label:", error);
+      toast({ title: "Error Deleting Label", description: error.message, variant: "destructive" });
+    } finally {
+      setIsDeletingLabel(false);
     }
   };
 
@@ -162,12 +260,22 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
     { action: () => onFilterChange('pending'), label: 'Pending Tasks', icon: ListTodo, tooltip: 'Pending Tasks', isFilter: true, filterName: 'pending' },
     { action: () => onFilterChange('completed'), label: 'Completed Tasks', icon: ListChecks, tooltip: 'Completed Tasks', isFilter: true, filterName: 'completed' },
   ];
+  
+  const labelNavItems: NavItemConfig[] = userLabels.map(label => ({
+    action: () => onLabelSelect(label.id),
+    label: label.name,
+    icon: Tag, // Default icon, can be customized later
+    tooltip: `View tasks in "${label.name}"`,
+    isLabel: true,
+    labelId: label.id,
+  }));
+
 
   const categoryNavItems: NavItemConfig[] = [
     { href: '/classes', label: 'Class Section', icon: Users, tooltip: 'Class Section (Coming Soon)', disabled: true, isPageLink: true },
     { href: '/reminders', label: 'Reminders', icon: AlarmClock, tooltip: 'View Reminders', disabled: false, isPageLink: true },
     { href: '/performance', label: 'Performance', icon: BarChart3, tooltip: 'Performance Overview', disabled: false, isPageLink: true },
-    { href: '/labels', label: 'Labels', icon: Tag, tooltip: 'Labels (Coming Soon)', disabled: true, isPageLink: true },
+    // "Labels" as a page link removed, labels are now listed directly
   ];
 
   const managementNavItems: NavItemConfig[] = [
@@ -176,7 +284,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
   ];
 
   const renderNavItems = (items: NavItemConfig[], sectionTitle?: string) => {
-    if (items.length === 0) return null;
+    if (items.length === 0 && ! (sectionTitle === "Labels" && !isLoadingLabels) ) return null; // Keep Labels section if not loading, even if empty for "Create" button
 
     const sectionContent = (
       <>
@@ -191,8 +299,55 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
 
             const buttonContent = (
               <>
-                <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
+                {item.isLabel && !isIconOnly && item.color ? (
+                  <span
+                    className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
+                )}
                 {!isIconOnly && <span className="truncate">{item.label}</span>}
+                
+                {item.isLabel && !isIconOnly && userLabels.find(l => l.id === item.labelId) && (
+                  <div className="ml-auto pl-1" onClick={(e) => {e.preventDefault(); e.stopPropagation();}} data-nocardclick="true">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover/menu-item:opacity-100 focus-visible:opacity-100 transition-opacity"
+                          aria-label={`Options for label ${item.label}`}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent sideOffset={5} align="start">
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              const labelToActOn = userLabels.find(l => l.id === item.labelId);
+                              if (labelToActOn) handleOpenEditLabelDialog(labelToActOn);
+                          }} 
+                          className="cursor-pointer"
+                        >
+                          <Edit2 className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              const labelToActOn = userLabels.find(l => l.id === item.labelId);
+                              if (labelToActOn) handleOpenDeleteLabelDialog(labelToActOn);
+                          }} 
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                        >
+                          <XCircle className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
               </>
             );
             
@@ -206,28 +361,33 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             };
 
             const menuButton = (
-              <SidebarMenuButton {...commonButtonProps}>
+              <SidebarMenuButton {...commonButtonProps} className={cn(item.isLabel && !isIconOnly && "flex items-center w-full")}>
                 {buttonContent}
               </SidebarMenuButton>
             );
           }
 
 
-          return (
-            <SidebarMenuItem key={`${item.label}-${index}`} className={cn(
-              isIconOnly ? 'flex justify-center' : 'group/menu-item',
-            )}>
-              {item.href ? (
-                <Link href={item.href || '#'} className="block w-full h-full" target={item.isExternal ? "_blank" : "_self"} passHref>
-                  {menuElement}
-                </Link>
-              ) : (
-                menuElement
-              )}
-            </SidebarMenuItem>
-          );
-        })}
-      </SidebarMenu>
+            return (
+              <SidebarMenuItem key={`${item.label}-${index}`} className={isIconOnly ? 'flex justify-center' : ''}>
+                {item.href || item.action ? (
+                  item.href ? (
+                    <Link href={linkPath} className="block w-full h-full" target={item.isExternal ? "_blank" : "_self"} passHref>
+                      {menuButton}
+                    </Link>
+                  ) : (
+                    menuButton
+                  )
+                ) : (
+                   <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
+                    {buttonContent}
+                   </div>
+                )}
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </>
     );
   };
 
@@ -312,7 +472,42 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
             {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 && (categoryNavItems.length > 0 || managementNavItems.length > 0)) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems)}
             
-            {(filterNavItems.length > 0 && categoryNavItems.length > 0) || (filterNavItems.length === 0 && categoryNavItems.length > 0 && managementNavItems.length > 0) ? <SidebarSeparator /> : null}
+            <SidebarSeparator />
+            {/* Labels Section */}
+            {!isIconOnly && (
+              <div className="px-3 pt-2 pb-1 flex items-center justify-between">
+                 <div className="text-xs font-medium text-muted-foreground tracking-wider uppercase">Labels</div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => setIsLabelDialogOpen(true)}>
+                            <PlusCircle className="h-4 w-4"/>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right"><p>Create new label</p></TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+            {isIconOnly && (
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-primary mt-1" onClick={() => setIsLabelDialogOpen(true)}>
+                            <PlusCircle className="h-5 w-5"/>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right"><p>Create new label</p></TooltipContent>
+                </Tooltip>
+            )}
+            {isLoadingLabels ? (
+              <div className={cn("px-2.5 py-1.5", isIconOnly && "flex justify-center")}>
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              renderNavItems(labelNavItems)
+            )}
+            {/* End Labels Section */}
+
+
+            <SidebarSeparator />
             {renderNavItems(categoryNavItems)}
 
             <SidebarSeparator />
@@ -385,6 +580,40 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange }: AppSide
           </div>
         </div>
       </SidebarFooter>
+
+      {/* Create Label Dialog */}
+      <Dialog open={isLabelDialogOpen} onOpenChange={setIsLabelDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Label</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new label.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              id="labelName"
+              placeholder="Label name (e.g., Work, Study)"
+              value={newLabelName}
+              onChange={(e) => setNewLabelName(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" onClick={() => setNewLabelName('')}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit" onClick={handleCreateLabel} disabled={isSavingLabel || !newLabelName.trim()}>
+              {isSavingLabel && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Label
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   );
 }
+
+    
