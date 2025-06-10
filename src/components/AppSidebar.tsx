@@ -23,12 +23,12 @@ import {
   XCircle,
   ChevronDown,
   ChevronRight,
-  MoreVertical, // Added for the three-dot menu
+  MoreVertical, 
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label as UiLabel } from '@/components/ui/label'; // Aliased to avoid conflict
+import { Label as UiLabel } from '@/components/ui/label'; 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -70,11 +70,11 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
+  sidebarMenuButtonVariants,
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
-  sidebarMenuButtonVariants,
 } from '@/components/ui/sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
@@ -108,19 +108,17 @@ interface NavItemConfig {
   color?: string;
 }
 
-// Function to generate a color from a predefined palette based on string hash
-// This provides some visual variety for labels without user color pickers yet
 const labelColorPalette = [
-  "#4285F4", // Google Blue
-  "#DB4437", // Google Red
-  "#F4B400", // Google Yellow
-  "#0F9D58", // Google Green
-  "#AB47BC", // Purple
-  "#00ACC1", // Cyan
-  "#FF7043", // Orange
-  "#78909C", // Blue Grey
-  "#5C6BC0", // Indigo
-  "#EC407A", // Pink
+  "#4285F4", 
+  "#DB4437", 
+  "#F4B400", 
+  "#0F9D58", 
+  "#AB47BC", 
+  "#00ACC1", 
+  "#FF7043", 
+  "#78909C", 
+  "#5C6BC0", 
+  "#EC407A", 
 ];
 
 const getDeterministicColorForLabel = (labelName: string): string => {
@@ -128,7 +126,7 @@ const getDeterministicColorForLabel = (labelName: string): string => {
   for (let i = 0; i < labelName.length; i++) {
     const char = labelName.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash |= 0; // Convert to 32bit integer
+    hash |= 0; 
   }
   const index = Math.abs(hash) % labelColorPalette.length;
   return labelColorPalette[index];
@@ -178,7 +176,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
             name: data.name,
             userId: data.userId,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-            color: data.color || getDeterministicColorForLabel(data.name), // Ensure color exists
+            color: data.color || getDeterministicColorForLabel(data.name), 
           } as Label;
         });
         setUserLabels(labelsData);
@@ -233,7 +231,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
     if (!editedLabelName.trim() || !labelToEdit || !user) return;
     setIsUpdatingLabel(true);
     try {
-      // Check for duplicate name (excluding the current label being edited if name hasn't changed)
       const existingLabel = userLabels.find(
         (l) => l.name.toLowerCase() === editedLabelName.trim().toLowerCase() && l.id !== labelToEdit.id
       );
@@ -244,7 +241,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       }
 
       const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToEdit.id);
-      await updateDoc(labelDocRef, { name: editedLabelName.trim() }); // Color is not updated here, only name
+      await updateDoc(labelDocRef, { name: editedLabelName.trim() }); 
       toast({ title: "Label Updated", description: `Label renamed to "${editedLabelName.trim()}".` });
       setIsEditLabelDialogOpen(false);
       setLabelToEdit(null);
@@ -269,7 +266,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToDelete.id);
       batch.delete(labelDocRef);
 
-      // Find tasks with this label and set their labelId to null
       const tasksQuery = query(collection(db, `users/${user.uid}/tasks`), where("labelId", "==", labelToDelete.id));
       const tasksSnapshot = await getDocs(tasksQuery);
       tasksSnapshot.forEach((taskDoc) => {
@@ -280,7 +276,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       toast({ title: "Label Deleted", description: `Label "${labelToDelete.name}" deleted and removed from tasks.` });
       
       if (selectedLabelId === labelToDelete.id) {
-        onLabelSelect(null); // Clear filter if the deleted label was selected
+        onLabelSelect(null); 
       }
       setIsDeleteLabelDialogOpen(false);
       setLabelToDelete(null);
@@ -307,7 +303,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
   const labelNavItems: NavItemConfig[] = userLabels.map(label => ({
     action: () => onLabelSelect(label.id),
     label: label.name,
-    icon: Tag, // Fallback icon for icon-only mode
+    icon: Tag, 
     tooltip: `View tasks in "${label.name}"`,
     isLabel: true,
     labelId: label.id,
@@ -331,11 +327,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
 
     const sectionContent = (
       <>
-        {sectionTitle && !isIconOnly && (
-          <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground tracking-wider uppercase">
-            {sectionTitle}
-          </div>
-        )}
         <SidebarMenu className={cn(isIconOnly && "w-auto")}>
           {items.map((item, index) => {
             let isActive = false;
@@ -347,21 +338,33 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
               isActive = selectedLabelId === item.labelId;
             }
 
+            const commonButtonProps = {
+              variant: "ghost" as const,
+              onClick: item.action,
+              disabled: item.disabled,
+              isActive: isActive,
+              "aria-label": item.tooltip,
+              tooltip: item.tooltip,
+              className: isActive ? ( (item.isFilter || item.isLabel) ? "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]" : "bg-muted text-primary font-semibold" ) : "",
+            };
+            
             const buttonContent = (
               <>
-                {item.isLabel && !isIconOnly && item.color ? (
-                  <span
-                    className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
-                )}
-                {!isIconOnly && <span className="truncate">{item.label}</span>}
+                <span className="flex items-center flex-grow overflow-hidden mr-1">
+                  {item.isLabel && !isIconOnly && item.color ? (
+                    <span
+                      className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground")} />
+                  )}
+                  {!isIconOnly && <span className="truncate">{item.label}</span>}
+                </span>
                 
                 {item.isLabel && !isIconOnly && userLabels.find(l => l.id === item.labelId) && (
-                  <div className="ml-auto pl-1" onClick={(e) => {e.preventDefault(); e.stopPropagation();}} data-nocardclick="true">
+                  <div className="pl-1 flex-shrink-0" onClick={(e) => {e.preventDefault(); e.stopPropagation();}} data-nocardclick="true">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -401,32 +404,44 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
               </>
             );
 
-            const commonButtonProps = {
-              variant: "ghost" as const,
-              onClick: item.action,
-              disabled: item.disabled,
-              isActive: isActive,
-              "aria-label": item.tooltip,
-              tooltip: item.tooltip,
-            };
+            const isLabelInExpandedView = item.isLabel && !isIconOnly;
 
-            const menuButton = (
-              <SidebarMenuButton {...commonButtonProps} className={cn(item.isLabel && !isIconOnly && "flex items-center w-full")}>
-                {buttonContent}
+            const menuButtonElement = (
+              <SidebarMenuButton
+                {...commonButtonProps}
+                asChild={isLabelInExpandedView} 
+              >
+                {isLabelInExpandedView ? (
+                  <div 
+                    className={cn(
+                      "flex items-center justify-between w-full", 
+                       // active styles for the div need to be applied here if SidebarMenuButton's internal active style doesn't propagate correctly with asChild
+                      isActive && "bg-muted text-primary font-semibold border-l-2 border-primary -ml-[1px] pl-[calc(0.625rem-1px)]"
+                    )}
+                    // onClick, onKeyDown, aria-label are passed by SidebarMenuButton when asChild
+                  >
+                    {buttonContent}
+                  </div>
+                ) : (
+                  buttonContent 
+                )}
               </SidebarMenuButton>
             );
 
             const linkPath = item.href || '#';
 
             return (
-              <SidebarMenuItem key={`${item.label}-${index}`} className={cn(isIconOnly ? 'flex justify-center' : 'group/menu-item', item.isLabel && !isIconOnly && "flex items-center justify-between")}>
+              <SidebarMenuItem key={`${item.label}-${index}`} className={cn(
+                isIconOnly ? 'flex justify-center' : 'group/menu-item',
+                 // No longer need 'flex items-center justify-between' here if the inner div handles it
+              )}>
                 {item.href || item.action ? (
                   item.href ? (
                     <Link href={linkPath} className="block w-full h-full" target={item.isExternal ? "_blank" : "_self"} passHref>
-                      {menuButton}
+                      {menuButtonElement}
                     </Link>
                   ) : (
-                    menuButton
+                    menuButtonElement
                   )
                 ) : (
                    <div className={cn("flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50", sidebarMenuButtonVariants({variant: commonButtonProps.variant}), commonButtonProps.className)} aria-disabled={item.disabled} role="button" tabIndex={item.disabled ? -1 : 0}>
@@ -634,7 +649,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
         </div>
       </SidebarFooter>
 
-      {/* Create Label Dialog */}
       <Dialog open={isCreateLabelDialogOpen} onOpenChange={setIsCreateLabelDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -667,7 +681,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
         </DialogContent>
       </Dialog>
 
-      {/* Edit Label Dialog */}
       <Dialog open={isEditLabelDialogOpen} onOpenChange={setIsEditLabelDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -698,7 +711,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
         </DialogContent>
       </Dialog>
 
-      {/* Delete Label Confirmation Dialog */}
       {labelToDelete && (
         <AlertDialog open={isDeleteLabelDialogOpen} onOpenChange={setIsDeleteLabelDialogOpen}>
           <AlertDialogContent>
