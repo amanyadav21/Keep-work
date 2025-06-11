@@ -623,7 +623,7 @@ export {
   SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
-  sidebarMenuButtonVariants,
+  // sidebarMenuButtonVariants, // Removed from here
   SidebarMenuItem,
   SidebarProvider,
   SidebarSeparator,
