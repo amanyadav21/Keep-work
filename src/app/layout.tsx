@@ -1,8 +1,11 @@
+
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
-// import { Toaster } from '@/components/ui/toaster'; // Placeholder for Sonner or similar
+import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
+import { MainContentWrapper } from '@/components/MainContentWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,10 +28,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* Placeholder for AuthProvider */}
-          {/* Placeholder for StoreProvider (Zustand) */}
-          {children}
-          {/* <Toaster /> */}
+          <AuthProvider>
+            {/* MainContentWrapper handles sidebar layout adjustments */}
+            {/* AppSidebar and Header are rendered by individual page components that need them */}
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
