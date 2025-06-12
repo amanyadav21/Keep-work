@@ -444,7 +444,7 @@ export default function HomePage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-xl bg-card p-0">
           <DialogHeader>
             <SrDialogTitle className="sr-only">
               {editingTask ? 'Edit Task' : 'Add New Task'}
