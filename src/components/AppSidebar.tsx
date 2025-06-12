@@ -25,6 +25,7 @@ import {
   MoreVertical,
   Tags, 
   ListTodo,
+  GraduationCap, // Added import
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -137,7 +138,13 @@ const getDeterministicColorForLabel = (labelName: string): string => {
 export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedLabelId, onLabelSelect }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
-  const { state: sidebarState, collapsible, isMobile, open: sidebarOpen, defaultOpen } = useSidebar();
+  const { 
+    state: sidebarState, 
+    collapsible, 
+    isMobile, 
+    open: sidebarOpen, 
+    defaultOpen 
+  } = useSidebar();
   const router = useRouter();
   const { toast } = useToast();
   const [clientMounted, setClientMounted] = React.useState(false);
@@ -163,6 +170,8 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
   React.useEffect(() => {
     setClientMounted(true);
   }, []);
+
+  const isIconOnly = clientMounted ? (!isMobile && sidebarState === 'collapsed' && collapsible === 'icon') : (!defaultOpen && collapsible === 'icon');
 
   React.useEffect(() => {
     if (user && clientMounted) {
@@ -290,9 +299,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       setIsDeletingLabel(false);
     }
   };
-
-
-  const isIconOnly = clientMounted ? (!isMobile && sidebarState === 'collapsed' && collapsible === 'icon') : (!defaultOpen && collapsible === 'icon');
 
   const mainNavItems: NavItemConfig[] = [
      { action: onAddTask, label: 'Add Task', icon: PlusCircle, tooltip: 'Add New Task' },
@@ -553,7 +559,15 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
   return (
     <Sidebar side="left" className="shadow-sm">
       <SidebarHeader className="flex items-center min-w-0">
-        <SidebarTrigger className="shrink-0" tooltip="Toggle Sidebar" />
+        {!isIconOnly && (
+          <Link href="/" className="flex items-center gap-2 group mr-auto overflow-hidden pr-2 flex-shrink-0">
+            <GraduationCap className="h-6 w-6 text-primary group-hover:text-primary/90 transition-colors flex-shrink-0" />
+            <h1 className="text-lg font-semibold text-foreground tracking-tight group-hover:text-foreground/90 transition-colors truncate">
+              Upnext
+            </h1>
+          </Link>
+        )}
+        <SidebarTrigger className={cn("shrink-0", isIconOnly && "mx-auto")}/>
       </SidebarHeader>
 
       <SidebarContent className="p-0">
