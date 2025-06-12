@@ -20,6 +20,7 @@ import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs, FirestoreError } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LandingPage } from '@/components/LandingPage';
+import { AddTaskCard } from '@/components/AddTaskCard';
 
 
 const priorityOrder: Record<TaskPriority, number> = {
@@ -225,6 +226,22 @@ export default function HomePage() {
     setIsFormOpen(false);
   }, [handleAddTask, handleEditTask]);
 
+  const handleQuickAddTask = useCallback(({ title, description }: Pick<TaskFormValues, 'title' | 'description'>) => {
+    const newTaskData: TaskFormValues = {
+      title: title,
+      description: description || "",
+      dueDate: null,
+      category: "General", 
+      priority: "None",
+      isCompleted: false,
+      subtasks: [],
+      reminderDate: null,
+      reminderTime: null,
+      labelId: null,
+    };
+    handleAddTask(newTaskData);
+  }, [handleAddTask]);
+
   const handleToggleComplete = useCallback(async (id: string) => {
     if (!user) return;
     const task = tasks.find(t => t.id === id);
@@ -299,7 +316,7 @@ export default function HomePage() {
     setIsFormOpen(true);
   }, []);
 
-  const handleOpenAddForm = useCallback(() => {
+  const handleOpenAddFormThroughDialog = useCallback(() => { // Renamed to avoid conflict, this is for the full dialog
     if (!user) {
       toast({ title: "Please Log In", description: "You need to be logged in to add tasks.", variant: "default" });
       return;
@@ -310,11 +327,8 @@ export default function HomePage() {
   
   const handleLabelSelect = useCallback((labelId: string | null) => {
     setSelectedLabelId(labelId);
-    // If a label is selected, reset the main filter to 'general' to show all tasks of that label.
-    // Or, you might want the filter (pending/completed) to apply WITHIN the label.
-    // For now, let's say selecting a label overrides the other filter for simplicity of view.
     if (labelId) {
-        setFilter('general'); // Or a new filter type like 'label_tasks'
+        setFilter('general'); 
     }
   }, []);
 
@@ -345,14 +359,12 @@ export default function HomePage() {
   const filteredTasks = useMemo(() => {
     let tasksToFilter = sortedTasks.filter(task => !task.isTrashed);
 
-    // First, filter by selected label if any
     if (selectedLabelId) {
       tasksToFilter = tasksToFilter.filter(task => task.labelId === selectedLabelId);
     }
-    // Then, apply the main filter (today, pending, completed)
-    // If a label is selected, 'general' and 'all' within that label are the same.
+    
     if (selectedLabelId && (filter === 'general' || filter === 'all')) {
-        return tasksToFilter; // Show all tasks for the selected label
+        return tasksToFilter; 
     }
 
 
@@ -367,7 +379,7 @@ export default function HomePage() {
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
-      case 'general': // 'general' or 'all' when no label is selected shows all non-trashed tasks
+      case 'general': 
       case 'all':
       default:
         return tasksToFilter;
@@ -392,7 +404,7 @@ export default function HomePage() {
   return (
     <>
       <AppSidebar
-        onAddTask={handleOpenAddForm}
+        onAddTask={handleOpenAddFormThroughDialog} // Sidebar "Add Task" button will open full dialog
         currentFilter={filter}
         onFilterChange={setFilter}
         selectedLabelId={selectedLabelId}
@@ -402,15 +414,7 @@ export default function HomePage() {
 
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
         <div className="w-full max-w-6xl mx-auto">
-          <div className="mb-6 max-w-2xl mx-auto">
-            <Button
-              className="w-full h-12 px-4 py-3 text-base bg-card text-foreground/80 border border-border rounded-lg shadow justify-start hover:text-foreground hover:border-primary hover:bg-primary/10 hover:shadow-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-background"
-              onClick={handleOpenAddForm}
-            >
-              <Plus className="mr-3 h-5 w-5" />
-              Take a note...
-            </Button>
-          </div>
+          <AddTaskCard onAddTask={handleQuickAddTask} />
 
           {isLoadingTasks ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -476,3 +480,4 @@ export default function HomePage() {
     </>
   );
 }
+
