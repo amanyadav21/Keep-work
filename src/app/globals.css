@@ -33,6 +33,16 @@
     --ring: 222.2 84% 4.9%;
  
     --radius: 0.5rem;
+
+    --sidebar-width-expanded: 16rem;
+    --sidebar-width-collapsed: 4rem; 
+
+    /* Custom Priority Colors */
+    --priority-urgent: 0 100% 50%; /* Red */
+    --priority-high: 30 100% 50%; /* Orange */
+    --priority-medium: 60 100% 50%; /* Yellow */
+    --priority-low: 120 60% 50%; /* Green */
+    --status-green: 120 70% 45%; /* For completed status text */
   }
  
   .dark {
@@ -63,6 +73,16 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    --sidebar-width-expanded: 16rem;
+    --sidebar-width-collapsed: 4rem;
+
+    /* Custom Priority Colors - Dark Theme */
+    --priority-urgent: 0 90% 60%; /* Slightly lighter red */
+    --priority-high: 30 90% 60%; /* Slightly lighter orange */
+    --priority-medium: 60 90% 60%; /* Slightly lighter yellow */
+    --priority-low: 120 70% 60%; /* Slightly lighter green */
+    --status-green: 120 60% 65%; /* Lighter green for completed status */
   }
 }
  
