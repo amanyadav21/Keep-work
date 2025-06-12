@@ -5,7 +5,8 @@ import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider } from '@/components/ui/sidebar'; // Import SidebarProvider
+import { SidebarProvider } from '@/components/ui/sidebar'; 
+import { MainContentWrapper } from '@/components/MainContentWrapper'; // Import MainContentWrapper
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -29,11 +30,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <SidebarProvider> {/* Wrap with SidebarProvider */}
-              {/* AppSidebar and Header are rendered by individual page components that need them */}
-              {/* MainContentWrapper, if used by pages, will also get context */}
-              {children}
-              <Toaster />
+            <SidebarProvider>
+              <MainContentWrapper> {/* Wrap children and Toaster with MainContentWrapper */}
+                {children}
+                <Toaster />
+              </MainContentWrapper>
             </SidebarProvider>
           </AuthProvider>
         </ThemeProvider>
