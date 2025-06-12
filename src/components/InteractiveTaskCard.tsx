@@ -294,7 +294,7 @@ export function InteractiveTaskCard({
     if (descriptionTextareaRef.current) {
       descriptionTextareaRef.current.style.height = 'auto';
       const scrollHeight = descriptionTextareaRef.current.scrollHeight;
-      const minHeight = (mode === 'add' && !form.getValues("title")) ? 24 : 40; // smaller if only description visible initially
+      const minHeight = (mode === 'add' && !form.getValues("title") && isLocallyExpanded) ? 24 : 40; 
       descriptionTextareaRef.current.style.height = `${Math.max(scrollHeight, minHeight)}px`;
     }
   }, [watchDescription, isLocallyExpanded, mode, form]);
@@ -384,7 +384,7 @@ export function InteractiveTaskCard({
                 ref={descriptionTextareaRef}
                 placeholder="Take a note..."
                 {...field}
-                className="text-sm border-0 shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-2 min-h-[40px] resize-none placeholder:text-muted-foreground/70 max-h-[40vh] overflow-y-auto"
+                className="text-sm border-0 shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-2 min-h-[40px] resize-none placeholder:text-muted-foreground/70"
                 rows={1}
                 disabled={isSubmitting}
                 />
@@ -718,3 +718,4 @@ export function InteractiveTaskCard({
 }
 
     
+
