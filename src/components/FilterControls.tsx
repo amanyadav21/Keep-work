@@ -1,6 +1,3 @@
-// This component is no longer used and can be safely deleted.
-// Filtering functionality has been moved to AppSidebar.tsx.
-
-export function FilterControls() {
-  return null;
-}
+// THIS COMPONENT IS DEPRECATED AND MARKED FOR DELETION.
+// Its original functionality has been moved or is no longer used.
+export {};

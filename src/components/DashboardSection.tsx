@@ -1,7 +1,3 @@
-// This component is no longer used and can be safely deleted.
-// Its content (TaskStats and Performance placeholder) was either removed 
-// or integrated elsewhere as per the new Google Keep-like UI design.
-
-export function DashboardSection() {
-  return null;
-}
+// THIS COMPONENT IS DEPRECATED AND MARKED FOR DELETION.
+// Its original functionality is no longer used.
+export {};

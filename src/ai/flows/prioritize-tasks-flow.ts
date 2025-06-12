@@ -1,2 +1,3 @@
-// This file is no longer needed as Genkit integration is being removed.
-// You can delete this file and the src/ai/flows directory.
+// THIS FILE IS DEPRECATED AND MARKED FOR DELETION.
+// Its original functionality (related to Genkit AI flow) has been removed.
+export {};
