@@ -25,7 +25,7 @@ import {
   MoreVertical,
   Tags, 
   ListTodo,
-  GraduationCap, // Added import
+  GraduationCap,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -367,27 +367,21 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
           
           const labelDisplayContent = (
             <>
-              {/* For expanded labels, show color dot */}
               {item.isLabel && !isIconOnly && item.color && (
                 <span
-                  className="mr-1.5 h-2.5 w-2.5 shrink-0 rounded-full" // Dot
+                  className="mr-2 h-3 w-3 shrink-0 rounded-full" // Slightly larger dot, adjusted margin
                   style={{ backgroundColor: item.color }}
                   aria-hidden="true"
                 />
               )}
-          
-              {/* Icon: Tag for labels, specific icon for others */}
               <item.icon className={cn(
                   "shrink-0",
-                  // If it's an expanded label (which now includes its own Tag icon), use h-4, otherwise h-5 for the icon
                   (item.isLabel && !isIconOnly) ? "h-4 w-4" : "h-5 w-5",
                   isActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground"
                 )}
               />
-          
-              {/* Text for expanded items */}
               {!isIconOnly && (
-                <span className="truncate ml-1.5">{item.label}</span> // Adjusted margin for text after icon
+                <span className="truncate ml-2">{item.label}</span> 
               )}
             </>
           );
@@ -793,3 +787,4 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
     </Sidebar>
   );
 }
+
