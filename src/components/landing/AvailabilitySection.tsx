@@ -2,10 +2,12 @@
 "use client";
 
 import React from 'react';
-import { Smartphone, Tablet, Laptop, Globe, Mic, CalendarDays, AppWindow, Watch, Monitor, MousePointerSquare } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Smartphone, Tablet, Laptop, Globe, Mic, CalendarDays, AppWindow, Watch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Simple generic browser icon SVG if needed
+// Simple generic browser icon SVG
 const BrowserIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -23,8 +25,7 @@ const BrowserIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-
-const platformIcons = [
+const platformDetails = [
   { name: 'Android', icon: Smartphone },
   { name: 'iPhone', icon: Smartphone },
   { name: 'iPad', icon: Tablet },
@@ -36,36 +37,39 @@ const platformIcons = [
   { name: 'Chrome', icon: BrowserIcon },
   { name: 'Firefox', icon: BrowserIcon },
   { name: 'Apple Watch', icon: Watch },
-  { name: 'Huawei', icon: Smartphone },
-  { name: 'Desktop', icon: Monitor },
+  { name: 'Wear OS', icon: Watch },
 ];
 
 export default function AvailabilitySection() {
   return (
-    <section className="py-16 md:py-24 bg-background relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 opacity-50 dark:opacity-30">
-        {/* Soft background elements, can be reused from hero or be new */}
-        <div
-          className="absolute top-0 -left-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full filter blur-3xl animate-pulse-slow"
-          aria-hidden="true"
-        />
-        <div
-          className="absolute bottom-0 -right-1/4 w-1/2 h-1/2 bg-accent/10 rounded-full filter blur-3xl animate-pulse-slower animation-delay-2000"
-          aria-hidden="true"
-        />
-      </div>
+    <section className="py-20 md:py-28 bg-background relative overflow-hidden">
+      {/* Decorative background dots */}
+      <div 
+        className="absolute top-[10%] left-[5%] w-24 h-24 bg-pink-500/20 dark:bg-pink-500/10 rounded-full filter blur-2xl opacity-70 animate-pulse-slow"
+        aria-hidden="true"
+      />
+      <div 
+        className="absolute bottom-[15%] right-[8%] w-32 h-32 bg-green-500/20 dark:bg-green-500/10 rounded-full filter blur-3xl opacity-60 animate-pulse-slower animation-delay-1000"
+        aria-hidden="true"
+      />
+       <div 
+        className="absolute top-[20%] right-[15%] w-16 h-16 bg-blue-500/10 dark:bg-blue-500/5 rounded-full filter blur-xl opacity-50 animate-pulse-slow animation-delay-500"
+        aria-hidden="true"
+      />
+
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center">
         <div
           className={cn(
-            "relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px]",
-            "rounded-full flex flex-col items-center justify-between text-center p-6", // Changed justify-center to justify-between, p-8 to p-6
-            "shadow-2xl transition-all duration-300 ease-out hover:scale-[1.01] hover:shadow-[0_20px_50px_-15px_rgba(25,76,229,0.3)] dark:hover:shadow-[0_20px_50px_-15px_rgba(34,130,242,0.2)]"
+            "relative w-[320px] h-[320px] xs:w-[380px] xs:h-[380px] sm:w-[500px] sm:h-[500px] md:w-[600px] md:h-[600px] lg:w-[680px] lg:h-[680px]", // Responsive sizing for the circle
+            "rounded-full flex flex-col items-center justify-center text-center p-6 md:p-10",
+            "shadow-2xl transition-all duration-300 ease-out"
           )}
           style={{
-            backgroundImage: 'radial-gradient(circle at 30% 30%, hsl(205, 100%, 80%), hsl(215, 90%, 65%), hsl(225, 80%, 50%))'
+            backgroundImage: 'radial-gradient(circle at center, hsl(255, 70%, 70%), hsl(265, 80%, 58%))'
           }}
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white !leading-tight px-4"> {/* Removed mb-6 md:mb-8 */}
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white !leading-tight mb-3 md:mb-5">
             Organize anything
             <br />
             with anyone,
@@ -73,38 +77,64 @@ export default function AvailabilitySection() {
             anywhere
           </h2>
 
-          <div className="flex flex-col items-center"> {/* Added a wrapper div for bottom content */}
-            <p className="text-sm text-blue-100 dark:text-blue-200 mb-3 md:mb-4">Available on:</p>
-            <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 sm:gap-x-5 sm:gap-y-4 max-w-xs sm:max-w-sm md:max-w-md"> {/* Adjusted grid columns and max-width */}
-              {platformIcons.map((platform) => (
-                <div key={platform.name} className="flex flex-col items-center group">
-                  <platform.icon className="h-6 w-6 text-blue-100 dark:text-blue-200 group-hover:text-white transition-colors" /> {/* Standardized icon size */}
-                  <span className="text-xs text-blue-200 dark:text-blue-300 mt-1 group-hover:text-white transition-colors"> {/* Standardized label size */}
-                    {platform.name}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <p className="text-sm md:text-base text-purple-100 dark:text-purple-200 mb-6 md:mb-8">
+            Seamlessly available on all your devices:
+          </p>
+
+          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 md:gap-x-6 md:gap-y-5 mb-8 md:mb-10 max-w-sm sm:max-w-md md:max-w-lg">
+            {platformDetails.map((platform) => (
+              <div key={platform.name} className="flex flex-col items-center group">
+                <platform.icon className="h-6 w-6 md:h-7 md:w-7 text-purple-100 dark:text-purple-200 group-hover:text-white transition-colors" />
+                <span className="text-xs text-purple-200 dark:text-purple-300 mt-1.5 group-hover:text-white transition-colors">
+                  {platform.name}
+                </span>
+              </div>
+            ))}
           </div>
+
+          <Button 
+            asChild 
+            size="lg"
+            className="bg-white text-purple-700 hover:bg-gray-100 shadow-lg font-semibold py-3 px-8 rounded-full text-sm md:text-base"
+          >
+            <Link href="/signup">
+              Get Started Free
+            </Link>
+          </Button>
         </div>
       </div>
-       {/* Add Tailwind keyframes if needed, or ensure global CSS has them */}
       <style jsx global>{`
         .animate-pulse-slow {
-          animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          animation: pulse 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         .animate-pulse-slower {
-          animation: pulse 3.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          animation: pulse 6.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .animation-delay-2000 {
-            animation-delay: 2s;
+        .animation-delay-500 {
+            animation-delay: 0.5s;
+        }
+        .animation-delay-1000 {
+            animation-delay: 1s;
         }
         @keyframes pulse {
-          50% {
-            opacity: .5;
+          0%, 100% {
+            opacity: 0.5;
+            transform: scale(0.95);
           }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+        }
+        /* Add xs breakpoint if not already defined in Tailwind config, or use Tailwind's default sm for this size */
+        @media (min-width: 480px) { /* Example for 'xs', adjust as needed */
+          .xs\\:w-\\[380px\\] { width: 380px; }
+          .xs\\:h-\\[380px\\] { height: 380px; }
+          .xs\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         }
       `}</style>
     </section>
   );
 }
+
+    
