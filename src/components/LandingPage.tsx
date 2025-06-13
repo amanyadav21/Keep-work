@@ -7,7 +7,8 @@ import { LandingHeader } from '@/components/LandingHeader';
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import PricingSection from '@/components/landing/PricingSection';
-import AvailabilitySection from '@/components/landing/AvailabilitySection'; // Import the new component
+import AvailabilitySection from '@/components/landing/AvailabilitySection'; 
+import IntegrationsSection from '@/components/landing/IntegrationsSection'; // Import the new component
 import FooterSection from '@/components/landing/FooterSection';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -41,8 +42,9 @@ export function LandingPage() {
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         <HeroSection ref={heroRef} /> {/* Pass ref to HeroSection */}
         <FeaturesSection />
+        <AvailabilitySection /> 
+        <IntegrationsSection /> {/* Add the new IntegrationsSection here */}
         <PricingSection />
-        <AvailabilitySection /> {/* Add the new section here */}
         <FooterSection />
       </div>
 
