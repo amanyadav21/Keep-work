@@ -1,17 +1,17 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react'; // Added useState, useEffect, useRef
-import Link from 'next/link'; // Added Link for the sticky button
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { LandingHeader } from '@/components/LandingHeader';
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import PricingSection from '@/components/landing/PricingSection';
 import CtaSection from '@/components/landing/CtaSection';
 import FooterSection from '@/components/landing/FooterSection';
-import { Button } from '@/components/ui/button'; // Added Button
-import { ArrowRight } from 'lucide-react'; // Added ArrowRight
-import { cn } from '@/lib/utils'; // Added cn
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function LandingPage() {
   const [showStickyButton, setShowStickyButton] = useState(false);
@@ -49,8 +49,8 @@ export function LandingPage() {
       {/* Sticky "Get Started" Button */}
       <div
         className={cn(
-          "fixed top-5 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-300 ease-in-out",
-          showStickyButton ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full pointer-events-none"
+          "fixed bottom-5 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-300 ease-in-out",
+          showStickyButton ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full pointer-events-none"
         )}
       >
         <Button
