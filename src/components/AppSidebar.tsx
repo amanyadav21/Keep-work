@@ -87,7 +87,6 @@ import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp,
 import { useToast } from '@/hooks/use-toast';
 
 interface AppSidebarProps {
-  onAddTask: () => void;
   currentFilter: TaskFilter | null; // Can be null if determined by labelId
   onFilterChange: (filter: TaskFilter) => void;
   selectedLabelId: string | null;
@@ -135,7 +134,7 @@ const getDeterministicColorForLabel = (labelName: string): string => {
 };
 
 
-export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedLabelId, onLabelSelect }: AppSidebarProps) {
+export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onLabelSelect }: AppSidebarProps) {
   const pathname = usePathname();
   const { user, logOut, loading: authLoading } = useAuth();
   const { 
@@ -300,10 +299,6 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
     }
   };
 
-  const mainNavItems: NavItemConfig[] = [
-     { action: onAddTask, label: 'Add Task', icon: PlusCircle, tooltip: 'Add New Task' },
-  ];
-
   const filterNavItems: NavItemConfig[] = [
     { action: () => { onFilterChange('general'); onLabelSelect(null); }, label: 'General', icon: Inbox, tooltip: 'General Tasks', isFilter: true, filterName: 'general' },
     { action: () => { onFilterChange('today'); onLabelSelect(null); }, label: 'Today', icon: CalendarClock, tooltip: 'Tasks Due Today', isFilter: true, filterName: 'today' },
@@ -369,7 +364,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
             <>
               {item.isLabel && !isIconOnly && item.color && (
                 <span
-                  className="mr-2 h-3 w-3 shrink-0 rounded-full" // Slightly larger dot, adjusted margin
+                  className="mr-2 h-3 w-3 shrink-0 rounded-full"
                   style={{ backgroundColor: item.color }}
                   aria-hidden="true"
                 />
@@ -567,12 +562,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       <SidebarContent className="p-0">
         <ScrollArea className="h-full w-full p-2">
           <div className={cn("flex-1", isIconOnly ? "space-y-2 flex flex-col items-center" : "space-y-1")}>
-
-            {renderNavItems(mainNavItems)}
-
-            {(mainNavItems.length > 0 && filterNavItems.length > 0) || (mainNavItems.length === 0 && filterNavItems.length > 0 ) ? <SidebarSeparator /> : null}
             {renderNavItems(filterNavItems)}
-
             <SidebarSeparator />
 
             {!isIconOnly && (

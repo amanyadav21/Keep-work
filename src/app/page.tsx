@@ -287,7 +287,6 @@ export default function HomePage() {
   return (
     <>
       <AppSidebar
-        onAddTask={handleOpenAddFormThroughDialog}
         currentFilter={filter}
         onFilterChange={setFilter}
         selectedLabelId={selectedLabelId}
@@ -355,7 +354,7 @@ export default function HomePage() {
       )}
 
       <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
-        <AlertDialogContent className="rounded-lg bg-card">
+        <AlertDialogContent className="rounded-xl bg-card sm:max-w-xl">
           <SrAlertDialogHeader>
             <SrAlertDialogTitle>Move Task to Trash?</SrAlertDialogTitle>
             <AlertDialogDesc>
@@ -373,3 +372,4 @@ export default function HomePage() {
     </>
   );
 }
+
