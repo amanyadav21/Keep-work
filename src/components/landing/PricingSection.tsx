@@ -57,7 +57,8 @@ const PricingCard = ({
       className={cn(
         "w-full mt-auto",
         isPopular && "bg-primary text-primary-foreground hover:bg-primary/90", 
-        !isPopular && buttonVariant === 'default' && "bg-muted hover:bg-muted/80 text-foreground", 
+        !isPopular && buttonVariant === 'outline' && "border-primary text-primary hover:bg-primary/10", // Updated for outline button
+        !isPopular && buttonVariant === 'default' && "bg-muted hover:bg-muted/80 text-foreground"
       )}
     >
       <Link href={actionLink}>{buttonText}</Link>
@@ -84,7 +85,7 @@ export default function PricingSection() {
             priceDetails="For individuals getting started."
             features={["Up to 3 active projects", "Basic task management", "Email reminders", "Limited AI Assistant"]}
             buttonText="Get Started"
-            buttonVariant="default" 
+            buttonVariant="outline" 
           />
           <PricingCard
             planName="Pro"

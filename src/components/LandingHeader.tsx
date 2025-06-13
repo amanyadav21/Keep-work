@@ -27,10 +27,9 @@ export function LandingHeader() {
   return (
     <header className={cn(
       "sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-      "border-b border-border/40", // Mobile: full-width with bottom border
-      "sm:border-b-0 sm:max-w-6xl sm:mx-auto sm:mt-4 sm:rounded-full sm:border sm:border-border/60 sm:shadow-xl" // Desktop: floating pill
+      "border-b border-border/40" // Always full-width with bottom border
     )}>
-      <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6">
+      <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6 max-w-7xl mx-auto"> {/* Added max-w-7xl and mx-auto */}
         <Link href="/" className="flex items-center group">
           <span className="font-bold text-2xl text-foreground group-hover:text-foreground/90 transition-colors">Upnext</span>
         </Link>

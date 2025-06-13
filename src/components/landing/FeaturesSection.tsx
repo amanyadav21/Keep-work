@@ -61,9 +61,9 @@ export default function FeaturesSection() {
             icon={CalendarClock}
             title="Deadline Tracking"
             description="Never miss a due date. Get notified about upcoming deadlines. Sync with your calendar for a seamless overview."
-            className="md:col-span-2 lg:col-span-2 bg-accent text-accent-foreground"
-            iconContainerClassName="bg-accent-foreground/20 dark:bg-accent-foreground/10 group-hover/bentoitem:bg-accent-foreground/30"
-            iconClassName="text-accent-foreground"
+            className="md:col-span-2 lg:col-span-2 bg-card text-card-foreground"
+            iconContainerClassName="bg-primary/10 dark:bg-primary/15 group-hover/bentoitem:bg-primary/20"
+            iconClassName="text-primary"
           />
           <BentoGridItem
             icon={Zap}
