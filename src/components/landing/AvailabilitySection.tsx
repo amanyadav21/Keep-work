@@ -37,7 +37,7 @@ const platformDetails = [
   { name: 'Chrome', icon: BrowserIcon },
   { name: 'Firefox', icon: BrowserIcon },
   { name: 'Apple Watch', icon: Watch },
-  { name: 'Wear OS', icon: Watch },
+  { name: 'Wear OS', icon: Watch }, // Changed "Huawei" to "Wear OS" for broader smartwatch representation
 ];
 
 export default function AvailabilitySection() {
@@ -60,10 +60,12 @@ export default function AvailabilitySection() {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center">
         <div
+          id="availability-circle"
           className={cn(
-            "relative w-[320px] h-[320px] xs:w-[380px] xs:h-[380px] sm:w-[500px] sm:h-[500px] md:w-[600px] md:h-[600px] lg:w-[680px] lg:h-[680px]", // Responsive sizing for the circle
+            "relative w-[360px] h-[360px] xs:w-[420px] xs:h-[420px] sm:w-[560px] sm:h-[560px] md:w-[680px] md:h-[680px] lg:w-[760px] lg:h-[760px]", 
             "rounded-full flex flex-col items-center justify-center text-center p-6 md:p-10",
-            "shadow-2xl transition-all duration-300 ease-out"
+            "shadow-2xl transition-all duration-300 ease-out hover:scale-[1.01]",
+            "hover:shadow-[0_20px_50px_-15px_rgba(76,29,149,0.4)] dark:hover:shadow-[0_20px_50px_-15px_rgba(120,80,200,0.3)]"
           )}
           style={{
             backgroundImage: 'radial-gradient(circle at center, hsl(255, 70%, 70%), hsl(265, 80%, 58%))'
@@ -126,15 +128,13 @@ export default function AvailabilitySection() {
             transform: scale(1.05);
           }
         }
-        /* Add xs breakpoint if not already defined in Tailwind config, or use Tailwind's default sm for this size */
-        @media (min-width: 480px) { /* Example for 'xs', adjust as needed */
-          .xs\\:w-\\[380px\\] { width: 380px; }
-          .xs\\:h-\\[380px\\] { height: 380px; }
-          .xs\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        /* Custom 'xs' breakpoint styles for Tailwind JIT */
+        @media (min-width: 480px) { 
+          .xs\\:w-\\[420px\\] { width: 420px !important; } /* Use !important if needed to override base */
+          .xs\\:h-\\[420px\\] { height: 420px !important; }
+          .xs\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
         }
       `}</style>
     </section>
   );
 }
-
-    
