@@ -47,7 +47,7 @@ const PricingCard = ({
     <p className={cn("text-sm mb-4", isPopular ? "text-primary-foreground/80" : "text-muted-foreground")}>{priceDetails}</p>
     <div className="mb-6">
       <span className={cn("text-5xl font-bold", isPopular ? "text-primary-foreground" : "text-foreground")}>{price}</span>
-      <span className={cn(isPopular ? "text-primary-foreground/80" : "text-muted-foreground")}>/month</span>
+      { price !== "$0" && <span className={cn(isPopular ? "text-primary-foreground/80" : "text-muted-foreground")}>/month</span>}
     </div>
     <ul className={cn(
         "space-y-3 mb-8 flex-grow",
@@ -63,12 +63,12 @@ const PricingCard = ({
     <Button
       asChild
       size="lg"
-      variant={isPopular ? 'default' : buttonVariant} // For popular, use its specific style below
+      variant={isPopular ? 'default' : buttonVariant} 
       className={cn(
         "w-full mt-auto font-semibold group",
         isPopular && "bg-accent text-accent-foreground hover:bg-accent/90", 
         !isPopular && buttonVariant === 'outline' && "border-primary text-primary hover:bg-primary/10",
-        !isPopular && buttonVariant === 'default' && "bg-primary text-primary-foreground hover:bg-primary/90" // Standard card button, dark
+        !isPopular && buttonVariant === 'default' && "bg-primary text-primary-foreground hover:bg-primary/90"
       )}
     >
       <Link href={actionLink}>
@@ -80,28 +80,34 @@ const PricingCard = ({
 );
 
 export default function PricingSection() {
+  const freeFeatures = [
+    "Basic Task Management",
+    "Up to 3 Projects",
+    "Limited AI Assistant Usage",
+    "Community Support",
+  ];
+
   const professionalFeatures = [
-    "All Basic Tasks",
-    "Up to 5 Projects",
+    "All Free Features",
+    "Up to 10 Projects",
+    "Standard AI Assistant Access",
     "Email Reminders",
-    "Basic AI Assistant",
-    "Standard Support"
+    "Priority Community Support"
   ];
 
   const unlimitedFeatures = [
-    "Unlimited Tasks",
-    "Unlimited Projects",
+    "Unlimited Tasks & Projects",
     "Full AI Assistant Access",
     "Calendar Integration",
     "Focus Mode",
     "Progress Analytics",
-    "Priority Support",
+    "Priority Email Support",
     "Collaboration (Soon)"
   ];
 
   return (
     <section id="pricing" className="py-16 md:py-24 bg-background border-b border-border">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground !leading-tight">
             Unlock Your Potential with <br /> Clear, Simple Pricing.
@@ -110,14 +116,23 @@ export default function PricingSection() {
             Choose the plan that best fits your academic journey with Upnext.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          <PricingCard
+            planName="Free"
+            price="$0"
+            priceDetails="For individuals getting started."
+            features={freeFeatures}
+            buttonText="Get Started Free"
+            buttonVariant="outline"
+            actionLink="/signup?plan=free"
+          />
           <PricingCard
             planName="Professional"
             price="$2"
             priceDetails="Ideal for individual students."
             features={professionalFeatures}
-            buttonText="Start now"
-            buttonVariant="default" // Will be dark (primary bg)
+            buttonText="Start Professional"
+            buttonVariant="default"
             actionLink="/signup?plan=professional"
           />
           <PricingCard
@@ -126,10 +141,10 @@ export default function PricingSection() {
             priceDetails="For students seeking maximum productivity."
             features={unlimitedFeatures}
             featureLayout="two-columns"
-            buttonText="Start now"
-            isPopular={true} // This will trigger teal button and dark card
+            buttonText="Go Unlimited"
+            isPopular={true} 
             actionLink="/signup?plan=unlimited"
-            className="pt-10" // Extra padding top for the popular badge
+            className="lg:pt-10" 
           />
         </div>
       </div>
