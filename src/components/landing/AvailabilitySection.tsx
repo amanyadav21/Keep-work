@@ -65,7 +65,7 @@ export default function AvailabilitySection() {
             "relative w-[380px] h-[380px] xs:w-[500px] xs:h-[500px] sm:w-[640px] sm:h-[640px] md:w-[780px] md:h-[780px] lg:w-[880px] lg:h-[880px]", 
             "rounded-full flex flex-col items-center justify-between text-center p-6 sm:p-8 md:p-10",
             "shadow-2xl transition-all duration-300 ease-out hover:scale-[1.01]",
-            "hover:shadow-[0_20px_50px_-15px_rgba(76,29,149,0.4)] dark:hover:shadow-[0_20px_50px_-15px_rgba(120,80,200,0.3)]"
+            "hover:shadow-[0_20px_50px_-15px_rgba(25,76,229,0.3)] dark:hover:shadow-[0_20px_50px_-15px_rgba(34,130,242,0.2)]"
           )}
           style={{
             backgroundImage: 'radial-gradient(circle at 20% 20%, hsl(250, 80%, 80%), hsl(260, 85%, 65%), hsl(270, 75%, 50%))'
@@ -79,15 +79,18 @@ export default function AvailabilitySection() {
             Anywhere, anytime
           </h2>
 
-          <p className="text-sm xs:text-base md:text-lg text-purple-100 dark:text-purple-200 mb-6 xs:mb-8 md:mb-10">
+          <p className="text-sm xs:text-base md:text-lg text-purple-100 dark:text-purple-200 mb-6 xs:mb-8 md:mb-10 lg:mb-12">
             Seamlessly available on all your devices:
           </p>
 
-          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 md:gap-x-6 md:gap-y-5 mb-8 xs:mb-10 md:mb-12 max-w-[280px] xs:max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
+          <div className={cn(
+            "grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 md:gap-x-6 md:gap-y-5 mb-8 xs:mb-10 md:mb-12 lg:mb-16",
+            "max-w-[280px] xs:max-w-xs sm:max-w-sm md:max-w-md lg:max-w-xl"
+          )}>
             {platformDetails.map((platform) => (
               <div key={platform.name} className="flex flex-col items-center group hover:scale-110 transition-transform duration-150 ease-in-out">
-                <platform.icon className="h-6 w-6 md:h-7 md:w-7 text-purple-100 dark:text-purple-200 group-hover:text-white transition-colors" />
-                <span className="text-xs text-purple-200 dark:text-purple-300 mt-1.5 group-hover:text-white transition-colors">
+                <platform.icon className={cn("h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-purple-100 dark:text-purple-200 group-hover:text-white transition-colors")} />
+                <span className={cn("text-xs lg:text-sm text-purple-200 dark:text-purple-300 mt-1.5 group-hover:text-white transition-colors")}>
                   {platform.name}
                 </span>
               </div>
@@ -130,15 +133,15 @@ export default function AvailabilitySection() {
         }
         /* Custom 'xs' breakpoint styles for Tailwind JIT */
          @media (min-width: 480px) { 
-          .xs\\:w-\\[500px\\] { width: 500px !important; }
-          .xs\\:h-\\[500px\\] { height: 500px !important; }
+          .xs\\:w-\\[500px\\] { width: 500px !important; } /* Updated from 480px to 500px */
+          .xs\\:h-\\[500px\\] { height: 500px !important; } /* Updated from 480px to 500px */
           .xs\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-          .xs\\:text-4xl { font-size: 2.25rem !important; line-height: 2.5rem !important; } /* Tailwind text-4xl */
-          .xs\\:text-base { font-size: 1rem !important; line-height: 1.5rem !important; } /* Tailwind text-base */
-          .xs\\:mb-8 { margin-bottom: 2rem !important; } /* Tailwind mb-8 */
-          .xs\\:mb-10 { margin-bottom: 2.5rem !important; } /* Tailwind mb-10 */
-          .xs\\:mb-12 { margin-bottom: 3rem !important; } /* Tailwind mb-12 */
-          .xs\\:max-w-xs { max-width: 20rem !important; } /* Tailwind max-w-xs */
+          .xs\\:text-4xl { font-size: 2.25rem !important; line-height: 2.5rem !important; }
+          .xs\\:text-base { font-size: 1rem !important; line-height: 1.5rem !important; }
+          .xs\\:mb-8 { margin-bottom: 2rem !important; }
+          .xs\\:mb-10 { margin-bottom: 2.5rem !important; }
+          .xs\\:mb-12 { margin-bottom: 3rem !important; }
+          .xs\\:max-w-xs { max-width: 20rem !important; }
         }
       `}</style>
     </section>
