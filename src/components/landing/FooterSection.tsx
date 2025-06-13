@@ -9,9 +9,10 @@ export default function FooterSection() {
   return (
     <footer className="py-12 md:py-16 bg-card border-t border-border text-muted-foreground">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-10 items-start">
           
-          <div className="sm:col-span-2 lg:col-span-1 flex flex-col items-center sm:items-start text-center sm:text-left">
+          {/* Brand Column */}
+          <div className="sm:col-span-2 md:col-span-1 flex flex-col items-center sm:items-start text-center sm:text-left">
             <Link href="/" className="flex items-center space-x-2 mb-4 group">
               <span className="font-bold text-2xl text-foreground group-hover:text-primary transition-colors">Upnext</span>
             </Link>
@@ -20,7 +21,8 @@ export default function FooterSection() {
             </p>
           </div>
 
-          <div>
+          {/* Product Links */}
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
             <h5 className="font-semibold text-foreground mb-4 uppercase tracking-wider text-sm">Product</h5>
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/#features" className="hover:text-primary transition-colors">Features</Link></li>
@@ -29,7 +31,8 @@ export default function FooterSection() {
             </ul>
           </div>
 
-          <div>
+          {/* Resources Links */}
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
             <h5 className="font-semibold text-foreground mb-4 uppercase tracking-wider text-sm">Resources</h5>
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
@@ -39,13 +42,14 @@ export default function FooterSection() {
             </ul>
           </div>
           
-          <div>
+          {/* Connect With Us */}
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
              <h5 className="font-semibold text-foreground mb-4 uppercase tracking-wider text-sm">Connect With Us</h5>
             <div className="flex space-x-4 mb-4">
-              <Link href="#" aria-label="Twitter" className="hover:text-primary transition-colors"><Twitter className="h-5 w-5" /></Link>
-              <Link href="#" aria-label="Facebook" className="hover:text-primary transition-colors"><Facebook className="h-5 w-5" /></Link>
-              <Link href="#" aria-label="Instagram" className="hover:text-primary transition-colors"><Instagram className="h-5 w-5" /></Link>
-              <Link href="#" aria-label="LinkedIn" className="hover:text-primary transition-colors"><Linkedin className="h-5 w-5" /></Link>
+              <Link href="#" aria-label="Twitter" className="text-muted-foreground hover:text-primary transition-colors"><Twitter className="h-5 w-5" /></Link>
+              <Link href="#" aria-label="Facebook" className="text-muted-foreground hover:text-primary transition-colors"><Facebook className="h-5 w-5" /></Link>
+              <Link href="#" aria-label="Instagram" className="text-muted-foreground hover:text-primary transition-colors"><Instagram className="h-5 w-5" /></Link>
+              <Link href="#" aria-label="LinkedIn" className="text-muted-foreground hover:text-primary transition-colors"><Linkedin className="h-5 w-5" /></Link>
             </div>
             <p className="text-xs">Stay updated with our latest news and features.</p>
           </div>
