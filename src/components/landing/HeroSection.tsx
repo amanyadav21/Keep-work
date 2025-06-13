@@ -15,11 +15,11 @@ const HeroSection = React.forwardRef<HTMLElement>((props, ref) => {
       <div className="absolute inset-0 -z-10 overflow-hidden">
         {/* Blurred radial gradients for an "aurora" effect */}
         <div
-          className="absolute -top-1/3 -left-1/4 w-3/4 h-3/4 md:w-1/2 md:h-1/2 transform rotate-12 bg-primary/10 dark:bg-primary/5 rounded-full filter blur-3xl opacity-50 dark:opacity-30"
+          className="absolute -top-1/3 -left-1/4 w-3/4 h-3/4 md:w-1/2 md:h-1/2 transform rotate-12 bg-primary/10 dark:bg-primary/5 rounded-full filter blur-3xl opacity-70 dark:opacity-50"
           aria-hidden="true"
         />
         <div
-          className="absolute -bottom-1/3 -right-1/4 w-4/5 h-4/5 md:w-3/5 md:h-3/5 transform -rotate-12 bg-accent/10 dark:bg-accent/5 rounded-full filter blur-3xl opacity-40 dark:opacity-25"
+          className="absolute -bottom-1/3 -right-1/4 w-4/5 h-4/5 md:w-3/5 md:h-3/5 transform -rotate-12 bg-accent/10 dark:bg-accent/5 rounded-full filter blur-3xl opacity-60 dark:opacity-40"
           aria-hidden="true"
         />
         
@@ -46,7 +46,7 @@ const HeroSection = React.forwardRef<HTMLElement>((props, ref) => {
           Upnext is your intelligent task management hub, meticulously designed for students. Streamline your workflow, conquer deadlines, and unlock your full academic potential.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild size="lg" className="text-base py-3.5 px-8 shadow-lg hover:shadow-primary/30 transition-all duration-300 transform hover:-translate-y-0.5 group">
+          <Button asChild size="lg" className="text-base py-3.5 px-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 group">
             <Link href="/signup">
               Get Started for Free
               <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -67,3 +67,4 @@ const HeroSection = React.forwardRef<HTMLElement>((props, ref) => {
 HeroSection.displayName = "HeroSection"; // Setting displayName for the forwarded ref component
 
 export default HeroSection;
+
