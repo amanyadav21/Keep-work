@@ -7,7 +7,7 @@ import { LandingHeader } from '@/components/LandingHeader';
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import PricingSection from '@/components/landing/PricingSection';
-// CtaSection import removed
+import AvailabilitySection from '@/components/landing/AvailabilitySection'; // Import the new component
 import FooterSection from '@/components/landing/FooterSection';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -42,7 +42,7 @@ export function LandingPage() {
         <HeroSection ref={heroRef} /> {/* Pass ref to HeroSection */}
         <FeaturesSection />
         <PricingSection />
-        {/* <CtaSection /> removed */}
+        <AvailabilitySection /> {/* Add the new section here */}
         <FooterSection />
       </div>
 
@@ -67,4 +67,3 @@ export function LandingPage() {
     </>
   );
 }
-
