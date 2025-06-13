@@ -58,7 +58,7 @@ export function LandingPage() {
         <Button
           asChild
           size="lg" 
-          className="rounded-full shadow-lg flex items-center gap-2 text-sm md:text-base" 
+          className="rounded-full shadow-lg flex items-center gap-2 text-base md:text-lg" 
         >
           <Link href="/signup">
             Get Started. It's FREE
@@ -69,3 +69,4 @@ export function LandingPage() {
     </>
   );
 }
+
