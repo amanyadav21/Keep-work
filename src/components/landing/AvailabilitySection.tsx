@@ -62,7 +62,7 @@ export default function AvailabilitySection() {
           className={cn(
             "relative w-[380px] h-[380px] xs:w-[500px] xs:h-[500px] sm:w-[640px] sm:h-[640px] md:w-[780px] md:h-[780px] lg:w-[880px] lg:h-[880px]", 
             "rounded-full flex flex-col items-center justify-between text-center p-6 sm:p-8 md:p-10 lg:p-12",
-            "shadow-2xl transition-all duration-300 ease-out hover:scale-[1.01]",
+            "shadow-xl transition-all duration-300 ease-out hover:scale-[1.01]",
             "hover:shadow-[0_20px_50px_-15px_rgba(160,120,240,0.3)] dark:hover:shadow-[0_20px_50px_-15px_rgba(180,140,255,0.25)]"
           )}
           style={{
@@ -73,12 +73,12 @@ export default function AvailabilitySection() {
             Everything organized<br />Everyone connected,<br />Anywhere, anytime
           </h2>
 
-          <p className="text-sm xs:text-base md:text-lg lg:text-xl text-purple-50 dark:text-purple-100 mb-6 xs:mb-8 md:mb-10 lg:mb-12">
+          <p className="text-sm xs:text-base md:text-lg lg:text-xl text-purple-50 dark:text-purple-100 mb-6 xs:mb-8 md:mb-10 lg:mb-12 lg:mb-8">
             Seamlessly available on all your devices:
           </p>
 
           <div className={cn(
-            "grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 md:gap-x-6 md:gap-y-5 mb-8 xs:mb-10 md:mb-12 lg:mb-12",
+            "grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 md:gap-x-6 md:gap-y-5 mb-8 xs:mb-10 md:mb-12 lg:mb-16",
             "max-w-xs xs:max-w-xs sm:max-w-sm md:max-w-md lg:max-w-xl"
           )}>
             {platformDetails.map((platform) => (
@@ -91,18 +91,7 @@ export default function AvailabilitySection() {
             ))}
           </div>
 
-          <Button 
-            asChild 
-            size="lg"
-            className={cn(
-              "bg-white text-purple-700 hover:bg-gray-100 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 font-semibold rounded-full",
-              "py-3 px-8 text-sm md:text-base lg:text-lg lg:py-3.5 lg:px-10"
-            )}
-          >
-            <Link href="/signup">
-              Get Started Free
-            </Link>
-          </Button>
+          {/* Button removed from here */}
         </div>
       </div>
       <style jsx global>{`
@@ -143,4 +132,3 @@ export default function AvailabilitySection() {
     </section>
   );
 }
-
