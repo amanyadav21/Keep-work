@@ -55,8 +55,8 @@ export function LandingPage() {
       >
         <Button
           asChild
-          size="lg" // Using 'lg' for a slightly larger button as in hero
-          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 text-sm md:text-base"
+          size="lg" 
+          className="rounded-full shadow-lg flex items-center gap-2 text-sm md:text-base" // Using theme's primary color by default
         >
           <Link href="/signup">
             Get Started. It's FREE
