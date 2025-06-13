@@ -7,7 +7,7 @@ import { LandingHeader } from '@/components/LandingHeader';
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import PricingSection from '@/components/landing/PricingSection';
-import CtaSection from '@/components/landing/CtaSection';
+// CtaSection import removed
 import FooterSection from '@/components/landing/FooterSection';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -42,7 +42,7 @@ export function LandingPage() {
         <HeroSection ref={heroRef} /> {/* Pass ref to HeroSection */}
         <FeaturesSection />
         <PricingSection />
-        <CtaSection />
+        {/* <CtaSection /> removed */}
         <FooterSection />
       </div>
 
@@ -56,7 +56,7 @@ export function LandingPage() {
         <Button
           asChild
           size="lg" 
-          className="rounded-full shadow-lg flex items-center gap-2 text-sm md:text-base" // Using theme's primary color by default
+          className="rounded-full shadow-lg flex items-center gap-2 text-sm md:text-base" 
         >
           <Link href="/signup">
             Get Started. It's FREE
@@ -67,3 +67,4 @@ export function LandingPage() {
     </>
   );
 }
+
