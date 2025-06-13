@@ -37,7 +37,7 @@ const platformDetails = [
   { name: 'Chrome', icon: BrowserIcon },
   { name: 'Firefox', icon: BrowserIcon },
   { name: 'Apple Watch', icon: Watch },
-  { name: 'Wear OS', icon: Watch }, // Changed "Huawei" to "Wear OS" for broader smartwatch representation
+  { name: 'Wear OS', icon: Watch },
 ];
 
 export default function AvailabilitySection() {
@@ -62,21 +62,21 @@ export default function AvailabilitySection() {
         <div
           id="availability-circle"
           className={cn(
-            "relative w-[360px] h-[360px] xs:w-[420px] xs:h-[420px] sm:w-[560px] sm:h-[560px] md:w-[680px] md:h-[680px] lg:w-[760px] lg:h-[760px]", 
-            "rounded-full flex flex-col items-center justify-center text-center p-6 md:p-10",
+            "relative w-[360px] h-[360px] xs:w-[480px] xs:h-[480px] sm:w-[600px] sm:h-[600px] md:w-[720px] md:h-[720px] lg:w-[800px] lg:h-[800px]", 
+            "rounded-full flex flex-col items-center justify-center text-center p-6",
             "shadow-2xl transition-all duration-300 ease-out hover:scale-[1.01]",
             "hover:shadow-[0_20px_50px_-15px_rgba(76,29,149,0.4)] dark:hover:shadow-[0_20px_50px_-15px_rgba(120,80,200,0.3)]"
           )}
           style={{
-            backgroundImage: 'radial-gradient(circle at center, hsl(255, 70%, 70%), hsl(265, 80%, 58%))'
+            backgroundImage: 'radial-gradient(circle at 20% 20%, hsl(250, 80%, 80%), hsl(260, 85%, 65%), hsl(270, 75%, 50%))'
           }}
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white !leading-tight mb-3 md:mb-5">
-            Organize anything
+          Everything organized
             <br />
-            with anyone,
+            Everyone connected,
             <br />
-            anywhere
+            Anywhere, anytime
           </h2>
 
           <p className="text-sm md:text-base text-purple-100 dark:text-purple-200 mb-6 md:mb-8">
@@ -85,7 +85,7 @@ export default function AvailabilitySection() {
 
           <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 md:gap-x-6 md:gap-y-5 mb-8 md:mb-10 max-w-sm sm:max-w-md md:max-w-lg">
             {platformDetails.map((platform) => (
-              <div key={platform.name} className="flex flex-col items-center group">
+              <div key={platform.name} className="flex flex-col items-center group hover:scale-110 transition-transform duration-150 ease-in-out">
                 <platform.icon className="h-6 w-6 md:h-7 md:w-7 text-purple-100 dark:text-purple-200 group-hover:text-white transition-colors" />
                 <span className="text-xs text-purple-200 dark:text-purple-300 mt-1.5 group-hover:text-white transition-colors">
                   {platform.name}
@@ -97,7 +97,7 @@ export default function AvailabilitySection() {
           <Button 
             asChild 
             size="lg"
-            className="bg-white text-purple-700 hover:bg-gray-100 shadow-lg font-semibold py-3 px-8 rounded-full text-sm md:text-base"
+            className="bg-white text-purple-700 hover:bg-gray-100 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 font-semibold py-3 px-8 rounded-full text-sm md:text-base"
           >
             <Link href="/signup">
               Get Started Free
@@ -129,9 +129,9 @@ export default function AvailabilitySection() {
           }
         }
         /* Custom 'xs' breakpoint styles for Tailwind JIT */
-        @media (min-width: 480px) { 
-          .xs\\:w-\\[420px\\] { width: 420px !important; } /* Use !important if needed to override base */
-          .xs\\:h-\\[420px\\] { height: 420px !important; }
+         @media (min-width: 480px) { 
+          .xs\\:w-\\[480px\\] { width: 480px !important; }
+          .xs\\:h-\\[480px\\] { height: 480px !important; }
           .xs\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
         }
       `}</style>
