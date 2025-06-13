@@ -222,8 +222,8 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
       });
       toast({ title: "Label Created", description: `Label "${newLabelName.trim()}" added.` });
       setNewLabelName("");
-      setIsCreateLabelDialogOpen(false);
-      if (!isLabelsExpanded) setIsLabelsExpanded(true); 
+      setIsCreateLabelDialogOpen(false); // Close dialog on success
+      if (!isLabelsExpanded) setIsLabelsExpanded(true); // Expand labels section if it was collapsed
     } catch (error: any) {
       console.error("Error creating label:", error);
       toast({ title: "Error Creating Label", description: error.message, variant: "destructive" });
@@ -254,7 +254,7 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
       const labelDocRef = doc(db, `users/${user.uid}/labels`, labelToEdit.id);
       await updateDoc(labelDocRef, { name: editedLabelName.trim() }); // Color is not updated here, only name
       toast({ title: "Label Updated", description: `Label renamed to "${editedLabelName.trim()}".` });
-      setIsEditLabelDialogOpen(false);
+      setIsEditLabelDialogOpen(false); // Close dialog on success
       setLabelToEdit(null);
     } catch (error: any) {
       console.error("Error updating label:", error);
@@ -287,7 +287,7 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
       toast({ title: "Label Deleted", description: `Label "${labelToDelete.name}" deleted and removed from tasks.` });
 
       if (selectedLabelId === labelToDelete.id) {
-        onLabelSelect(null);
+        onLabelSelect(null); // Clear filter if the deleted label was selected
       }
       setIsDeleteLabelDialogOpen(false);
       setLabelToDelete(null);
@@ -777,4 +777,3 @@ export function AppSidebar({ currentFilter, onFilterChange, selectedLabelId, onL
     </Sidebar>
   );
 }
-

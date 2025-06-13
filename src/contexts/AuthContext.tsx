@@ -25,7 +25,6 @@ interface AuthContextType {
   signUp: (email: string, pass: string) => Promise<AuthResult>;
   logIn: (email: string, pass: string) => Promise<AuthResult>;
   logOut: () => Promise<void>;
-  // signInWithGoogle removed
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -75,14 +74,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { user: firebaseUser, error: null };
     } catch (error) {
       const authError = error as AuthError;
-      console.error("Signup error:", authError);
-      let description = "An unexpected error occurred during signup. Please try again.";
-      if (authError.code === 'auth/email-already-in-use') {
-        description = "This email address is already in use. Please try logging in or use a different email.";
-      } else if (authError.code === 'auth/weak-password') {
-        description = "The password is too weak. Please choose a stronger password.";
-      } else if (authError.message) {
-        description = authError.message;
+      console.error("Signup error:", authError.code, authError.message);
+      let description: string;
+      switch (authError.code) {
+        case 'auth/email-already-in-use':
+          description = "This email address is already in use. Please try logging in or use a different email.";
+          break;
+        case 'auth/weak-password':
+          description = "The password is too weak. Please choose a stronger password (at least 6 characters).";
+          break;
+        case 'auth/invalid-email':
+          description = "The email address is not valid. Please enter a valid email.";
+          break;
+        default:
+          description = "An unexpected error occurred during signup. Please try again or contact support if the issue persists.";
       }
       return { user: null, error: description };
     } finally {
@@ -112,22 +117,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { user: firebaseUser, error: null };
     } catch (error) {
       const authError = error as AuthError;
-      console.error("Login error:", authError);
-      let description = "An unexpected error occurred during login. Please try again.";
-      if (authError.code === 'auth/invalid-credential' || authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
-        description = "Invalid email or password. Please check your credentials and try again.";
-      } else if (authError.code === 'auth/user-disabled') {
-        description = "This user account has been disabled.";
-      } else if (authError.message) {
-        description = authError.message;
+      console.error("Login error:", authError.code, authError.message);
+      let description: string;
+      switch (authError.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          description = "Invalid email or password. Please check your credentials and try again.";
+          break;
+        case 'auth/user-disabled':
+          description = "This user account has been disabled. Please contact support.";
+          break;
+        case 'auth/too-many-requests':
+          description = "Access to this account has been temporarily disabled due to many failed login attempts. You can try again later or reset your password.";
+          break;
+        default:
+          description = "An unexpected error occurred during login. Please try again or contact support if the issue persists.";
       }
       return { user: null, error: description };
     } finally {
       setLoading(false);
     }
   };
-
-  // signInWithGoogle function removed
 
   const logOut = async () => {
     setLoading(true);
@@ -137,8 +148,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.push('/login');
     } catch (error) {
       const authError = error as AuthError;
-      console.error("Logout error:", authError);
-      toast({ title: "Logout Failed", description: authError.message || "An unexpected error occurred.", variant: "destructive" });
+      console.error("Logout error:", authError.code, authError.message);
+      toast({ title: "Logout Failed", description: authError.message || "An unexpected error occurred. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -150,7 +161,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     logIn,
     logOut,
-    // signInWithGoogle removed from value
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
