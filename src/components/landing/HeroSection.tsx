@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import React from 'react'; // Import React
 
-export default function HeroSection() {
+const HeroSection = React.forwardRef<HTMLElement>((props, ref) => {
   return (
-    <section className="relative py-24 md:py-36 lg:py-48 px-4 text-center overflow-hidden">
+    <section ref={ref} className="relative py-24 md:py-36 lg:py-48 px-4 text-center overflow-hidden">
       {/* Enhanced Background Elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         {/* Blurred radial gradients for an "aurora" effect */}
@@ -61,4 +62,8 @@ export default function HeroSection() {
       </div>
     </section>
   );
-}
+});
+
+HeroSection.displayName = "HeroSection"; // Setting displayName for the forwarded ref component
+
+export default HeroSection;
