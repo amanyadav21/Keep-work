@@ -26,10 +26,15 @@ export function LandingHeader() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-      "border-b border-border/40" // Always full-width with bottom border
+      "sticky top-0 z-50 w-full py-3", // Outer container for positioning and vertical padding
     )}>
-      <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6 max-w-7xl mx-auto"> {/* Added max-w-7xl and mx-auto */}
+      <div className={cn(
+        "flex h-14 items-center justify-between px-4 sm:px-6",
+        "max-w-6xl mx-auto", // Max width and center the actual bar
+        "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80", // Background for the bar
+        "rounded-xl shadow-lg", // Rounded corners and shadow for the bar
+        "border border-border/40" // Subtle border for the bar
+      )}>
         <Link href="/" className="flex items-center group">
           <span className="font-bold text-2xl text-foreground group-hover:text-foreground/90 transition-colors">Upnext</span>
         </Link>
@@ -113,3 +118,5 @@ export function LandingHeader() {
     </header>
   );
 }
+
+    
