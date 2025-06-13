@@ -62,8 +62,8 @@ export default function AvailabilitySection() {
         <div
           id="availability-circle"
           className={cn(
-            "relative w-[360px] h-[360px] xs:w-[480px] xs:h-[480px] sm:w-[600px] sm:h-[600px] md:w-[720px] md:h-[720px] lg:w-[800px] lg:h-[800px]", 
-            "rounded-full flex flex-col items-center justify-center text-center p-6",
+            "relative w-[380px] h-[380px] xs:w-[500px] xs:h-[500px] sm:w-[640px] sm:h-[640px] md:w-[780px] md:h-[780px] lg:w-[880px] lg:h-[880px]", 
+            "rounded-full flex flex-col items-center justify-between text-center p-6 sm:p-8 md:p-10",
             "shadow-2xl transition-all duration-300 ease-out hover:scale-[1.01]",
             "hover:shadow-[0_20px_50px_-15px_rgba(76,29,149,0.4)] dark:hover:shadow-[0_20px_50px_-15px_rgba(120,80,200,0.3)]"
           )}
@@ -71,19 +71,19 @@ export default function AvailabilitySection() {
             backgroundImage: 'radial-gradient(circle at 20% 20%, hsl(250, 80%, 80%), hsl(260, 85%, 65%), hsl(270, 75%, 50%))'
           }}
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white !leading-tight mb-3 md:mb-5">
-          Everything organized
+          <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white !leading-tight">
+            Everything organized
             <br />
             Everyone connected,
             <br />
             Anywhere, anytime
           </h2>
 
-          <p className="text-sm md:text-base text-purple-100 dark:text-purple-200 mb-6 md:mb-8">
+          <p className="text-sm xs:text-base md:text-lg text-purple-100 dark:text-purple-200 mb-6 xs:mb-8 md:mb-10">
             Seamlessly available on all your devices:
           </p>
 
-          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 md:gap-x-6 md:gap-y-5 mb-8 md:mb-10 max-w-sm sm:max-w-md md:max-w-lg">
+          <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 gap-x-4 gap-y-3 sm:gap-x-5 sm:gap-y-4 md:gap-x-6 md:gap-y-5 mb-8 xs:mb-10 md:mb-12 max-w-[280px] xs:max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
             {platformDetails.map((platform) => (
               <div key={platform.name} className="flex flex-col items-center group hover:scale-110 transition-transform duration-150 ease-in-out">
                 <platform.icon className="h-6 w-6 md:h-7 md:w-7 text-purple-100 dark:text-purple-200 group-hover:text-white transition-colors" />
@@ -130,9 +130,15 @@ export default function AvailabilitySection() {
         }
         /* Custom 'xs' breakpoint styles for Tailwind JIT */
          @media (min-width: 480px) { 
-          .xs\\:w-\\[480px\\] { width: 480px !important; }
-          .xs\\:h-\\[480px\\] { height: 480px !important; }
+          .xs\\:w-\\[500px\\] { width: 500px !important; }
+          .xs\\:h-\\[500px\\] { height: 500px !important; }
           .xs\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+          .xs\\:text-4xl { font-size: 2.25rem !important; line-height: 2.5rem !important; } /* Tailwind text-4xl */
+          .xs\\:text-base { font-size: 1rem !important; line-height: 1.5rem !important; } /* Tailwind text-base */
+          .xs\\:mb-8 { margin-bottom: 2rem !important; } /* Tailwind mb-8 */
+          .xs\\:mb-10 { margin-bottom: 2.5rem !important; } /* Tailwind mb-10 */
+          .xs\\:mb-12 { margin-bottom: 3rem !important; } /* Tailwind mb-12 */
+          .xs\\:max-w-xs { max-width: 20rem !important; } /* Tailwind max-w-xs */
         }
       `}</style>
     </section>
