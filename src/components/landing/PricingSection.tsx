@@ -5,8 +5,21 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+interface PricingCardProps {
+  planName: string;
+  price: string;
+  priceDetails: string;
+  features: string[];
+  buttonText: string;
+  buttonVariant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
+  isPopular?: boolean;
+  actionLink?: string;
+  featureLayout?: 'single-column' | 'two-columns';
+  className?: string;
+}
 
 const PricingCard = ({
   planName,
@@ -16,93 +29,107 @@ const PricingCard = ({
   buttonText,
   buttonVariant = "default",
   isPopular = false,
-  actionLink = "/signup"
-}: {
-  planName: string;
-  price: string;
-  priceDetails: string;
-  features: string[];
-  buttonText: string;
-  buttonVariant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
-  isPopular?: boolean;
-  actionLink?: string;
-}) => (
+  actionLink = "/signup",
+  featureLayout = 'single-column',
+  className
+}: PricingCardProps) => (
   <div className={cn(
-    "bg-card text-card-foreground p-6 md:p-8 rounded-xl shadow-xl flex flex-col h-full relative border-2",
-    isPopular ? "border-primary scale-[1.03] shadow-primary/20" : "border-border"
+    "p-6 md:p-8 rounded-xl shadow-xl flex flex-col h-full relative border-2",
+    isPopular ? "bg-primary text-primary-foreground border-primary/50 scale-[1.02] shadow-primary/20" : "bg-card text-card-foreground border-border",
+    className
   )}>
     {isPopular && (
-      <div className="absolute top-0 right-4 -mt-3">
-        <Badge className="bg-accent text-accent-foreground px-3 py-1 text-xs font-bold uppercase tracking-wider">Popular</Badge>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-3.5">
+        <Badge className="bg-accent text-accent-foreground px-4 py-1.5 text-xs font-bold uppercase tracking-wider shadow-md">Most Popular</Badge>
       </div>
     )}
-    <h3 className="text-2xl font-semibold mb-1 text-foreground">{planName}</h3>
-    <p className="text-muted-foreground text-sm mb-4">{priceDetails}</p>
+    <h3 className={cn("text-2xl font-semibold mb-1", isPopular ? "text-primary-foreground" : "text-foreground")}>{planName}</h3>
+    <p className={cn("text-sm mb-4", isPopular ? "text-primary-foreground/80" : "text-muted-foreground")}>{priceDetails}</p>
     <div className="mb-6">
-      <span className="text-5xl font-bold text-foreground">{price}</span>
-      <span className="text-muted-foreground">/month</span>
+      <span className={cn("text-5xl font-bold", isPopular ? "text-primary-foreground" : "text-foreground")}>{price}</span>
+      <span className={cn(isPopular ? "text-primary-foreground/80" : "text-muted-foreground")}>/month</span>
     </div>
-    <ul className="space-y-3 mb-8 flex-grow">
+    <ul className={cn(
+        "space-y-3 mb-8 flex-grow",
+        featureLayout === 'two-columns' && "md:grid md:grid-cols-2 md:gap-x-6 md:space-y-0"
+        )}>
       {features.map((feature, index) => (
-        <li key={index} className="flex items-start">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-2.5 shrink-0 mt-0.5" />
-          <span className="text-sm text-muted-foreground">{feature}</span>
+        <li key={index} className={cn("flex items-start", featureLayout === 'two-columns' && index >= features.length / 2 && "mt-3 md:mt-0")}>
+          <CheckCircle className={cn("h-5 w-5 mr-2.5 shrink-0 mt-0.5", isPopular ? "text-accent" : "text-green-500")} />
+          <span className={cn("text-sm", isPopular ? "text-primary-foreground/90" : "text-muted-foreground")}>{feature}</span>
         </li>
       ))}
     </ul>
     <Button
       asChild
       size="lg"
-      variant={isPopular ? 'default' : buttonVariant}
+      variant={isPopular ? 'default' : buttonVariant} // For popular, use its specific style below
       className={cn(
-        "w-full mt-auto",
-        isPopular && "bg-primary text-primary-foreground hover:bg-primary/90", 
-        !isPopular && buttonVariant === 'outline' && "border-primary text-primary hover:bg-primary/10", // Updated for outline button
-        !isPopular && buttonVariant === 'default' && "bg-muted hover:bg-muted/80 text-foreground"
+        "w-full mt-auto font-semibold group",
+        isPopular && "bg-accent text-accent-foreground hover:bg-accent/90", 
+        !isPopular && buttonVariant === 'outline' && "border-primary text-primary hover:bg-primary/10",
+        !isPopular && buttonVariant === 'default' && "bg-primary text-primary-foreground hover:bg-primary/90" // Standard card button, dark
       )}
     >
-      <Link href={actionLink}>{buttonText}</Link>
+      <Link href={actionLink}>
+        {buttonText}
+        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+      </Link>
     </Button>
   </div>
 );
 
 export default function PricingSection() {
+  const professionalFeatures = [
+    "All Basic Tasks",
+    "Up to 5 Projects",
+    "Email Reminders",
+    "Basic AI Assistant",
+    "Standard Support"
+  ];
+
+  const unlimitedFeatures = [
+    "Unlimited Tasks",
+    "Unlimited Projects",
+    "Full AI Assistant Access",
+    "Calendar Integration",
+    "Focus Mode",
+    "Progress Analytics",
+    "Priority Support",
+    "Collaboration (Soon)"
+  ];
+
   return (
-    <section id="pricing" className="py-16 md:py-24 bg-muted/30 border-b border-border">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="pricing" className="py-16 md:py-24 bg-background border-b border-border">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold mb-3 text-foreground">
-            Simple, Transparent Pricing
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground !leading-tight">
+            Unlock Your Potential with <br /> Clear, Simple Pricing.
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Choose the plan that's right for your academic journey. No hidden fees, ever.
+            Choose the plan that best fits your academic journey with Upnext.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
           <PricingCard
-            planName="Basic"
-            price="Free"
-            priceDetails="For individuals getting started."
-            features={["Up to 3 active projects", "Basic task management", "Email reminders", "Limited AI Assistant"]}
-            buttonText="Get Started"
-            buttonVariant="outline" 
+            planName="Professional"
+            price="$2"
+            priceDetails="Ideal for individual students."
+            features={professionalFeatures}
+            buttonText="Start now"
+            buttonVariant="default" // Will be dark (primary bg)
+            actionLink="/signup?plan=professional"
           />
           <PricingCard
-            planName="Pro"
-            price="$5"
-            priceDetails="For students needing more power."
-            features={["Unlimited projects", "Advanced task management", "Full AI Assistant access", "Focus mode & analytics", "Priority support", "Calendar integration"]}
-            buttonText="Choose Pro"
-            isPopular={true}
-          />
-          <PricingCard
-            planName="Team"
-            price="$15"
-            priceDetails="For study groups and clubs."
-            features={["All Pro features", "Shared workspaces", "Team collaboration tools", "Admin controls", "Dedicated AI support"]}
-            buttonText="Contact Sales"
-            buttonVariant="outline"
-            actionLink="/contact-sales" 
+            planName="Unlimited"
+            price="$7"
+            priceDetails="For students seeking maximum productivity."
+            features={unlimitedFeatures}
+            featureLayout="two-columns"
+            buttonText="Start now"
+            isPopular={true} // This will trigger teal button and dark card
+            actionLink="/signup?plan=unlimited"
+            className="pt-10" // Extra padding top for the popular badge
           />
         </div>
       </div>
