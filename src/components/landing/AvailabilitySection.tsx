@@ -33,10 +33,10 @@ const platformIcons = [
   { name: 'Siri', icon: Mic },
   { name: 'Calendar', icon: CalendarDays },
   { name: 'Windows', icon: AppWindow },
-  { name: 'Chrome', icon: BrowserIcon }, // Using custom generic browser icon
-  { name: 'Firefox', icon: BrowserIcon }, // Using custom generic browser icon
+  { name: 'Chrome', icon: BrowserIcon }, 
+  { name: 'Firefox', icon: BrowserIcon }, 
   { name: 'Apple Watch', icon: Watch },
-  { name: 'Huawei', icon: Smartphone }, // Generic, as specific logo isn't in Lucide
+  { name: 'Huawei', icon: Smartphone }, 
   { name: 'Desktop', icon: Monitor },
 ];
 
@@ -58,12 +58,11 @@ export default function AvailabilitySection() {
         <div 
           className={cn(
             "relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px]",
-            "rounded-full flex flex-col items-center justify-center text-center p-8 shadow-2xl",
-            "bg-gradient-radial from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-700"
+            "rounded-full flex flex-col items-center justify-center text-center p-8",
+            "shadow-2xl transition-all duration-300 ease-out hover:scale-[1.01] hover:shadow-[0_20px_50px_-15px_rgba(25,76,229,0.3)] dark:hover:shadow-[0_20px_50px_-15px_rgba(34,130,242,0.2)]"
           )}
           style={{
-            // A simpler radial gradient for the sphere effect
-            backgroundImage: 'radial-gradient(circle at 30% 30%, hsl(205, 90%, 65%), hsl(215, 80%, 55%))'
+            backgroundImage: 'radial-gradient(circle at 30% 30%, hsl(205, 100%, 80%), hsl(215, 90%, 65%), hsl(225, 80%, 50%))'
           }}
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 md:mb-8 !leading-tight px-4">
