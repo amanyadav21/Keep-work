@@ -33,10 +33,10 @@ const platformIcons = [
   { name: 'Siri', icon: Mic },
   { name: 'Calendar', icon: CalendarDays },
   { name: 'Windows', icon: AppWindow },
-  { name: 'Chrome', icon: BrowserIcon }, 
-  { name: 'Firefox', icon: BrowserIcon }, 
+  { name: 'Chrome', icon: BrowserIcon },
+  { name: 'Firefox', icon: BrowserIcon },
   { name: 'Apple Watch', icon: Watch },
-  { name: 'Huawei', icon: Smartphone }, 
+  { name: 'Huawei', icon: Smartphone },
   { name: 'Desktop', icon: Monitor },
 ];
 
@@ -55,17 +55,17 @@ export default function AvailabilitySection() {
         />
       </div>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center">
-        <div 
+        <div
           className={cn(
             "relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px]",
-            "rounded-full flex flex-col items-center justify-center text-center p-8",
+            "rounded-full flex flex-col items-center justify-between text-center p-6", // Changed justify-center to justify-between, p-8 to p-6
             "shadow-2xl transition-all duration-300 ease-out hover:scale-[1.01] hover:shadow-[0_20px_50px_-15px_rgba(25,76,229,0.3)] dark:hover:shadow-[0_20px_50px_-15px_rgba(34,130,242,0.2)]"
           )}
           style={{
             backgroundImage: 'radial-gradient(circle at 30% 30%, hsl(205, 100%, 80%), hsl(215, 90%, 65%), hsl(225, 80%, 50%))'
           }}
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 md:mb-8 !leading-tight px-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white !leading-tight px-4"> {/* Removed mb-6 md:mb-8 */}
             Organize anything
             <br />
             with anyone,
@@ -73,17 +73,18 @@ export default function AvailabilitySection() {
             anywhere
           </h2>
 
-          <p className="text-sm text-blue-100 dark:text-blue-200 mb-3 md:mb-4">Available on:</p>
-          
-          <div className="grid grid-cols-5 sm:grid-cols-7 gap-x-3 gap-y-2 sm:gap-x-4 sm:gap-y-3 max-w-md">
-            {platformIcons.map((platform) => (
-              <div key={platform.name} className="flex flex-col items-center group">
-                <platform.icon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-100 dark:text-blue-200 group-hover:text-white transition-colors" />
-                <span className="text-[10px] sm:text-xs text-blue-200 dark:text-blue-300 mt-1 group-hover:text-white transition-colors">
-                  {platform.name}
-                </span>
-              </div>
-            ))}
+          <div className="flex flex-col items-center"> {/* Added a wrapper div for bottom content */}
+            <p className="text-sm text-blue-100 dark:text-blue-200 mb-3 md:mb-4">Available on:</p>
+            <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 sm:gap-x-5 sm:gap-y-4 max-w-xs sm:max-w-sm md:max-w-md"> {/* Adjusted grid columns and max-width */}
+              {platformIcons.map((platform) => (
+                <div key={platform.name} className="flex flex-col items-center group">
+                  <platform.icon className="h-6 w-6 text-blue-100 dark:text-blue-200 group-hover:text-white transition-colors" /> {/* Standardized icon size */}
+                  <span className="text-xs text-blue-200 dark:text-blue-300 mt-1 group-hover:text-white transition-colors"> {/* Standardized label size */}
+                    {platform.name}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
