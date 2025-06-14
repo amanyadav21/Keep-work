@@ -34,8 +34,10 @@ const PricingCard = ({
   className
 }: PricingCardProps) => (
   <div className={cn(
-    "p-6 md:p-8 rounded-xl shadow-xl flex flex-col h-full relative border-2",
-    isPopular ? "bg-primary text-primary-foreground border-primary/50 scale-[1.02] shadow-primary/20" : "bg-card text-card-foreground border-border",
+    "p-6 md:p-8 rounded-xl shadow-xl flex flex-col h-full relative border-2 transition-all duration-300 ease-out",
+    isPopular 
+      ? "bg-primary text-primary-foreground border-primary/50 scale-[1.02] shadow-primary/20 hover:scale-[1.05] hover:shadow-primary/30" 
+      : "bg-card text-card-foreground border-border hover:scale-[1.03] hover:shadow-2xl",
     className
   )}>
     {isPopular && (
@@ -106,11 +108,11 @@ export default function PricingSection() {
   ];
 
   return (
-    <section id="pricing" className="py-16 md:py-24 bg-background border-b border-border">
+    <section id="pricing" className="py-16 md:py-24 bg-muted/30 border-y border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground !leading-tight">
-            Unlock Your Potential with <br /> Clear, Simple Pricing.
+            Unlock Your Potential with <br className="hidden sm:block" /> Clear, Simple Pricing.
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Choose the plan that best fits your academic journey with Upnext.
