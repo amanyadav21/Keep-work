@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Task, TaskFilter } from '@/types';
+import type { Task } from '@/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,10 +12,6 @@ import { ArrowLeft, Undo, Trash2, Inbox, Loader2, Flag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow, parseISO, isValid } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AppSidebar } from '@/components/AppSidebar';
-import { Header } from '@/components/Header';
 
 export default function TrashPage() {
   const { user, loading: authLoading } = useAuth();
@@ -24,12 +20,6 @@ export default function TrashPage() {
   const [trashedTasks, setTrashedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  
-  const [currentFilter, setCurrentFilter] = useState<TaskFilter>('all'); // Dummy for AppSidebar
-  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null); // Dummy for AppSidebar
-  const handleLabelSelect = (labelId: string | null) => setSelectedLabelId(labelId); // Dummy
-  const handleOpenAddTaskForm = () => console.log("Add task from trash - placeholder"); // Dummy
-
 
   useEffect(() => {
     setIsMounted(true);
@@ -38,17 +28,6 @@ export default function TrashPage() {
   useEffect(() => {
     if (isMounted && !authLoading && !user) {
       router.push('/login');
-    }
-  }, [isMounted, authLoading, user, router]);
-
-
-  useEffect(() => {
-    if (!isMounted || authLoading || !user) {
-      if (!user && !authLoading && isMounted) {
-        setIsLoading(false); 
-      } else if (authLoading) {
-        setIsLoading(true);
-      }
       return;
     }
 
@@ -66,7 +45,8 @@ export default function TrashPage() {
         } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
           dueDate = data.dueDate;
         } else {
-          dueDate = new Date().toISOString(); 
+          // Fallback or handle as appropriate for your app, e.g., set to null or a default date
+          dueDate = new Date().toISOString(); // Example fallback
         }
 
         let createdAt;
@@ -75,7 +55,7 @@ export default function TrashPage() {
         } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
           createdAt = data.createdAt;
         } else {
-          createdAt = new Date().toISOString(); 
+          createdAt = new Date().toISOString(); // Example fallback
         }
 
         let trashedAt;
@@ -84,7 +64,7 @@ export default function TrashPage() {
         } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
           trashedAt = data.trashedAt;
         } else {
-           trashedAt = new Date().toISOString(); 
+          trashedAt = new Date().toISOString(); 
         }
 
 
@@ -211,49 +191,39 @@ export default function TrashPage() {
   }
 
   return (
-    <>
-      <AppSidebar 
-        onAddTask={handleOpenAddTaskForm}
-        currentFilter={currentFilter} 
-        onFilterChange={setCurrentFilter}
-        selectedLabelId={selectedLabelId}
-        onLabelSelect={handleLabelSelect}
-      />
-      <Header />
-      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto bg-muted/30 dark:bg-background">
-        {/* Page-specific header, no longer sticky */}
-        <div className="py-4 px-4 md:px-6 border-b bg-background">
-          <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight flex items-center">
-                <Trash2 className="h-6 w-6 mr-2 text-destructive" />
-                Trash
-              </h1>
-            </div>
-            {trashedTasks.length > 0 && !isLoading && ( 
-               <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">Empty Trash</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to empty the trash?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action is permanent and cannot be undone. All {trashedTasks.length} task(s) in the trash will be deleted forever.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleEmptyTrash} className="bg-destructive hover:bg-destructive/90">Yes, Empty Trash</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+    <div className="flex flex-col min-h-screen bg-muted/30">
+      <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+        <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Go back">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight flex items-center">
+              <Trash2 className="h-6 w-6 mr-2 text-destructive" />
+              Trash
+            </h1>
           </div>
+          {trashedTasks.length > 0 && (
+             <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">Empty Trash</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to empty the trash?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action is permanent and cannot be undone. All {trashedTasks.length} task(s) in the trash will be deleted forever.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleEmptyTrash} className="bg-destructive hover:bg-destructive/90">Yes, Empty Trash</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
+      </header>
 
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-3xl mx-auto">
@@ -346,3 +316,6 @@ export default function TrashPage() {
     </>
   );
 }
+
+
+    

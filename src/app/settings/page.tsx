@@ -24,15 +24,10 @@ export default function SettingsPage() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (mounted && !authLoading && !user) {
-      router.push('/login');
-    }
-  }, [mounted, authLoading, user, router]);
-
-  const currentTheme = mounted ? (theme === "system" ? systemTheme : theme) : undefined;
+  const currentTheme = theme === "system" ? systemTheme : theme;
 
   if (authLoading || !mounted) {
+    // Initial loading state (auth check or component not yet mounted)
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -40,8 +35,9 @@ export default function SettingsPage() {
     );
   }
 
-  if (!user) {
-    return (
+  if (!user && !authLoading && mounted) {
+    router.push('/login');
+     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <p className="ml-2">Redirecting to login...</p>
@@ -49,6 +45,15 @@ export default function SettingsPage() {
     );
   }
   
+  if (!user) {
+     return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p>Please log in to view settings.</p>
+        <Button onClick={() => router.push('/login')} className="ml-2">Login</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-muted/40 dark:bg-background">
       <header className="py-4 px-4 md:px-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50">

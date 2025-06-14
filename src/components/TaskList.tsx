@@ -14,16 +14,6 @@ interface TaskListProps {
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
 }
 
-const breakpointColumnsObj = {
-  default: 4, 
-  1440: 4, // XL screens
-  1280: 3, // Large desktops
-  1024: 3, // Desktops/Large tablets
-  768: 2,  // Tablets
-  640: 1   // Mobile (sm)
-};
-
-
 export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSubtask }: TaskListProps) {
   if (tasks.length === 0) {
     return (
@@ -36,11 +26,7 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSu
   }
 
   return (
-    <Masonry
-      breakpointCols={breakpointColumnsObj}
-      className="flex w-auto -ml-4" // Adjusted w-full to w-auto, still use negative margin for item padding
-      columnClassName="pl-4 bg-clip-padding" // Add padding to column, children will fill it
-    >
+    <div className="grid gap-4 py-4 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
       {tasks.map((task) => (
         <div key={task.id} className="mb-4"> {/* Add margin bottom to each item wrapper */}
           <TaskItem

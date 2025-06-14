@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -19,8 +18,12 @@ import { db } from '@/firebase/config';
 import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs, FirestoreError } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LandingPage } from '@/components/LandingPage';
-// AddTaskCard is removed, InteractiveTaskCard will handle its role
-import { cn } from '@/lib/utils'; // For conditional styling of centered card
+
+
+interface HomePageProps {
+  params: Record<string, never>;
+  searchParams: { [key: string]: string | string[] | undefined };
+}
 
 const priorityOrder: Record<TaskPriority, number> = {
   "Urgent": 0,
@@ -35,10 +38,11 @@ export default function HomePage() {
   const { toast } = useToast();
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<TaskFilter>('general');
+  const [filter, setFilter] = useState<TaskFilter>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [initialAddTaskContent, setInitialAddTaskContent] = useState("");
@@ -66,7 +70,7 @@ export default function HomePage() {
           } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
             dueDate = data.dueDate;
           } else {
-            dueDate = null; // Updated to allow null
+            dueDate = new Date().toISOString(); 
           }
 
           let createdAt;
@@ -105,6 +109,7 @@ export default function HomePage() {
             trashedAt,
             reminderAt,
             subtasks: data.subtasks || [],
+            labelId: data.labelId || null, // Add labelId
           } as Task;
         });
         setTasks(tasksData);
@@ -113,16 +118,10 @@ export default function HomePage() {
         console.error("Error fetching tasks:", error);
         let title = "Error Fetching Tasks";
         let description = "Could not fetch tasks. " + error.message;
-
-        if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-          title = "You are Offline";
-          description = "Tasks could not be loaded from the server. Displaying cached data if available. Some functionality may be limited.";
-        } else if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
-          title = "Permissions Error";
+        if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
           description = "You don't have permission to access these tasks. Check Firestore rules.";
         } else if (error.message && (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("index needed"))) {
-           title = "Database Index Required";
-           description = "A Firestore index is needed for fetching tasks. Please create an index for 'tasks' with: isTrashed (ASC), createdAt (DESC). Check server console for a link if provided by Firebase.";
+           description = "A Firestore index is needed for fetching tasks. Please create an index for collection group 'tasks' with: isTrashed (ASC), createdAt (DESC). Check server console for a link if provided by Firebase.";
         }
         toast({
             title: title,
@@ -139,7 +138,8 @@ export default function HomePage() {
     }
   }, [user, toast, isMounted, authLoading]);
 
-  const handleAddTask = useCallback(async (data: InteractiveTaskCardValues) => {
+
+  const handleAddTask = useCallback(async (data: TaskFormValues) => {
     if (!user) {
       toast({ title: "Not Authenticated", description: "Please log in to add tasks.", variant: "destructive" });
       return;
@@ -149,7 +149,7 @@ export default function HomePage() {
       const newTaskData = {
         title: data.title,
         description: data.description,
-        dueDate: data.dueDate ? formatISO(data.dueDate) : null, // Handle potentially null dueDate
+        dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
         isCompleted: false, // New tasks are not completed
@@ -158,23 +158,16 @@ export default function HomePage() {
         userId: user.uid,
         isTrashed: false,
         trashedAt: null,
-        reminderAt: data.reminderAt || null,
       };
       await addDoc(tasksCollectionRef, newTaskData);
       // Toast is now handled in InteractiveTaskCard onSubmit
     } catch (error: any) {
       console.error("Error adding task:", error);
-      let description = `Could not add task: ${error.message}`;
-      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The task will be saved locally and synced when you're back online.";
-         toast({ title: "Offline Mode", description, variant: "default" });
-      } else {
-        toast({ title: "Error Adding Task", description, variant: "destructive" });
-      }
+      toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
     }
   }, [user, toast]);
 
-  const handleEditTask = useCallback(async (data: InteractiveTaskCardValues, taskId: string) => {
+  const handleEditTask = useCallback(async (data: TaskFormValues, taskId: string) => {
     if (!user) {
       toast({ title: "Not Authenticated", description: "Please log in to edit tasks.", variant: "destructive" });
       return;
@@ -184,7 +177,7 @@ export default function HomePage() {
       const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = {
         title: data.title,
         description: data.description,
-        dueDate: data.dueDate ? formatISO(data.dueDate) : null, // Handle potentially null dueDate
+        dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
         reminderAt: data.reminderAt || null,
@@ -193,24 +186,17 @@ export default function HomePage() {
           text: st.text,
           isCompleted: st.isCompleted || false,
         })) || [],
+        labelId: data.labelId || null, // Save labelId
       };
       await updateDoc(taskDocRef, updatedTaskData);
       // Toast is now handled in InteractiveTaskCard onSubmit
     } catch (error: any) {
       console.error("Error updating task:", error);
-      let description = `Could not update task: ${error.message}`;
-      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The task update will be saved locally and synced when you're back online.";
-        toast({ title: "Offline Mode", description, variant: "default" });
-      } else {
-        toast({ title: "Error Updating Task", description, variant: "destructive" });
-      }
+      toast({ title: "Error", description: `Could not update task: ${error.message}`, variant: "destructive" });
     }
   }, [user, toast]);
 
-  const handleSubmitTask = useCallback((data: InteractiveTaskCardValues & { reminderAt?: string | null }, existingTaskId?: string) => {
-    // The reminderAt logic from TaskForm is now integrated into InteractiveTaskCard's onSubmit
-    // So data received here should already have reminderAt correctly formatted if set.
+  const handleSubmitTask = useCallback((data: TaskFormValues, existingTaskId?: string) => {
     if (existingTaskId) {
       handleEditTask(data, existingTaskId);
     } else {
@@ -231,13 +217,7 @@ export default function HomePage() {
       await updateDoc(taskDocRef, { isCompleted: !task.isCompleted });
     } catch (error: any) {
       console.error("Error toggling task complete:", error);
-      let description = `Could not update task status: ${error.message}`;
-      if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The change will be synced when you're back online.";
-        toast({ title: "Offline Mode", description, variant: "default" });
-      } else {
-        toast({ title: "Error", description, variant: "destructive" });
-      }
+      toast({ title: "Error", description: `Could not update task status: ${error.message}`, variant: "destructive" });
     }
   }, [user, tasks, toast]);
 
@@ -252,13 +232,7 @@ export default function HomePage() {
     } catch (error: any)
      {
       console.error("Error toggling subtask complete:", error);
-      let description = `Could not update subtask status: ${error.message}`;
-       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The change will be synced when you're back online.";
-        toast({ title: "Offline Mode", description, variant: "default" });
-      } else {
-        toast({ title: "Error", description, variant: "destructive" });
-      }
+      toast({ title: "Error", description: `Could not update subtask status: ${error.message}`, variant: "destructive" });
     }
   }, [user, tasks, toast]);
 
@@ -272,24 +246,19 @@ export default function HomePage() {
         isTrashed: true,
         trashedAt: serverTimestamp()
       });
-      toast({ title: "Task Moved to Trash", description: `"${(task.title || task.description).substring(0,25)}..." moved to trash.` });
+      toast({ title: "Task Moved to Trash", description: `"${(task.title || task.description)?.substring(0,25)}..." moved to trash.` });
       setTaskToDelete(null);
     } catch (error: any) {
       console.error("Error moving task to trash:", error);
-       let description = `Could not move task to trash: ${error.message}`;
-       if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-        description = "You appear to be offline. The change will be synced when you're back online.";
-        toast({ title: "Offline Mode", description, variant: "default" });
-      } else {
-        toast({ title: "Error", description, variant: "destructive" });
-      }
+      toast({ title: "Error", description: `Could not move task to trash: ${error.message}`, variant: "destructive" });
       setTaskToDelete(null);
     }
   }, [user, tasks, toast]);
 
-  const handleOpenEditView = useCallback((taskToEdit: Task) => {
-    setExpandedTask(taskToEdit);
-    setIsExpandedTaskVisible(true);
+
+  const handleOpenEditForm = useCallback((task: Task) => {
+    setEditingTask(task);
+    setIsFormOpen(true);
   }, []);
   
   const handleOpenAddFormThroughDialog = useCallback(() => {
@@ -303,10 +272,25 @@ export default function HomePage() {
     setExpandedTask(null); // No existing task, so it's effectively an "add detailed task"
     setIsExpandedTaskVisible(true);
   }, [user, toast]);
+  
+  const handleLabelSelect = useCallback((labelId: string | null) => {
+    setSelectedLabelId(labelId);
+    // If a label is selected, reset the main filter to 'general' to show all tasks of that label.
+    // Or, you might want the filter (pending/completed) to apply WITHIN the label.
+    // For now, let's say selecting a label overrides the other filter for simplicity of view.
+    if (labelId) {
+        setFilter('general'); // Or a new filter type like 'label_tasks'
+    }
+  }, []);
+
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
-      if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+      // Sort by completion status (incomplete first)
+      if (a.isCompleted !== b.isCompleted) {
+        return a.isCompleted ? 1 : -1;
+      }
+      // If both are incomplete, sort by priority
       if (!a.isCompleted && !b.isCompleted) {
         const priorityA = priorityOrder[a.priority || "None"];
         const priorityB = priorityOrder[b.priority || "None"];
@@ -314,7 +298,10 @@ export default function HomePage() {
       }
       const dueDateA = a.dueDate ? parseISO(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
       const dueDateB = b.dueDate ? parseISO(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
-      if (dueDateA !== dueDateB) return dueDateA - dueDateB;
+      if (dueDateA !== dueDateB) {
+        return dueDateA - dueDateB;
+      }
+      // Finally, sort by creation date (older first, for stable sort if all else equal)
       const createdAtA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
       const createdAtB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
       return createdAtA - createdAtB;
@@ -322,27 +309,36 @@ export default function HomePage() {
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
-    const nonTrashedTasks = sortedTasks.filter(task => !task.isTrashed);
+    let tasksToFilter = sortedTasks.filter(task => !task.isTrashed);
+
+    // First, filter by selected label if any
+    if (selectedLabelId) {
+      tasksToFilter = tasksToFilter.filter(task => task.labelId === selectedLabelId);
+    }
+    // Then, apply the main filter (today, pending, completed)
+    // If a label is selected, 'general' and 'all' within that label are the same.
+    if (selectedLabelId && (filter === 'general' || filter === 'all')) {
+        return tasksToFilter; // Show all tasks for the selected label
+    }
+
+
     switch (filter) {
       case 'pending':
-        return nonTrashedTasks.filter(task => !task.isCompleted);
+        return tasksToFilter.filter(task => !task.isCompleted);
       case 'completed':
-        return nonTrashedTasks.filter(task => task.isCompleted);
+        return tasksToFilter.filter(task => task.isCompleted);
       case 'today':
         return tasksToFilter.filter(task => {
           if (!task.dueDate) return false;
           const dueDate = parseISO(task.dueDate);
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
-      case 'general': 
-        return nonTrashedTasks;
-      default: 
+      default: // 'all'
         return nonTrashedTasks;
     }
-  }, [sortedTasks, filter]);
+  }, [sortedTasks, filter, selectedLabelId]);
 
   const pendingTasksCount = useMemo(() => tasks.filter(t => !t.isCompleted && !t.isTrashed).length, [tasks]);
-
 
   if (authLoading || !isMounted) {
     return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -352,25 +348,29 @@ export default function HomePage() {
   return (
     <>
       <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />
-      <Header />
-
+      <Header /> 
+      
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
         <div className="w-full max-w-6xl mx-auto">
-          {/* The new InteractiveTaskCard for quick adds */}
-          <InteractiveTaskCard
-            mode="add"
-            onSubmit={handleSubmitTask}
-            initialContent={initialAddTaskContent} // Pass any pre-filled content if needed
-            className="mb-8" // Add some margin below the add card
-          />
-
+          <div className="mb-6 max-w-2xl mx-auto">
+            <Button
+              className="w-full h-12 px-4 py-3 text-base bg-card text-foreground/80 border border-border rounded-lg shadow justify-start hover:text-foreground hover:border-primary hover:bg-primary/10 hover:shadow-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-background"
+              onClick={handleOpenAddForm}
+            >
+              <Plus className="mr-3 h-5 w-5" />
+              Take a note...
+            </Button>
+          </div>
+          
           {isLoadingTasks ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                  <div className="h-4 bg-muted rounded w-1/4"></div><div className="h-6 bg-muted rounded w-3/4"></div>
-                  <div className="h-4 bg-muted rounded w-full mt-1"></div><div className="h-4 bg-muted rounded w-1/2"></div>
-                  <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
+                    <div className="h-4 bg-muted rounded w-1/4"></div> {/* Priority + Title placeholder */}
+                    <div className="h-6 bg-muted rounded w-3/4"></div>
+                    <div className="h-4 bg-muted rounded w-full mt-1"></div> {/* Description line 1 */}
+                    <div className="h-4 bg-muted rounded w-1/2"></div> {/* Description line 2 */}
+                    <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
                 </div>
               ))}
             </div>
@@ -412,9 +412,9 @@ export default function HomePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
             <AlertDialogDesc>
-              This will move the task "{(tasks.find(t => t.id === taskToDelete)?.title || tasks.find(t => t.id === taskToDelete)?.description)?.substring(0, 50)}..." to trash.
+              This will move the task "{(tasks.find(t => t.id === taskToDelete)?.title || tasks.find(t => t.id === taskToDelete)?.description)?.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
             </AlertDialogDesc>
-          </SrAlertDialogHeader>
+          </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => taskToDelete && handleDeleteTask(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
@@ -426,3 +426,4 @@ export default function HomePage() {
     </>
   );
 }
+
