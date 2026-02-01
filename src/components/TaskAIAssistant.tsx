@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { getGeminiResponse } from '@/ai/gemini-client';
 
 interface TaskAIAssistantProps {
   taskTitle: string;
@@ -28,8 +27,22 @@ export function TaskAIAssistant({ taskTitle, taskDescription }: TaskAIAssistantP
     setResponse('');
     
     try {
-      const result = await getGeminiResponse(taskTitle, taskDescription || '');
-      setResponse(result);
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: taskTitle,
+          description: taskDescription || '',
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to get AI response');
+      }
+
+      const data = await res.json();
+      setResponse(data.response || '');
     } catch (err) {
       setError('Failed to get AI response. Please try again.');
       console.error(err);

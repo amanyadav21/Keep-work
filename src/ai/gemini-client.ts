@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI('AIzaSyDBpXMLuZaCALmKFtoqBwP-4dCzcYIULI0');
 
 export const getGeminiResponse = async (taskTitle: string, taskDescription: string): Promise<string> => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
     
     const prompt = `You are a helpful assistant. Answer this question about a task:
     
