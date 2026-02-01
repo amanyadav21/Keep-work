@@ -65,6 +65,7 @@ export default function HomePage() {
         id: crypto.randomUUID(),
         title: data.title,
         description: data.description,
+        summary: data.summary || "",
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
@@ -91,6 +92,7 @@ export default function HomePage() {
       const updatedTaskData: Partial<Task> = {
         title: data.title,
         description: data.description,
+        summary: data.summary || "",
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",

@@ -22,6 +22,7 @@ export interface Task {
   id: string;
   title: string;
   description: string;
+  summary?: string;
   dueDate: string; // ISO string date
   category: TaskCategory;
   priority?: TaskPriority;

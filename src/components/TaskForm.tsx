@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 // Removed duplicate popover import
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag } from "lucide-react";
+import { CalendarIcon, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import type { Task, TaskCategory, Subtask, TaskPriority } from "@/types";
@@ -55,6 +55,7 @@ const subtaskSchema = z.object({
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required.").max(150, "Title must be at most 150 characters"),
   description: z.string().min(3, "Description must be at least 3 characters"), // Removed .max(500, ...)
+  summary: z.string().max(300, "Summary must be at most 300 characters").optional(),
   dueDate: z.date({ required_error: "Due date is required." }),
   category: z.enum(taskCategories, { required_error: "Category is required." }),
   priority: z.enum(taskPriorities).optional().default("None"),
@@ -89,6 +90,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
           dueDate: initialDueDate,
           category: editingTask.category,
           priority: editingTask.priority || "None",
+          summary: editingTask.summary || "",
           subtasks: editingTask.subtasks?.map(st => ({...st})) || [],
           reminderDate: initialReminderDate,
           reminderTime: initialReminderTime,
@@ -97,6 +99,7 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
       : {
           title: "",
           description: "",
+          summary: "",
           dueDate: new Date(new Date().setHours(23, 59, 59, 999)), 
           category: undefined,
           priority: "None",
@@ -115,6 +118,67 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   const [newSubtaskText, setNewSubtaskText] = useState("");
   const newSubtaskInputRef = useRef<HTMLInputElement>(null);
   const [showSubtasks, setShowSubtasks] = useState(!!editingTask?.subtasks?.length);
+  const [isAISuggesting, setIsAISuggesting] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [hasAutoSuggested, setHasAutoSuggested] = useState(false);
+
+  const watchedTitle = form.watch('title');
+  const watchedDescription = form.watch('description');
+  const watchedCategory = form.watch('category');
+  const watchedPriority = form.watch('priority');
+
+  const runAISuggestions = async () => {
+    if (!watchedTitle || !watchedDescription) return;
+    setIsAISuggesting(true);
+    setAiError("");
+    try {
+      const res = await fetch('/api/ai/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: watchedTitle,
+          description: watchedDescription,
+          dueDate: form.getValues('dueDate')?.toISOString?.() || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to get AI suggestions');
+      }
+
+      const data = await res.json();
+      if (data?.category) {
+        form.setValue('category', data.category, { shouldValidate: true });
+      }
+      if (data?.priority) {
+        form.setValue('priority', data.priority, { shouldValidate: true });
+      }
+      if (data?.summary) {
+        form.setValue('summary', data.summary);
+      }
+      setHasAutoSuggested(true);
+    } catch (err) {
+      console.error(err);
+      setAiError('AI suggestions failed. You can still fill manually.');
+    } finally {
+      setIsAISuggesting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (editingTask) return;
+    if (hasAutoSuggested) return;
+    if (!watchedTitle || watchedTitle.trim().length < 4) return;
+    if (!watchedDescription || watchedDescription.trim().length < 12) return;
+    if (watchedCategory || watchedPriority !== 'None') return;
+
+    const timeoutId = setTimeout(() => {
+      runAISuggestions();
+    }, 800);
+
+    return () => clearTimeout(timeoutId);
+  }, [editingTask, hasAutoSuggested, watchedTitle, watchedDescription, watchedCategory, watchedPriority]);
 
 
   const handleAddSubtask = () => {
@@ -165,6 +229,37 @@ export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
                   placeholder="Add a description..."
                   {...field}
                   className="min-h-[100px] resize-none"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={runAISuggestions}
+            disabled={isAISuggesting || !watchedTitle || !watchedDescription}
+            className="gap-2"
+          >
+            {isAISuggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {isAISuggesting ? 'Thinking...' : 'AI Suggest'}
+          </Button>
+          {aiError && <p className="text-xs text-destructive">{aiError}</p>}
+        </div>
+        <FormField
+          control={form.control}
+          name="summary"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Summary (AI)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="AI summary will appear here..."
+                  {...field}
+                  className="min-h-[70px] resize-none"
                 />
               </FormControl>
               <FormMessage />

@@ -177,8 +177,13 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               {task.title || task.description }
             </CardTitle>
           </div>
+          {task.title && task.summary && (
+            <CardDescription className={cn("text-sm text-foreground/80 line-clamp-2 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}> 
+              {task.summary}
+            </CardDescription>
+          )}
           {task.title && task.description && ( 
-            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}>
+            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}> 
               {task.description}
             </CardDescription>
           )}
