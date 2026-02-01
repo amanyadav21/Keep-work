@@ -135,8 +135,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     <TooltipProvider delayDuration={150}>
       <div // Changed from Card to div
         className={cn(
-          "group flex flex-col justify-between rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:scale-[1.02]",
-          task.isCompleted ? "bg-muted/60 dark:bg-muted/30 hover:shadow-lg opacity-75" : "bg-card"
+          "group flex flex-col justify-between rounded-2xl border border-border/60 bg-card/95 text-card-foreground shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:scale-[1.01]",
+          task.isCompleted ? "bg-muted/60 dark:bg-muted/30 hover:shadow-lg opacity-80" : "bg-card"
         )}
         onClick={cardClickHandler}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cardClickHandler(e); } }}
@@ -144,7 +144,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
         tabIndex={0}
         aria-label={`Edit task: ${task.title || task.description}`}
       >
-        <CardHeader className="p-5 pb-3 relative">
+        <CardHeader className="p-6 pb-4 relative">
            <Checkbox
             id={`task-complete-${task.id}`}
             checked={task.isCompleted}
@@ -153,7 +153,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();}}
             aria-labelledby={`task-title-${task.id}`}
             data-nocardclick="true"
-            className="absolute top-4 right-4 h-5 w-5 shrink-0 z-10 rounded-sm border-2 border-primary/70 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground transition-all duration-200 hover:border-primary"
+            className="absolute top-4 right-4 h-5 w-5 shrink-0 z-10 rounded-md border-2 border-primary/70 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground transition-all duration-200 hover:border-primary"
           />
           <div className="flex items-start gap-2 pr-8">
             {task.priority && task.priority !== "None" && (
@@ -169,7 +169,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             <CardTitle
               id={`task-title-${task.id}`}
               className={cn(
-                "text-lg font-semibold text-foreground break-words line-clamp-2", 
+                "text-[15px] md:text-base font-semibold text-foreground break-words line-clamp-2 tracking-tight", 
                 task.priority && task.priority !== "None" ? "" : "ml-0", 
                 task.isCompleted && (task.title || task.description) ? "line-through text-muted-foreground" : ""
               )}
@@ -178,17 +178,17 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             </CardTitle>
           </div>
           {task.title && task.summary && (
-            <CardDescription className={cn("text-sm text-foreground/80 line-clamp-2 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}> 
+            <CardDescription className={cn("text-sm text-foreground/80 line-clamp-2 mt-2", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}> 
               {task.summary}
             </CardDescription>
           )}
           {task.title && task.description && ( 
-            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-1", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}> 
+            <CardDescription className={cn("text-sm text-muted-foreground line-clamp-3 mt-2", task.priority && task.priority !== "None" ? "ml-[calc(0.625rem+0.5rem)]" : "ml-0", task.isCompleted && "line-through")}> 
               {task.description}
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent className="p-4 pt-0 flex-grow flex flex-col min-h-0">
+        <CardContent className="px-6 pb-4 pt-0 flex-grow flex flex-col min-h-0">
           <div className="flex-1 min-h-0 flex flex-col">
             {task.subtasks && task.subtasks.length > 0 ? (
               <div className="mt-2 space-y-2 flex-1 flex flex-col min-h-0">
@@ -240,10 +240,10 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           </div>
           
           <div className={cn(
-            "pt-3 text-xs flex items-center justify-between gap-x-2", 
+            "pt-4 text-xs flex items-center justify-between gap-x-2", 
             task.isCompleted ? "text-muted-foreground" : "text-muted-foreground/90"
           )}>
-            <Badge variant="secondary" className="text-xs py-0.5 px-1.5 font-medium shrink-0 bg-secondary/70 text-secondary-foreground">
+            <Badge variant="secondary" className="text-xs py-1 px-2 font-medium shrink-0 bg-secondary/70 text-secondary-foreground rounded-full">
               <CategoryIcon className={cn("h-3.5 w-3.5 mr-1", task.isCompleted ? "text-muted-foreground/80" : "text-primary")} />
               {task.category}
             </Badge>
@@ -256,11 +256,11 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 mt-auto border-t flex items-center justify-between bg-muted/20">
+        <CardFooter className="px-6 py-3 mt-auto border-t flex items-center justify-between bg-muted/10">
           <div className="flex-shrink-0">
             {(isMounted && timeLeft) && (
               <p className={cn(
-                "font-medium text-xs flex items-center gap-1 px-2 py-1 rounded-md",
+                "font-medium text-xs flex items-center gap-1 px-2.5 py-1 rounded-full",
                 isOverdue ? "text-destructive bg-destructive/10" : 
                 task.isCompleted ? "text-[hsl(var(--status-green))] bg-green-500/10" :
                 (task.dueDate && isToday(parseISO(task.dueDate)) && !task.isCompleted) ? "text-accent bg-accent/10" : 
@@ -280,7 +280,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               <TaskAIAssistant taskTitle={task.title} taskDescription={task.description} />
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(task); }} data-nocardclick="true" aria-label="Edit task" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted">
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(task); }} data-nocardclick="true" aria-label="Edit task" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -290,7 +290,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                   <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} data-nocardclick="true" aria-label="Delete task" className="text-destructive/80 hover:text-destructive hover:bg-destructive/10 h-7 w-7">
+                   <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} data-nocardclick="true" aria-label="Delete task" className="text-destructive/80 hover:text-destructive hover:bg-destructive/10 h-8 w-8">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
