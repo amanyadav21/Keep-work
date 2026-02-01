@@ -145,10 +145,10 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
       side="left"
       className="shadow-sm"
     >
-      <SidebarHeader className="flex items-center min-w-0">
-        <div className="flex items-center justify-between w-full px-2">
+      <SidebarHeader className="flex items-center min-w-0 border-b">
+        <div className="flex items-center justify-between w-full px-4 py-3">
           <div className="flex items-center gap-2 group">
-            {!isIconOnly && <span className="font-bold text-sm">Upnext</span>}
+            {!isIconOnly && <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Upnext</span>}
           </div>
           <SidebarTrigger className="shrink-0" tooltip="Toggle Sidebar" />
         </div>
@@ -163,7 +163,7 @@ export function AppSidebar({ onAddTask, currentFilter, onFilterChange, selectedL
                     onClick={onAddTask}
                     variant="primary"
                     size={isIconOnly ? "icon" : "lg"}
-                    className={cn(isIconOnly ? "" : "w-full justify-start h-10 text-base")}
+                    className={cn(isIconOnly ? "" : "w-full justify-start h-11 text-base font-medium shadow-sm hover:shadow-md transition-all")}
                     tooltip="Add New Task"
                   >
                     <PlusCircle className="h-5 w-5 shrink-0" />

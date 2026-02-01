@@ -233,14 +233,14 @@ export default function HomePage() {
       <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} selectedLabelId={selectedLabelId} onLabelSelect={handleLabelSelect} />
       
       <main 
-        className="flex-1 flex flex-col overflow-hidden transition-all duration-200 ease-in-out"
+        className="flex-1 flex flex-col overflow-hidden transition-all duration-200 ease-in-out bg-gradient-to-br from-background to-muted/20"
         style={{ marginLeft: effectiveSidebarWidth }}
       >
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-          <div className="w-full max-w-6xl mx-auto">
-            <div className="mb-6 max-w-2xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="w-full max-w-7xl mx-auto">
+            <div className="mb-8 max-w-2xl mx-auto">
               <Button
-                className="w-full h-12 px-4 py-3 text-base bg-card text-foreground/80 border border-border rounded-lg shadow justify-start hover:text-foreground hover:border-primary hover:bg-primary/10 hover:shadow-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-background"
+                className="w-full h-14 px-6 py-4 text-base bg-card text-foreground/80 border-2 border-border rounded-xl shadow-md justify-start hover:text-foreground hover:border-primary hover:bg-primary/5 hover:shadow-xl transition-all duration-300 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 font-medium"
                 onClick={handleOpenAddForm}
               >
                 <Plus className="mr-3 h-5 w-5" />
@@ -249,14 +249,14 @@ export default function HomePage() {
             </div>
             
             {isLoadingTasks ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                      <div className="h-4 bg-muted rounded w-1/4"></div>
-                      <div className="h-6 bg-muted rounded w-3/4"></div>
-                      <div className="h-4 bg-muted rounded w-full mt-1"></div>
-                      <div className="h-4 bg-muted rounded w-1/2"></div>
-                      <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
+                  <div key={i} className="bg-card rounded-xl shadow-md border p-5 animate-pulse h-[200px] space-y-4">
+                      <div className="h-4 bg-muted rounded-lg w-1/4"></div>
+                      <div className="h-6 bg-muted rounded-lg w-3/4"></div>
+                      <div className="h-4 bg-muted rounded-lg w-full mt-2"></div>
+                      <div className="h-4 bg-muted rounded-lg w-1/2"></div>
+                      <div className="h-4 bg-muted rounded-lg w-1/4 mt-auto"></div>
                   </div>
                 ))}
               </div>
@@ -277,20 +277,22 @@ export default function HomePage() {
         setIsFormOpen(open);
         if (!open) setEditingTask(null);
       }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-0">
-          <DialogHeader>
-            <SrDialogTitle className="sr-only">
-              {editingTask ? 'Edit Task' : 'Add New Task'}
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl bg-card border-2 shadow-2xl">
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <SrDialogTitle className="text-2xl font-bold tracking-tight">
+              {editingTask ? 'Edit Task' : 'Create New Task'}
             </SrDialogTitle>
           </DialogHeader>
-          <TaskForm
-            onSubmit={handleSubmitTask}
-            editingTask={editingTask}
-            onClose={() => {
-              setIsFormOpen(false);
-              setEditingTask(null);
-            }}
-          />
+          <div className="px-6 pb-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+            <TaskForm
+              onSubmit={handleSubmitTask}
+              editingTask={editingTask}
+              onClose={() => {
+                setIsFormOpen(false);
+                setEditingTask(null);
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

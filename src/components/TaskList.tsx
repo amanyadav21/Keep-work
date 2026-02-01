@@ -37,11 +37,11 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSu
   return (
     <Masonry
       breakpointCols={breakpointCols}
-      className="flex w-auto -ml-4"
-      columnClassName="pl-4 bg-background"
+      className="flex w-auto -ml-6"
+      columnClassName="pl-6 bg-clip-padding"
     >
       {tasks.map((task) => (
-        <div key={task.id} className="mb-4">
+        <div key={task.id} className="mb-6">
           <TaskItem
             task={task}
             onToggleComplete={onToggleComplete}

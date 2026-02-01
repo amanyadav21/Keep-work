@@ -135,8 +135,8 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
     <TooltipProvider delayDuration={150}>
       <div // Changed from Card to div
         className={cn(
-          "group flex flex-col justify-between rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow duration-200 cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
-          task.isCompleted ? "bg-muted/60 dark:bg-muted/30 hover:shadow-md" : "bg-card"
+          "group flex flex-col justify-between rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:scale-[1.02]",
+          task.isCompleted ? "bg-muted/60 dark:bg-muted/30 hover:shadow-lg opacity-75" : "bg-card"
         )}
         onClick={cardClickHandler}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cardClickHandler(e); } }}
@@ -144,7 +144,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
         tabIndex={0}
         aria-label={`Edit task: ${task.title || task.description}`}
       >
-        <CardHeader className="p-4 pb-2 relative">
+        <CardHeader className="p-5 pb-3 relative">
            <Checkbox
             id={`task-complete-${task.id}`}
             checked={task.isCompleted}
@@ -153,7 +153,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();}}
             aria-labelledby={`task-title-${task.id}`}
             data-nocardclick="true"
-            className="absolute top-3 right-3 h-5 w-5 shrink-0 z-10 rounded-sm border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+            className="absolute top-4 right-4 h-5 w-5 shrink-0 z-10 rounded-sm border-2 border-primary/70 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground transition-all duration-200 hover:border-primary"
           />
           <div className="flex items-start gap-2 pr-8">
             {task.priority && task.priority !== "None" && (
@@ -251,17 +251,17 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
           </div>
         </CardContent>
 
-        <CardFooter className="p-3 mt-auto border-t flex items-center justify-between">
+        <CardFooter className="p-4 mt-auto border-t flex items-center justify-between bg-muted/20">
           <div className="flex-shrink-0">
             {(isMounted && timeLeft) && (
               <p className={cn(
-                "font-medium text-xs flex items-center",
-                isOverdue ? "text-destructive" : 
-                task.isCompleted ? "text-[hsl(var(--status-green))]" :
-                (task.dueDate && isToday(parseISO(task.dueDate)) && !task.isCompleted) ? "text-accent" : 
-                "text-primary"
+                "font-medium text-xs flex items-center gap-1 px-2 py-1 rounded-md",
+                isOverdue ? "text-destructive bg-destructive/10" : 
+                task.isCompleted ? "text-[hsl(var(--status-green))] bg-green-500/10" :
+                (task.dueDate && isToday(parseISO(task.dueDate)) && !task.isCompleted) ? "text-accent bg-accent/10" : 
+                "text-primary bg-primary/10"
               )}>
-                {isOverdue && <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />}
+                {isOverdue && <AlertTriangle className="inline h-3.5 w-3.5" />}
                 {timeLeft}
               </p>
             )}
