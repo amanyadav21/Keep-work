@@ -25,10 +25,23 @@ export function TaskList({ tasks, onToggleComplete, onEdit, onDelete, onToggleSu
     );
   }
 
+  const breakpointCols = {
+    default: 4,
+    1536: 3, 
+    1280: 3,
+    1024: 2,
+    768: 2,
+    640: 1
+  };
+
   return (
-    <div className="grid gap-4 py-4 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+    <Masonry
+      breakpointCols={breakpointCols}
+      className="flex w-auto -ml-4"
+      columnClassName="pl-4 bg-background"
+    >
       {tasks.map((task) => (
-        <div key={task.id} className="mb-4"> {/* Add margin bottom to each item wrapper */}
+        <div key={task.id} className="mb-4">
           <TaskItem
             task={task}
             onToggleComplete={onToggleComplete}

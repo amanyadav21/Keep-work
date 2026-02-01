@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 // Card components are no longer used for the main structure, but CardDescription might be useful for styling
-import { CardDescription } from '@/components/ui/card';
+import { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { format, parseISO, isValid, isPast, isToday, isTomorrow, isYesterday, differenceInCalendarDays, formatDistanceToNowStrict } from 'date-fns';
-import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, ListChecks, BookOpen, Flag } from 'lucide-react';
+import { Pencil, Trash2, Users, User, AlertTriangle, CalendarDays, ListChecks, BookOpen, Flag, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
+import { TaskAIAssistant } from './TaskAIAssistant';
 
 interface TaskItemProps {
   task: Task;
@@ -29,6 +30,15 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
 }
+
+const priorityDotColor = (priority?: string) => {
+  switch (priority) {
+    case 'High': return 'bg-destructive';
+    case 'Medium': return 'bg-yellow-500';
+    case 'Low': return 'bg-green-500'; 
+    default: return 'bg-muted';
+  }
+};
 
 const categoryIcons: Record<TaskCategory, React.ElementType> = {
   General: Inbox,
@@ -257,14 +267,12 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
             )}
           </div>
            <div 
-            className={cn(
-              "flex items-center space-x-1",
-              task.isCompleted ? "opacity-60" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150"
-            )}
+            className="flex items-center gap-1"
             onClick={(e) => e.stopPropagation()} 
             onKeyDown={(e) => e.stopPropagation()}
             data-nocardclick="true"
           >
+              <TaskAIAssistant taskTitle={task.title} taskDescription={task.description} />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(task); }} data-nocardclick="true" aria-label="Edit task" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted">
@@ -286,7 +294,7 @@ function TaskItemComponent({ task, onToggleComplete, onEdit, onDelete, onToggleS
                 </TooltipContent>
               </Tooltip>
           </div>
-        </div>
+        </CardFooter>
       </div>
     </TooltipProvider>
   );

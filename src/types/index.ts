@@ -1,5 +1,4 @@
 
-import type { User as FirebaseUserType } from 'firebase/auth';
 
 export type TaskCategory = "General" | "Assignment" | "Class" | "Personal";
 export type TaskPriority = "Urgent" | "High" | "Medium" | "Low" | "None";
@@ -14,9 +13,9 @@ export interface Label {
   id: string;
   name: string;
   userId: string;
-  createdAt: string; // ISO string date
-  // color?: string; // Future enhancement
-  // icon?: string; // Future enhancement
+  createdAt: string; 
+  color: string; 
+  // icon?: string; 
 }
 
 export interface Task {
@@ -44,5 +43,3 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
 }
-
-export type FirebaseUser = FirebaseUserType;

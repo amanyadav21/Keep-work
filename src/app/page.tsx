@@ -2,22 +2,21 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Header } from '@/components/Header';
 import { AppSidebar } from '@/components/AppSidebar';
+import { Input } from '@/components/ui/input';
 import { TaskList } from '@/components/TaskList';
 import type { Task, TaskFilter, TaskPriority } from '@/types';
+import { TaskFormValues } from '@/components/TaskForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as SrDialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDesc, AlertDialogFooter, AlertDialogHeader as SrAlertDialogHeader, AlertDialogTitle as SrAlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatISO, parseISO, isValid, isToday as dateFnsIsToday, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Brain, Plus, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/firebase/config';
-import { collection, addDoc, doc, updateDoc, query, orderBy, onSnapshot, where, Timestamp, serverTimestamp, writeBatch, getDocs, FirestoreError } from 'firebase/firestore';
+import { Plus, Loader2 } from 'lucide-react';
+// Removed useAuth import
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { LandingPage } from '@/components/LandingPage';
+import { TaskForm } from '@/components/TaskForm';
+import { useTaskManager } from '@/hooks/useTaskManager';
 
 
 interface HomePageProps {
@@ -34,10 +33,11 @@ const priorityOrder: Record<TaskPriority, number> = {
 };
 
 export default function HomePage() {
-  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  
+  // Use Local Storage Hook
+  const { tasks, addTask, updateTask, trashTask } = useTaskManager();
 
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -45,136 +45,48 @@ export default function HomePage() {
 
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const [initialAddTaskContent, setInitialAddTaskContent] = useState("");
 
+  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
+    // Simulate loading/settling delay
+    const timer = setTimeout(() => {
+        setIsLoadingTasks(false);
+    }, 500);
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (user && isMounted) {
-      setIsLoadingTasks(true);
-      const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
-      // Base query filters for non-trashed tasks and orders by creation time.
-      // Label filtering will be applied client-side after fetching, or could be added here if complex.
-      const q = query(tasksCollectionRef, where("isTrashed", "==", false), orderBy("createdAt", "desc"));
-
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const tasksData = querySnapshot.docs.map(docSnap => {
-          const data = docSnap.data();
-
-          let dueDate;
-          if (data.dueDate instanceof Timestamp) {
-            dueDate = data.dueDate.toDate().toISOString();
-          } else if (typeof data.dueDate === 'string' && isValid(parseISO(data.dueDate))) {
-            dueDate = data.dueDate;
-          } else {
-            dueDate = new Date().toISOString(); 
-          }
-
-          let createdAt;
-          if (data.createdAt instanceof Timestamp) {
-            createdAt = data.createdAt.toDate().toISOString();
-          } else if (typeof data.createdAt === 'string' && isValid(parseISO(data.createdAt))) {
-            createdAt = data.createdAt;
-          } else {
-            createdAt = new Date().toISOString();
-          }
-
-          let trashedAt = null;
-          if (data.trashedAt instanceof Timestamp) {
-            trashedAt = data.trashedAt.toDate().toISOString();
-          } else if (typeof data.trashedAt === 'string' && isValid(parseISO(data.trashedAt))) {
-            trashedAt = data.trashedAt;
-          }
-
-          let reminderAt = null;
-          if (data.reminderAt instanceof Timestamp) {
-            reminderAt = data.reminderAt.toDate().toISOString();
-          } else if (typeof data.reminderAt === 'string' && isValid(parseISO(data.reminderAt))) {
-            reminderAt = data.reminderAt;
-          }
-
-          return {
-            id: docSnap.id,
-            title: data.title || '',
-            description: data.description,
-            dueDate,
-            category: data.category,
-            priority: data.priority || "None",
-            isCompleted: data.isCompleted,
-            createdAt,
-            isTrashed: data.isTrashed || false,
-            trashedAt,
-            reminderAt,
-            subtasks: data.subtasks || [],
-            labelId: data.labelId || null, // Add labelId
-          } as Task;
-        });
-        setTasks(tasksData);
-        setIsLoadingTasks(false);
-      }, (error: FirestoreError) => {
-        console.error("Error fetching tasks:", error);
-        let title = "Error Fetching Tasks";
-        let description = "Could not fetch tasks. " + error.message;
-        if (error.message && error.message.toLowerCase().includes("missing or insufficient permissions")) {
-          description = "You don't have permission to access these tasks. Check Firestore rules.";
-        } else if (error.message && (error.message.toLowerCase().includes("query requires an index") || error.message.toLowerCase().includes("index needed"))) {
-           description = "A Firestore index is needed for fetching tasks. Please create an index for collection group 'tasks' with: isTrashed (ASC), createdAt (DESC). Check server console for a link if provided by Firebase.";
-        }
-        toast({
-            title: title,
-            description: description,
-            variant: "destructive",
-            duration: error.code === 'unavailable' ? 8000 : 15000,
-        });
-        setIsLoadingTasks(false); 
-      });
-      return () => unsubscribe();
-    } else if (!user && isMounted && !authLoading) {
-      setTasks([]);
-      setIsLoadingTasks(false);
-    }
-  }, [user, toast, isMounted, authLoading]);
-
-
   const handleAddTask = useCallback(async (data: TaskFormValues) => {
-    if (!user) {
-      toast({ title: "Not Authenticated", description: "Please log in to add tasks.", variant: "destructive" });
-      return;
-    }
     try {
-      const tasksCollectionRef = collection(db, `users/${user.uid}/tasks`);
-      const newTaskData = {
+      const newTaskData: Task = {
+        id: crypto.randomUUID(),
         title: data.title,
         description: data.description,
         dueDate: formatISO(data.dueDate),
         category: data.category,
         priority: data.priority || "None",
-        isCompleted: false, // New tasks are not completed
-        createdAt: serverTimestamp(),
+        isCompleted: false,
+        createdAt: new Date().toISOString(),
         subtasks: data.subtasks?.map(st => ({ id: st.id || crypto.randomUUID(), text: st.text, isCompleted: st.isCompleted || false })) || [],
-        userId: user.uid,
+        userId: "local-user",
         isTrashed: false,
         trashedAt: null,
+        reminderAt: data.reminderAt || null,
+        labelId: data.labelId || null,
       };
-      await addDoc(tasksCollectionRef, newTaskData);
-      // Toast is now handled in InteractiveTaskCard onSubmit
+      
+      addTask(newTaskData);
+      
     } catch (error: any) {
       console.error("Error adding task:", error);
-      toast({ title: "Error", description: `Could not add task: ${error.message}`, variant: "destructive" });
+      toast({ title: "Error", description: "Could not add task locally.", variant: "destructive" });
     }
-  }, [user, toast]);
+  }, [toast, addTask]);
 
   const handleEditTask = useCallback(async (data: TaskFormValues, taskId: string) => {
-    if (!user) {
-      toast({ title: "Not Authenticated", description: "Please log in to edit tasks.", variant: "destructive" });
-      return;
-    }
     try {
-      const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
-      const updatedTaskData: Partial<Omit<Task, 'id' | 'createdAt' | 'userId'>> = {
+      const updatedTaskData: Partial<Task> = {
         title: data.title,
         description: data.description,
         dueDate: formatISO(data.dueDate),
@@ -186,74 +98,54 @@ export default function HomePage() {
           text: st.text,
           isCompleted: st.isCompleted || false,
         })) || [],
-        labelId: data.labelId || null, // Save labelId
+        labelId: data.labelId || null, 
       };
-      await updateDoc(taskDocRef, updatedTaskData);
-      // Toast is now handled in InteractiveTaskCard onSubmit
+      updateTask(taskId, updatedTaskData);
+      toast({ title: "Task Updated", description: "Changes saved to local storage." });
     } catch (error: any) {
       console.error("Error updating task:", error);
-      toast({ title: "Error", description: `Could not update task: ${error.message}`, variant: "destructive" });
+      toast({ title: "Error", description: "Could not update task.", variant: "destructive" });
     }
-  }, [user, toast]);
+  }, [updateTask, toast]);
 
+  // ... (rest of handlers like handleSubmitTask, etc. need no auth changes but I need to include them to keep file valid if I am replacing block)
+  // Actually, I can rely on previous code if I target carefully, but here I am replacing START of component.
+  
   const handleSubmitTask = useCallback((data: TaskFormValues, existingTaskId?: string) => {
     if (existingTaskId) {
       handleEditTask(data, existingTaskId);
     } else {
       handleAddTask(data);
     }
-    // Close centered/expanded view if it was open
-    setIsExpandedTaskVisible(false);
-    setExpandedTask(null);
   }, [handleAddTask, handleEditTask]);
 
 
-  const handleToggleComplete = useCallback(async (id: string) => {
-    if (!user) return;
+  const handleToggleComplete = useCallback((id: string) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
-    try {
-      const taskDocRef = doc(db, `users/${user.uid}/tasks`, id);
-      await updateDoc(taskDocRef, { isCompleted: !task.isCompleted });
-    } catch (error: any) {
-      console.error("Error toggling task complete:", error);
-      toast({ title: "Error", description: `Could not update task status: ${error.message}`, variant: "destructive" });
-    }
-  }, [user, tasks, toast]);
+    updateTask(id, { isCompleted: !task.isCompleted });
+  }, [tasks, updateTask]);
 
-  const handleToggleSubtaskComplete = useCallback(async (taskId: string, subtaskId: string) => {
-    if (!user) return;
+  const handleToggleSubtaskComplete = useCallback((taskId: string, subtaskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task || !task.subtasks) return;
     const updatedSubtasks = task.subtasks.map(st => st.id === subtaskId ? { ...st, isCompleted: !st.isCompleted } : st);
-    try {
-      const taskDocRef = doc(db, `users/${user.uid}/tasks`, taskId);
-      await updateDoc(taskDocRef, { subtasks: updatedSubtasks });
-    } catch (error: any)
-     {
-      console.error("Error toggling subtask complete:", error);
-      toast({ title: "Error", description: `Could not update subtask status: ${error.message}`, variant: "destructive" });
-    }
-  }, [user, tasks, toast]);
+    updateTask(taskId, { subtasks: updatedSubtasks });
+  }, [tasks, updateTask]);
 
-  const handleDeleteTask = useCallback(async (id: string) => {
-    if (!user) return;
+  const handleDeleteTask = useCallback((id: string) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
     try {
-      const taskDocRef = doc(db, `users/${user.uid}/tasks`, id);
-      await updateDoc(taskDocRef, {
-        isTrashed: true,
-        trashedAt: serverTimestamp()
-      });
-      toast({ title: "Task Moved to Trash", description: `"${(task.title || task.description)?.substring(0,25)}..." moved to trash.` });
+      trashTask(id);
+      toast({ title: "Task Moved to Trash", description: "Task moved to trash locally." });
       setTaskToDelete(null);
     } catch (error: any) {
       console.error("Error moving task to trash:", error);
-      toast({ title: "Error", description: `Could not move task to trash: ${error.message}`, variant: "destructive" });
+      toast({ title: "Error", description: "Could not trash task.", variant: "destructive" });
       setTaskToDelete(null);
     }
-  }, [user, tasks, toast]);
+  }, [tasks, trashTask, toast]);
 
 
   const handleOpenEditForm = useCallback((task: Task) => {
@@ -261,25 +153,20 @@ export default function HomePage() {
     setIsFormOpen(true);
   }, []);
   
-  const handleOpenAddFormThroughDialog = useCallback(() => {
-    if (!user) {
-      toast({ title: "Please Log In", description: "You need to be logged in to add tasks.", variant: "default" });
-      return;
-    }
-    // This function is for the sidebar's "Add Task" button.
-    // It should open the centered InteractiveTaskCard in 'add' mode, but with more prominent fields.
-    // For simplicity, we can open it in 'edit' mode but without an existing task, which InteractiveTaskCard handles.
-    setExpandedTask(null); // No existing task, so it's effectively an "add detailed task"
-    setIsExpandedTaskVisible(true);
-  }, [user, toast]);
+  const handleOpenAddForm = useCallback(() => {
+    setEditingTask(null);
+    setIsFormOpen(true);
+  }, []);
+
+  const handleOpenEditView = useCallback((task: Task) => {
+     setEditingTask(task);
+     setIsFormOpen(true);
+  }, []);
   
   const handleLabelSelect = useCallback((labelId: string | null) => {
     setSelectedLabelId(labelId);
-    // If a label is selected, reset the main filter to 'general' to show all tasks of that label.
-    // Or, you might want the filter (pending/completed) to apply WITHIN the label.
-    // For now, let's say selecting a label overrides the other filter for simplicity of view.
     if (labelId) {
-        setFilter('general'); // Or a new filter type like 'label_tasks'
+        setFilter('general'); 
     }
   }, []);
 
@@ -311,16 +198,13 @@ export default function HomePage() {
   const filteredTasks = useMemo(() => {
     let tasksToFilter = sortedTasks.filter(task => !task.isTrashed);
 
-    // First, filter by selected label if any
     if (selectedLabelId) {
       tasksToFilter = tasksToFilter.filter(task => task.labelId === selectedLabelId);
     }
-    // Then, apply the main filter (today, pending, completed)
-    // If a label is selected, 'general' and 'all' within that label are the same.
+    
     if (selectedLabelId && (filter === 'general' || filter === 'all')) {
-        return tasksToFilter; // Show all tasks for the selected label
+        return tasksToFilter; 
     }
-
 
     switch (filter) {
       case 'pending':
@@ -334,21 +218,17 @@ export default function HomePage() {
           return isValid(dueDate) && dateFnsIsToday(startOfDay(dueDate));
         });
       default: // 'all'
-        return nonTrashedTasks;
+        return tasksToFilter;
     }
   }, [sortedTasks, filter, selectedLabelId]);
 
-  const pendingTasksCount = useMemo(() => tasks.filter(t => !t.isCompleted && !t.isTrashed).length, [tasks]);
-
-  if (authLoading || !isMounted) {
+  if (!isMounted) {
     return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
-  if (!user) return <LandingPage />;
-
+  
   return (
     <>
-      <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} />
-      <Header /> 
+      <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} selectedLabelId={selectedLabelId} onLabelSelect={handleLabelSelect} />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
         <div className="w-full max-w-6xl mx-auto">
@@ -366,10 +246,10 @@ export default function HomePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                    <div className="h-4 bg-muted rounded w-1/4"></div> {/* Priority + Title placeholder */}
+                    <div className="h-4 bg-muted rounded w-1/4"></div>
                     <div className="h-6 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-full mt-1"></div> {/* Description line 1 */}
-                    <div className="h-4 bg-muted rounded w-1/2"></div> {/* Description line 2 */}
+                    <div className="h-4 bg-muted rounded w-full mt-1"></div>
+                    <div className="h-4 bg-muted rounded w-1/2"></div>
                     <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
                 </div>
               ))}
@@ -378,7 +258,7 @@ export default function HomePage() {
             <TaskList
               tasks={filteredTasks}
               onToggleComplete={handleToggleComplete}
-              onEdit={handleOpenEditView} // This will now open the centered InteractiveTaskCard
+              onEdit={handleOpenEditView}
               onDelete={(id) => setTaskToDelete(id)}
               onToggleSubtask={handleToggleSubtaskComplete}
             />
@@ -409,12 +289,12 @@ export default function HomePage() {
 
       <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
         <AlertDialogContent className="rounded-lg bg-card">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Move Task to Trash?</AlertDialogTitle>
+          <SrAlertDialogHeader>
+            <SrAlertDialogTitle>Move Task to Trash?</SrAlertDialogTitle>
             <AlertDialogDesc>
-              This will move the task "{(tasks.find(t => t.id === taskToDelete)?.title || tasks.find(t => t.id === taskToDelete)?.description)?.substring(0, 50)}..." to the trash. You can restore it later from the Trash section.
+              This will move the task &quot;{(tasks.find(t => t.id === taskToDelete)?.title || tasks.find(t => t.id === taskToDelete)?.description)?.substring(0, 50)}...&quot; to the trash. You can restore it later from the Trash section.
             </AlertDialogDesc>
-          </AlertDialogHeader>
+          </SrAlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => taskToDelete && handleDeleteTask(taskToDelete)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
@@ -426,4 +306,3 @@ export default function HomePage() {
     </>
   );
 }
-

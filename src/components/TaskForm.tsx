@@ -27,11 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+// Removed duplicate popover import
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Save, PlusCircle, Loader2, Trash2, ListChecks, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,9 +39,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAuth } from "@/contexts/AuthContext";
-import { db } from "@/firebase/config";
-import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+// Removed useAuth import
 
 
 const taskCategories: [TaskCategory, ...TaskCategory[]] = ["Assignment", "Class", "Personal"];
@@ -80,6 +74,12 @@ interface TaskFormProps {
 
 export function TaskForm({ onSubmit, editingTask, onClose }: TaskFormProps) {
   const { toast } = useToast();
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const initialDueDate = editingTask?.dueDate ? parseISO(editingTask.dueDate) : new Date(new Date().setHours(23, 59, 59, 999));
+  const initialReminderDate = editingTask?.reminderAt ? parseISO(editingTask.reminderAt) : null;
+  const initialReminderTime = editingTask?.reminderAt ? format(parseISO(editingTask.reminderAt), "HH:mm") : "09:00";
+
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: editingTask

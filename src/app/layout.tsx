@@ -1,14 +1,16 @@
 
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider } from '@/components/ui/sidebar'; 
-import { MainContentWrapper } from '@/components/MainContentWrapper'; // Import MainContentWrapper
+import { MainContentWrapper } from '@/components/MainContentWrapper'; 
 
-const inter = Inter({ subsets: ['latin'] });
+const poppins = Poppins({ 
+  subsets: ['latin'],
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900']
+});
 
 export const metadata: Metadata = {
   title: 'Production App',
@@ -22,21 +24,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={poppins.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
             <SidebarProvider>
-              <MainContentWrapper> {/* Wrap children and Toaster with MainContentWrapper */}
+              <MainContentWrapper> 
                 {children}
                 <Toaster />
               </MainContentWrapper>
             </SidebarProvider>
-          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
