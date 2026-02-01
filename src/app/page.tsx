@@ -17,6 +17,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TaskForm } from '@/components/TaskForm';
 import { useTaskManager } from '@/hooks/useTaskManager';
+import { useSidebar } from '@/components/ui/sidebar';
 
 
 interface HomePageProps {
@@ -34,6 +35,7 @@ const priorityOrder: Record<TaskPriority, number> = {
 
 export default function HomePage() {
   const { toast } = useToast();
+  const { effectiveSidebarWidth } = useSidebar();
   
   // Use Local Storage Hook
   const { tasks, addTask, updateTask, trashTask } = useTaskManager();
@@ -230,39 +232,44 @@ export default function HomePage() {
     <>
       <AppSidebar onAddTask={handleOpenAddForm} currentFilter={filter} onFilterChange={setFilter} selectedLabelId={selectedLabelId} onLabelSelect={handleLabelSelect} />
       
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="mb-6 max-w-2xl mx-auto">
-            <Button
-              className="w-full h-12 px-4 py-3 text-base bg-card text-foreground/80 border border-border rounded-lg shadow justify-start hover:text-foreground hover:border-primary hover:bg-primary/10 hover:shadow-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-background"
-              onClick={handleOpenAddForm}
-            >
-              <Plus className="mr-3 h-5 w-5" />
-              Take a note...
-            </Button>
-          </div>
-          
-          {isLoadingTasks ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
-                    <div className="h-4 bg-muted rounded w-1/4"></div>
-                    <div className="h-6 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-full mt-1"></div>
-                    <div className="h-4 bg-muted rounded w-1/2"></div>
-                    <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
-                </div>
-              ))}
+      <main 
+        className="flex-1 flex flex-col overflow-hidden transition-all duration-200 ease-in-out"
+        style={{ marginLeft: effectiveSidebarWidth }}
+      >
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+          <div className="w-full max-w-6xl mx-auto">
+            <div className="mb-6 max-w-2xl mx-auto">
+              <Button
+                className="w-full h-12 px-4 py-3 text-base bg-card text-foreground/80 border border-border rounded-lg shadow justify-start hover:text-foreground hover:border-primary hover:bg-primary/10 hover:shadow-lg transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-background"
+                onClick={handleOpenAddForm}
+              >
+                <Plus className="mr-3 h-5 w-5" />
+                Take a note...
+              </Button>
             </div>
-          ) : (
-            <TaskList
-              tasks={filteredTasks}
-              onToggleComplete={handleToggleComplete}
-              onEdit={handleOpenEditView}
-              onDelete={(id) => setTaskToDelete(id)}
-              onToggleSubtask={handleToggleSubtaskComplete}
-            />
-          )}
+            
+            {isLoadingTasks ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="bg-card rounded-lg shadow-sm border p-4 animate-pulse h-[180px] space-y-3">
+                      <div className="h-4 bg-muted rounded w-1/4"></div>
+                      <div className="h-6 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-full mt-1"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                      <div className="h-4 bg-muted rounded w-1/4 mt-auto"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <TaskList
+                tasks={filteredTasks}
+                onToggleComplete={handleToggleComplete}
+                onEdit={handleOpenEditView}
+                onDelete={(id) => setTaskToDelete(id)}
+                onToggleSubtask={handleToggleSubtaskComplete}
+              />
+            )}
+          </div>
         </div>
       </main>
 

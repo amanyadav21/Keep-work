@@ -5,7 +5,6 @@ import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider } from '@/components/ui/sidebar'; 
-import { MainContentWrapper } from '@/components/MainContentWrapper'; 
 
 const poppins = Poppins({ 
   subsets: ['latin'],
@@ -31,12 +30,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-            <SidebarProvider>
-              <MainContentWrapper> 
-                {children}
-                <Toaster />
-              </MainContentWrapper>
-            </SidebarProvider>
+          <SidebarProvider>
+            <div className="flex h-screen w-full overflow-hidden">
+              {children}
+            </div>
+            <Toaster />
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
